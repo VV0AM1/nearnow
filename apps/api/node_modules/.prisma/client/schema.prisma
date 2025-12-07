@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  avatar    String?
+  bio       String?
+  password  String? // Storing directly for simplicity in MVP
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  auth      Auth?
+  posts     Post[]
+  comments  Comment[]
+  neighborhoods Neighborhood[]
+}
+
+model Auth {
+  id           String   @id @default(uuid())
+  passwordHash String?
+  googleId     String?  @unique
+  twoFactorSecret String?
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model Post {
+  id        String   @id @default(uuid())
+  title     String
+  content   String?
+  imageUrl  String?
+  category  Category @default(GENERAL)
+  
+  // Location
+  latitude  Float
+  longitude Float
+  
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  
+  neighborhoodId String?
+  neighborhood   Neighborhood? @relation(fields: [neighborhoodId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  comments  Comment[]
+}
+
+model Neighborhood {
+  id        String   @id @default(uuid())
+  name      String
+  city      String
+  
+  // Center point
+  latitude  Float
+  longitude Float
+  radiusKm  Float    @default(5.0)
+  
+  posts     Post[]
+  users     User[]   // Users who joined this neighborhood
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+enum Role {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum Category {
+  GENERAL
+  CRIME
+  SAFETY
+  LOST_FOUND
+  EVENT
+  RECOMMENDATION
+}
