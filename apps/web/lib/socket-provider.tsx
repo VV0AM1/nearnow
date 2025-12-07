@@ -1,0 +1,43 @@
+"use client";
+
+import { createContext, useContext, useEffect, useState } from "react";
+import { io, Socket } from "socket.io-client";
+
+const SocketContext = createContext<Socket | null>(null);
+
+export const useSocket = () => {
+    return useContext(SocketContext);
+};
+
+export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
+    const [socket, setSocket] = useState<Socket | null>(null);
+
+    useEffect(() => {
+        // Attempt connections to localhost
+        const socketInstance = io("http://localhost:3002", {
+            transports: ["websocket", "polling"],
+            withCredentials: true,
+            reconnectionAttempts: 5,
+        });
+
+        socketInstance.on("connect", () => {
+            console.log("Socket connected:", socketInstance.id);
+        });
+
+        socketInstance.on("connect_error", (err) => {
+            console.error("Socket connection error:", err);
+        });
+
+        setSocket(socketInstance);
+
+        return () => {
+            socketInstance.disconnect();
+        };
+    }, []);
+
+    return (
+        <SocketContext.Provider value={socket}>
+            {children}
+        </SocketContext.Provider>
+    );
+};

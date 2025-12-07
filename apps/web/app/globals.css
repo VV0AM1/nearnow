@@ -1,0 +1,146 @@
+@import "tailwindcss";
+
+:root {
+  /* Premium Light Mode */
+  --background: #ffffff;
+  /* Slate-50 */
+  --foreground: #0f172a;
+  /* Slate-900 */
+
+  --primary: #4f46e5;
+  /* Indigo-600 */
+  --primary-foreground: #ffffff;
+
+  --secondary: #10b981;
+  /* Emerald-500 */
+  --secondary-foreground: #ffffff;
+
+  --accent: #f43f5e;
+  /* Rose-500 */
+  --accent-foreground: #ffffff;
+
+  --muted: #f1f5f9;
+  /* Slate-100 */
+  --muted-foreground: #64748b;
+  /* Slate-500 */
+
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+
+  --border: #e2e8f0;
+  /* Slate-200 */
+  --input: #e2e8f0;
+
+  --radius: 0.75rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Premium Dark Mode - Deep Blue/Slate */
+    --background: #020617;
+    /* Slate-950 */
+    --foreground: #f8fafc;
+    /* Slate-50 */
+
+    --primary: #6366f1;
+    /* Indigo-500 */
+    --primary-foreground: #ffffff;
+
+    --secondary: #34d399;
+    /* Emerald-400 */
+    --secondary-foreground: #022c22;
+
+    --accent: #fb7185;
+    /* Rose-400 */
+    --accent-foreground: #4c0519;
+
+    --muted: #1e293b;
+    /* Slate-800 */
+    --muted-foreground: #94a3b8;
+    /* Slate-400 */
+
+    --card: #0f172a;
+    /* Slate-900 */
+    --card-foreground: #f8fafc;
+
+    --border: #1e293b;
+    /* Slate-800 */
+    --input: #1e293b;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+
+  --radius-xl: var(--radius);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  @apply bg-background text-foreground antialiased;
+  background-image:
+    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(244, 63, 94, 0.15) 0px, transparent 50%);
+  background-attachment: fixed;
+}
+
+/* Glassmorphism Utilities */
+.glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
+.dark .glass {
+  background: rgba(5, 5, 20, 0.6);
+  /* Deeper dark glass */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+}
+
+.glass-card {
+  @apply rounded-xl transition-all duration-300;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+}
+
+.dark .glass-card {
+  background: rgba(10, 10, 25, 0.6);
+  /* Darker, slightly blueish tint matching premium bg */
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+.glass-popup .leaflet-popup-content-wrapper,
+.glass-popup .leaflet-popup-tip {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--foreground);
+  backdrop-filter: blur(8px);
+}
+
+.dark .glass-popup .leaflet-popup-content-wrapper,
+.dark .glass-popup .leaflet-popup-tip {
+  background: rgba(10, 10, 25, 0.9);
+  color: var(--foreground);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
