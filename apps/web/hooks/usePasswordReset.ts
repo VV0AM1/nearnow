@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API_URL } from "../lib/config";
 
 export function usePasswordReset() {
     const [loading, setLoading] = useState(false);
@@ -10,7 +11,7 @@ export function usePasswordReset() {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch("http://localhost:3002/auth/forgot-password", {
+            const res = await fetch("${API_URL}/auth/forgot-password", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email }),
@@ -33,7 +34,7 @@ export function usePasswordReset() {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch("http://localhost:3002/auth/reset-password", {
+            const res = await fetch("${API_URL}/auth/reset-password", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, otp, newPassword }),

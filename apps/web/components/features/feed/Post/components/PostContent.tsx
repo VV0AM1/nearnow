@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { API_URL } from "@/lib/config";
 import { formatDistanceToNow } from "date-fns";
 
 interface PostContentProps {
@@ -14,7 +16,7 @@ export default function PostContent({ content, imageUrl, createdAt, neighborhood
             {imageUrl && (
                 <div className="mt-2 rounded-lg overflow-hidden h-32 w-full relative group/img">
                     <img
-                        src={imageUrl.startsWith('http') ? imageUrl : `http://127.0.0.1:3002${imageUrl}`}
+                        src={imageUrl.startsWith('http') ? imageUrl : `${API_URL}${imageUrl}`}
                         alt="Incident"
                         className="w-full h-full object-cover"
                     />

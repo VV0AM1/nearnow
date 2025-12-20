@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { API_URL } from "@/lib/config";
 import { useGeoLocation } from "../../hooks/useGeoLocation";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import { RankingCard } from "../../components/features/safety/RankingCard";
@@ -16,7 +18,7 @@ export default function SafetyPage() {
         if (!location.latitude || !location.longitude) return;
 
         setLoading(true);
-        fetch(`http://localhost:3002/neighborhoods/stats?lat=${location.latitude}&lng=${location.longitude}&radius=${radius}`)
+        fetch(`${API_URL}/neighborhoods/stats?lat=${location.latitude}&lng=${location.longitude}&radius=${radius}`)
             .then(res => res.json())
             .then(data => {
                 if (Array.isArray(data)) {

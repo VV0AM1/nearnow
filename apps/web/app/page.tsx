@@ -5,7 +5,7 @@ import { User } from "../types/user";
 import { Post } from "../types/post";
 import HomeContent from "../components/features/home/HomeContent";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace('localhost', '127.0.0.1') || 'http://127.0.0.1:3002';
+import { API_URL } from "@/lib/config";
 
 async function getUser(token: string): Promise<User | null> {
   try {

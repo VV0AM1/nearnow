@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { API_URL } from "@/lib/config";
 import Cookies from "js-cookie";
 import { Post } from "./Post.types";
 
@@ -12,7 +13,7 @@ export function usePostInteractions(post: Post) {
             if (!userId) return;
 
             try {
-                const res = await fetch(`http://127.0.0.1:3002/posts/${post.id}/vote/check?userId=${userId}`);
+                const res = await fetch(`${API_URL}/posts/${post.id}/vote/check?userId=${userId}`);
                 if (res.ok) {
                     const data = await res.json();
                     setVoted(data.hasVoted);
@@ -35,7 +36,7 @@ export function usePostInteractions(post: Post) {
             const userId = Cookies.get("nearnow_user_id");
             if (!userId) return;
 
-            await fetch(`http://127.0.0.1:3002/posts/${post.id}/vote`, {
+            await fetch(`${API_URL}/posts/${post.id}/vote`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId, type: 'UP' })

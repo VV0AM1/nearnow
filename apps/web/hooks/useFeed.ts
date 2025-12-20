@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { API_URL } from "../lib/config";
 import { useSocket } from "../lib/socket-provider";
 
 export interface Post {
@@ -28,7 +29,7 @@ export function useFeed(location: { lat: number; long: number }, radius: number 
                     radius: radius.toString(),
                     category: category,
                 });
-                const res = await fetch(`http://127.0.0.1:3002/posts/feed?${query}`);
+                const res = await fetch(`${API_URL}/posts/feed?${query}`);
                 if (!res.ok) throw new Error("Failed to fetch feed");
                 const data = await res.json();
                 setPosts(data);

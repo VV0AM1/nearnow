@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_URL } from '../lib/config';
 import { getToken, getUserId } from '../lib/auth';
 
 export interface NotificationSettings {
@@ -33,7 +34,7 @@ export function useNotifications() {
     const fetchSettings = async () => {
         if (!userId || !token) return;
         try {
-            const res = await fetch(`http://127.0.0.1:3002/notifications/settings/${userId}`, {
+            const res = await fetch(`${API_URL}/notifications/settings/${userId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (res.ok) {
@@ -59,7 +60,7 @@ export function useNotifications() {
     const fetchNotifications = async () => {
         if (!userId || !token) return;
         try {
-            const res = await fetch(`http://127.0.0.1:3002/notifications/${userId}`, {
+            const res = await fetch(`${API_URL}/notifications/${userId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (res.ok) {
@@ -86,7 +87,7 @@ export function useNotifications() {
             // Merge current settings with updates
             const merged = { ...settings, ...newSettings };
 
-            const res = await fetch(`http://127.0.0.1:3002/notifications/settings/${userId}`, {
+            const res = await fetch(`${API_URL}/notifications/settings/${userId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -109,7 +110,7 @@ export function useNotifications() {
     const markAsRead = async (id: string) => {
         if (!token) return;
         try {
-            await fetch(`http://127.0.0.1:3002/notifications/${id}/read`, {
+            await fetch(`${API_URL}/notifications/${id}/read`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${token}` }
             });

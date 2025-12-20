@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Post } from "../types/post";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3002';
+import { API_URL } from "../lib/config";
 
 export function useUserPosts(userId?: string) {
     const [posts, setPosts] = useState<Post[]>([]);

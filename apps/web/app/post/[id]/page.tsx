@@ -1,8 +1,10 @@
+```javascript
 "use client";
 
 import { notFound, useRouter, useSearchParams } from "next/navigation";
 import CommentSection from "@/components/features/feed/CommentSection";
-import Post from "@/components/features/feed/Post";
+import { Post as PostComponent } from "@/components/features/feed/Post";
+import { API_URL } from "@/lib/config";
 import { ArrowLeft, Bookmark, X } from "lucide-react"; // Imported X for Close icon
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -16,53 +18,53 @@ function PostContent({ post }: { post: any }) {
     useEffect(() => {
         // Check if saved
         if (userId && token) {
-            fetch(`http://127.0.0.1:3002/users/${userId}/saved/${post.id}/check`, {
-                headers: { Authorization: `Bearer ${token}` }
+            fetch(`${ API_URL } /users/${ userId } /saved/${ post.id }/check`, {
+headers: { Authorization: `Bearer ${token}` }
             }).then(res => res.json()).then(data => setIsSaved(data.isSaved)).catch(console.error);
         }
     }, [userId, token, post.id]);
 
-    const toggleSave = async () => {
-        if (!userId || !token) return;
+const toggleSave = async () => {
+    if (!userId || !token) return;
 
-        const newState = !isSaved;
-        setIsSaved(newState); // Optimistic
+    const newState = !isSaved;
+    setIsSaved(newState); // Optimistic
 
-        try {
-            await fetch(`http://127.0.0.1:3002/users/${userId}/saved/${post.id}`, {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${token}` }
-            });
-        } catch (err) {
-            setIsSaved(!newState); // Revert
-        }
-    };
+    try {
+        await fetch(`${API_URL}/users/${userId}/saved/${post.id}`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` }
+        });
+    } catch (err) {
+        setIsSaved(!newState); // Revert
+    }
+};
 
-    return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="relative group">
-                <Post post={post} />
+return (
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="relative group">
+            <Post post={post} />
 
-                {/* Save Button Overlay */}
-                <button
-                    onClick={toggleSave}
-                    className={cn(
-                        "absolute top-4 right-4 p-2 rounded-full transition-all duration-300 z-10 shadow-lg",
-                        isSaved
-                            ? "bg-primary text-primary-foreground scale-110"
-                            : "bg-background/80 hover:bg-background text-muted-foreground hover:text-primary hover:scale-110"
-                    )}
-                >
-                    <Bookmark className={cn("h-5 w-5", isSaved && "fill-current")} />
-                </button>
-            </div>
-
-            <div className="glass-card p-6 border border-border shadow-xl">
-                <h3 className="text-lg font-bold mb-4">Comments</h3>
-                <CommentSection postId={post.id} initialComments={post.comments} />
-            </div>
+            {/* Save Button Overlay */}
+            <button
+                onClick={toggleSave}
+                className={cn(
+                    "absolute top-4 right-4 p-2 rounded-full transition-all duration-300 z-10 shadow-lg",
+                    isSaved
+                        ? "bg-primary text-primary-foreground scale-110"
+                        : "bg-background/80 hover:bg-background text-muted-foreground hover:text-primary hover:scale-110"
+                )}
+            >
+                <Bookmark className={cn("h-5 w-5", isSaved && "fill-current")} />
+            </button>
         </div>
-    );
+
+        <div className="glass-card p-6 border border-border shadow-xl">
+            <h3 className="text-lg font-bold mb-4">Comments</h3>
+            <CommentSection postId={post.id} initialComments={post.comments} />
+        </div>
+    </div>
+);
 }
 
 export default function PostPage(props: { params: Promise<{ id: string }> }) {
@@ -78,7 +80,7 @@ export default function PostPage(props: { params: Promise<{ id: string }> }) {
 
     useEffect(() => {
         props.params.then(p => {
-            fetch(`${process.env.NEXT_PUBLIC_API_URL?.replace('localhost', '127.0.0.1') || 'http://127.0.0.1:3002'}/posts/${p.id}`)
+            fetch(`${process.env.NEXT_PUBLIC_API_URL?.replace('localhost', '127.0.0.1') || '${API_URL}'}/posts/${p.id}`)
                 .then(res => res.ok ? res.json() : null)
                 .then(setPost)
                 .finally(() => setLoading(false));

@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { API_URL } from "../lib/config";
 import { getToken } from "../lib/auth";
 
 export interface Comment {
@@ -23,7 +24,7 @@ export function useComments(postId: string) {
     const fetchComments = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetch(`http://127.0.0.1:3002/comments/${postId}`);
+            const res = await fetch(`${API_URL}/comments/${postId}`);
             if (res.ok) {
                 const data = await res.json();
                 setComments(data);
@@ -47,7 +48,7 @@ export function useComments(postId: string) {
 
         setSubmitting(true);
         try {
-            const res = await fetch("http://127.0.0.1:3002/comments", {
+            const res = await fetch("${API_URL}/comments", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

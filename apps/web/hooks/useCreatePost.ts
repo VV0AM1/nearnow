@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API_URL } from "../lib/config";
 import { getToken, getUserId } from "../lib/auth";
 
 interface CreatePostData {
@@ -38,7 +39,7 @@ export function useCreatePost() {
                 formData.append('file', data.imageFile);
             }
 
-            const res = await fetch("http://localhost:3002/posts", {
+            const res = await fetch(`${API_URL}/posts`, {
                 method: "POST",
                 headers: {
                     // "Content-Type": "multipart/form-data" // Browser sets this automatically

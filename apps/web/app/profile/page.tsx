@@ -1,8 +1,10 @@
 "use client";
 
 import { User as UserIcon, LogOut, Mail, Hash, ChevronLeft, ChevronRight } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { API_URL } from "@/lib/config";
 import { logout } from "../../lib/auth";
-import Button from "@/components/common/button/Button";
 import { useProfile } from "@/hooks/useProfile";
 import NotificationSettings from "@/components/features/profile/NotificationSettings";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -36,7 +38,7 @@ export default function ProfilePage() {
                             <div className="h-16 w-16 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden border-2 border-transparent group-hover:border-primary transition-all cursor-pointer">
                                 {user.avatar ? (
                                     <img
-                                        src={user.avatar.startsWith('http') ? user.avatar : `http://127.0.0.1:3002${user.avatar}`}
+                                        src={user.avatar.startsWith('http') ? user.avatar : `${API_URL}${user.avatar}`}
                                         alt={user.name || 'User'}
                                         className="h-full w-full object-cover"
                                     />
@@ -60,7 +62,7 @@ export default function ProfilePage() {
                                             // Optimistic update could go here, but simple reload is safer
                                             try {
                                                 const token = document.cookie.split('; ').find(row => row.startsWith('nearnow_token='))?.split('=')[1];
-                                                const res = await fetch('http://127.0.0.1:3002/users/avatar', {
+                                                const res = await fetch('${API_URL}/users/avatar', {
                                                     method: 'POST',
                                                     headers: {
                                                         'Authorization': `Bearer ${token}`

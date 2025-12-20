@@ -1,7 +1,8 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { io, Socket } from "socket.io-client";
+import { io as ClientIO } from "socket.io-client";
+import { SOCKET_URL } from "./config";
 
 const SocketContext = createContext<Socket | null>(null);
 
@@ -14,7 +15,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
     useEffect(() => {
         // Attempt connections to localhost
-        const socketInstance = io("http://localhost:3002", {
+        const socketInstance = ClientIO(SOCKET_URL, {
             transports: ["websocket", "polling"],
             withCredentials: true,
             reconnectionAttempts: 5,

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { API_URL } from "../lib/config";
 import { getToken, logout } from "../lib/auth";
 
 interface UserProfile {
@@ -30,7 +31,7 @@ export function useProfile() {
             }
 
             try {
-                const res = await fetch("http://127.0.0.1:3002/auth/me", {
+                const res = await fetch(`${API_URL}/auth/me`, {
                     headers: {
                         "Authorization": `Bearer ${token}`
                     }
