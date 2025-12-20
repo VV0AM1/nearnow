@@ -1,0 +1,125 @@
+import { PostsService } from './posts.service';
+import { CreatePostInput } from './dto/create-post.input';
+import { User } from '../users/entities/user.entity';
+export declare class PostsResolver {
+    private readonly postsService;
+    constructor(postsService: PostsService);
+    createPost(user: User, createPostInput: CreatePostInput): Promise<{
+        neighborhood: {
+            id: string;
+            name: string;
+            cityId: string;
+            latitude: number;
+            longitude: number;
+            radiusKm: number;
+            safetyLevel: import(".prisma/client").$Enums.SafetyLevel;
+            createdAt: Date;
+            updatedAt: Date;
+        } | null;
+        author: {
+            id: string;
+            email: string;
+            name: string | null;
+            avatar: string | null;
+            bio: string | null;
+            role: import(".prisma/client").$Enums.Role;
+            reputation: number;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+    } & {
+        id: string;
+        title: string;
+        content: string | null;
+        imageUrl: string | null;
+        category: import(".prisma/client").$Enums.Category;
+        latitude: number;
+        longitude: number;
+        authorId: string;
+        neighborhoodId: string | null;
+        likes: number;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
+    findAll(): import(".prisma/client").Prisma.PrismaPromise<({
+        neighborhood: {
+            id: string;
+            name: string;
+            cityId: string;
+            latitude: number;
+            longitude: number;
+            radiusKm: number;
+            safetyLevel: import(".prisma/client").$Enums.SafetyLevel;
+            createdAt: Date;
+            updatedAt: Date;
+        } | null;
+        author: {
+            id: string;
+            email: string;
+            name: string | null;
+            avatar: string | null;
+            bio: string | null;
+            role: import(".prisma/client").$Enums.Role;
+            reputation: number;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+    } & {
+        id: string;
+        title: string;
+        content: string | null;
+        imageUrl: string | null;
+        category: import(".prisma/client").$Enums.Category;
+        latitude: number;
+        longitude: number;
+        authorId: string;
+        neighborhoodId: string | null;
+        likes: number;
+        createdAt: Date;
+        updatedAt: Date;
+    })[]>;
+    feed(latitude: number, longitude: number, radius: number): Promise<(({
+        comments: {
+            id: string;
+            content: string;
+            authorId: string;
+            postId: string;
+            createdAt: Date;
+        }[];
+        neighborhood: {
+            id: string;
+            name: string;
+            cityId: string;
+            latitude: number;
+            longitude: number;
+            radiusKm: number;
+            safetyLevel: import(".prisma/client").$Enums.SafetyLevel;
+            createdAt: Date;
+            updatedAt: Date;
+        } | null;
+        author: {
+            id: string;
+            email: string;
+            name: string | null;
+            avatar: string | null;
+            bio: string | null;
+            role: import(".prisma/client").$Enums.Role;
+            reputation: number;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+    } & {
+        id: string;
+        title: string;
+        content: string | null;
+        imageUrl: string | null;
+        category: import(".prisma/client").$Enums.Category;
+        latitude: number;
+        longitude: number;
+        authorId: string;
+        neighborhoodId: string | null;
+        likes: number;
+        createdAt: Date;
+        updatedAt: Date;
+    }) | undefined)[]>;
+}

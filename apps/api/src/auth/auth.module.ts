@@ -9,11 +9,14 @@ import { JwtStrategy } from './jwt.strategy';
 
 import { AuthController } from './auth.controller';
 
+import { EmailModule } from '../email/email.module';
+
 @Module({
   controllers: [AuthController],
   imports: [
     UsersModule,
     PassportModule,
+    EmailModule,
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

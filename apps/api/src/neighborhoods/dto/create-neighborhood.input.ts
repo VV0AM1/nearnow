@@ -11,7 +11,7 @@ export class CreateNeighborhoodInput {
     @Field()
     @IsNotEmpty()
     @IsString()
-    city: string;
+    cityId: string;
 
     @Field(() => Float)
     @IsNumber()

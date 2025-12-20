@@ -6,13 +6,18 @@ import PostDetailModal from "./PostDetailModal";
 import { useFeed } from "../../../hooks/useFeed";
 import LocationSearch from "./LocationSearch";
 import RadiusSlider from "./RadiusSlider";
-import CategoryFilter, { getCategoryColor } from "./CategoryFilter";
+import CategoryFilter from "./CategoryFilter";
+import FeedList from "./FeedList";
+import FeedListSkeleton from "../../ui/loading/FeedListSkeleton";
+
+import { Post } from "../../../types/post";
 
 interface FeedContainerProps {
     initialLocation?: { lat: number; long: number };
+    initialPosts?: Post[];
 }
 
-export default function FeedContainer({ initialLocation }: FeedContainerProps) {
+export default function FeedContainer({ initialLocation, initialPosts = [] }: FeedContainerProps) {
     const [location, setLocation] = useState(initialLocation || { lat: 37.7749, long: -122.4194 });
 
     // Sync if initialLocation changes (e.g. from parent)
@@ -24,7 +29,7 @@ export default function FeedContainer({ initialLocation }: FeedContainerProps) {
 
     const [radius, setRadius] = useState(10);
     const [category, setCategory] = useState("ALL");
-    const { posts, loading, error } = useFeed(location, radius, category);
+    const { posts, loading, error, incrementCommentCount } = useFeed(location, radius, category, initialPosts);
     const [selectedPost, setSelectedPost] = useState<any>(null);
 
     // Initial load check
@@ -32,7 +37,13 @@ export default function FeedContainer({ initialLocation }: FeedContainerProps) {
 
     return (
         <>
-            <PostDetailModal post={selectedPost} onClose={() => setSelectedPost(null)} />
+            {selectedPost && (
+                <PostDetailModal
+                    post={selectedPost}
+                    onClose={() => setSelectedPost(null)}
+                    onCommentAdded={(id) => incrementCommentCount(id)}
+                />
+            )}
 
             <div className="space-y-4 mb-6">
                 <div className="flex flex-col md:flex-row gap-4">
@@ -52,55 +63,23 @@ export default function FeedContainer({ initialLocation }: FeedContainerProps) {
             {error && <div className="text-center p-4 text-red-500 bg-red-50 rounded-lg mb-4">Error: {error}</div>}
 
             {isLoading ? (
-                <div className="text-center p-12 text-muted-foreground">Searching nearby...</div>
+                <div className="h-[600px] flex flex-col gap-6">
+                    <FeedListSkeleton />
+                </div>
             ) : (
                 <div className="flex flex-col lg:flex-row gap-6 h-[600px]">
-                    {/* Feed List */}
-                    <div className="lg:w-1/3 overflow-y-auto custom-scrollbar space-y-4 pr-2">
-                        {posts.length === 0 ? (
-                            <div className="text-center text-muted-foreground p-8 border border-dashed border-border rounded-xl">
-                                <p>No alerts found nearby.</p>
-                                <p className="text-xs mt-2 opacity-50">Try increasing the radius or changing filters.</p>
-                            </div>
-                        ) : (
-                            posts.map((post: any) => {
-                                const colorClass = getCategoryColor(post.category);
-                                return (
-                                    <div
-                                        key={post.id}
-                                        onClick={() => setSelectedPost(post)}
-                                        className="bg-card p-4 rounded-xl border border-border shadow-sm flex gap-4 hover:bg-accent/5 transition-colors cursor-pointer"
-                                    >
-                                        <div className={`h-10 w-10 rounded-full ${colorClass.replace('bg-', 'bg-opacity-20 text-')} flex items-center justify-center text-xl shrink-0`}>
-                                            📝
-                                        </div>
-                                        <div>
-                                            <div className="flex justify-between items-start">
-                                                <h3 className="font-semibold text-sm">{post.title}</h3>
-                                                <span className={`text-[10px] px-2 py-0.5 rounded-full text-white ${colorClass}`}>
-                                                    {post.category}
-                                                </span>
-                                            </div>
-                                            <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{post.content}</p>
-                                            <div className="mt-2 text-[10px] text-muted-foreground flex gap-2">
-                                                <span>{new Date(post.createdAt).toLocaleTimeString()}</span>
-                                                <span>•</span>
-                                                <span>{post.neighborhood?.name || "Unknown Area"}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })
-                        )}
+                    {/* Feed List Section */}
+                    <div className="lg:w-1/3 overflow-y-auto no-scrollbar">
+                        <FeedList posts={posts} onPostClick={setSelectedPost} />
                     </div>
 
-                    {/* Map Visualization */}
+                    {/* Map Visualization Section */}
                     <div className="lg:w-2/3 h-full rounded-xl overflow-hidden shadow-sm border border-border relative">
-                        <div className="absolute top-4 right-4 z-[400] flex gap-2">
-                            <div className="bg-background/80 backdrop-blur px-3 py-1 rounded-full text-xs font-bold shadow-md border border-border">
+                        <div className="absolute top-4 right-4 z-[400] flex gap-2 pointer-events-none">
+                            <div className="bg-black/80 text-white backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold shadow-lg border border-white/10">
                                 {radius}km Radius
                             </div>
-                            <div className="bg-background/80 backdrop-blur px-3 py-1 rounded-full text-xs font-bold shadow-md border border-border">
+                            <div className="bg-black/80 text-white backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold shadow-lg border border-white/10">
                                 {posts.length} Active Alerts
                             </div>
                         </div>

@@ -1,146 +1,217 @@
 @import "tailwindcss";
 
-:root {
-  /* Premium Light Mode */
-  --background: #ffffff;
-  /* Slate-50 */
-  --foreground: #0f172a;
-  /* Slate-900 */
+@theme {
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
 
-  --primary: #4f46e5;
-  /* Indigo-600 */
-  --primary-foreground: #ffffff;
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
 
-  --secondary: #10b981;
-  /* Emerald-500 */
-  --secondary-foreground: #ffffff;
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
 
-  --accent: #f43f5e;
-  /* Rose-500 */
-  --accent-foreground: #ffffff;
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
 
-  --muted: #f1f5f9;
-  /* Slate-100 */
-  --muted-foreground: #64748b;
-  /* Slate-500 */
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
 
-  --card: #ffffff;
-  --card-foreground: #0f172a;
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
 
-  --border: #e2e8f0;
-  /* Slate-200 */
-  --input: #e2e8f0;
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
 
-  --radius: 0.75rem;
-}
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Premium Dark Mode - Deep Blue/Slate */
-    --background: #020617;
-    /* Slate-950 */
-    --foreground: #f8fafc;
-    /* Slate-50 */
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
 
-    --primary: #6366f1;
-    /* Indigo-500 */
-    --primary-foreground: #ffffff;
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
 
-    --secondary: #34d399;
-    /* Emerald-400 */
-    --secondary-foreground: #022c22;
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
 
-    --accent: #fb7185;
-    /* Rose-400 */
-    --accent-foreground: #4c0519;
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
 
-    --muted: #1e293b;
-    /* Slate-800 */
-    --muted-foreground: #94a3b8;
-    /* Slate-400 */
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
 
-    --card: #0f172a;
-    /* Slate-900 */
-    --card-foreground: #f8fafc;
-
-    --border: #1e293b;
-    /* Slate-800 */
-    --input: #1e293b;
+    to {
+      height: 0;
+    }
   }
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
+/*
+  Tailwind v4 default border color falls back to `currentColor`.
+  This keeps v3-style behavior so things that rely on default borders still look right.
+*/
+@layer base {
 
-  --radius-xl: var(--radius);
-
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
 }
 
-body {
-  @apply bg-background text-foreground antialiased;
-  background-image:
-    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(244, 63, 94, 0.15) 0px, transparent 50%);
-  background-attachment: fixed;
+/* === Design Tokens (HSL) ================================================== */
+
+:root {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+
+  --card: 222.2 84% 4.9%;
+  --card-foreground: 210 40% 98%;
+
+  --popover: 222.2 84% 4.9%;
+  --popover-foreground: 210 40% 98%;
+
+  --primary: 217.2 91.2% 59.8%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 224.3 76.3% 48%;
+
+  --radius: 0.5rem;
 }
 
-/* Glassmorphism Utilities */
+/* === Base styles ========================================================== */
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+/* === Glassmorphism Utilities ============================================== */
+/* Navbar glass (class used on <nav className="glass ...">) */
 .glass {
-  background: rgba(255, 255, 255, 0.85);
+  background:
+    radial-gradient(circle at 0% 0%, hsl(var(--primary) / 0.28), transparent 55%),
+    radial-gradient(circle at 100% 0%, hsl(var(--accent) / 0.24), transparent 55%),
+    hsl(var(--background) / 0.96);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-bottom: 1px solid hsl(var(--border) / 0.7);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.85);
+}
+
+/* Card-style glass panels (feed container, auth shells, etc.) */
+.glass-card {
+  background:
+    radial-gradient(circle at 0% 0%, hsl(var(--primary) / 0.18), transparent 55%),
+    radial-gradient(circle at 100% 100%, hsl(var(--accent) / 0.16), transparent 55%),
+    hsl(var(--background) / 0.90);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: var(--radius-lg);
+  border-color: hsl(var(--border) / 0.65);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.80);
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.glass-card:hover {
+  border-color: hsl(var(--primary) / 0.75);
+  box-shadow: 0 22px 55px rgba(15, 23, 42, 0.95);
+  transform: translateY(-1px);
+}
+
+/* Popup-style glass (used together with Leaflet overrides below) */
+.glass-popup {
+  background:
+    radial-gradient(circle at 0% 0%, hsl(var(--primary) / 0.22), transparent 55%),
+    hsl(var(--background) / 0.96);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  border-radius: var(--radius-md);
+  border: 1px solid hsl(var(--border) / 0.7);
+  color: hsl(var(--foreground));
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.85);
 }
 
-.dark .glass {
-  background: rgba(5, 5, 20, 0.6);
-  /* Deeper dark glass */
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+/* === Leaflet Overrides for Dark / Glass Popups =========================== */
+
+.leaflet-popup-content-wrapper {
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  border-radius: var(--radius-md) !important;
 }
 
-.glass-card {
-  @apply rounded-xl transition-all duration-300;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+.leaflet-popup-tip {
+  background: rgba(30, 41, 59, 0.9) !important;
+  border-radius: 2px !important;
 }
 
-.dark .glass-card {
-  background: rgba(10, 10, 25, 0.6);
-  /* Darker, slightly blueish tint matching premium bg */
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+/* Custom Marker Cluster Styles */
+.custom-cluster-icon {
+  background: transparent;
+  border: none;
 }
 
-.glass-popup .leaflet-popup-content-wrapper,
-.glass-popup .leaflet-popup-tip {
-  background: rgba(255, 255, 255, 0.9);
-  color: var(--foreground);
-  backdrop-filter: blur(8px);
+/* === Custom Scrollbar Utilities ========================================== */
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
 }
 
-.dark .glass-popup .leaflet-popup-content-wrapper,
-.dark .glass-popup .leaflet-popup-tip {
-  background: rgba(10, 10, 25, 0.9);
-  color: var(--foreground);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

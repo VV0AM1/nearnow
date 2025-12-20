@@ -1,4 +1,5 @@
 import { ButtonHTMLAttributes } from "react";
+import CategoryBadge from "../../common/display/CategoryBadge";
 
 export const CATEGORIES = [
     { id: "ALL", label: "All", color: "bg-slate-500" },
@@ -21,21 +22,14 @@ interface CategoryFilterProps {
 
 export default function CategoryFilter({ selected, onSelect }: CategoryFilterProps) {
     return (
-        <div className="flex gap-2 overflow-x-auto p-2 pb-4 custom-scrollbar">
+        <div className="flex gap-2 overflow-x-auto p-2 pb-4 no-scrollbar">
             {CATEGORIES.map(cat => (
-                <button
+                <CategoryBadge
                     key={cat.id}
+                    category={cat.id}
+                    isSelected={selected === cat.id}
                     onClick={() => onSelect(cat.id)}
-                    className={`
-                        px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all
-                        ${selected === cat.id
-                            ? `${cat.color} text-white shadow-lg ring-2 ring-offset-2 ring-offset-background`
-                            : 'bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground'
-                        }
-                    `}
-                >
-                    {cat.label}
-                </button>
+                />
             ))}
         </div>
     );

@@ -1,58 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Search, MapPin, Loader2 } from "lucide-react";
+import { useLocationSearch } from "../../../hooks/useLocationSearch";
 
 interface LocationSearchProps {
     onLocationSelect: (lat: number, lon: number, displayName: string) => void;
+    biasLocation?: { lat: number; long: number };
 }
 
-export default function LocationSearch({ onLocationSelect, biasLocation }: LocationSearchProps & { biasLocation?: { lat: number; long: number } }) {
-    const [query, setQuery] = useState("");
-    const [results, setResults] = useState<any[]>([]);
-    const [loading, setLoading] = useState(false);
+export default function LocationSearch({ onLocationSelect, biasLocation }: LocationSearchProps) {
+    const { query, setQuery, results, loading, clearResults } = useLocationSearch(biasLocation);
     const [open, setOpen] = useState(false);
 
-    // Debounce search
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            if (query.length > 2) {
-                handleSearch();
-            }
-        }, 800);
-
-        return () => clearTimeout(timer);
-    }, [query]);
-
-    const handleSearch = async () => {
-        if (!query.trim()) return;
-        setLoading(true);
-        setOpen(true);
-        try {
-            let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`;
-
-            // Bias results towards user location if available
-            if (biasLocation) {
-                // Approximate bounding box (roughly 50km)
-                const viewbox = `${biasLocation.long - 0.5},${biasLocation.lat + 0.5},${biasLocation.long + 0.5},${biasLocation.lat - 0.5}`;
-                url += `&viewbox=${viewbox}`;
-            }
-
-            const res = await fetch(url);
-            const data = await res.json();
-            setResults(data);
-        } catch (error) {
-            console.error("Geocoding error:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
+    // Sync open state with results availability
+    // Note: useLocationSearch handles the debouncing and fetching
 
     const handleSelect = (result: any) => {
         onLocationSelect(parseFloat(result.lat), parseFloat(result.lon), result.display_name);
-        setQuery(result.display_name.split(",")[0]); // Just keep the first part (e.g. City Name)
+        setQuery(result.display_name.split(",")[0]);
         setOpen(false);
-        setResults([]);
+        clearResults();
     };
 
     return (
@@ -62,19 +30,18 @@ export default function LocationSearch({ onLocationSelect, biasLocation }: Locat
                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <input
                         value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                        onChange={(e) => {
+                            setQuery(e.target.value);
+                            setOpen(true);
+                        }}
                         placeholder="Search city or address..."
                         className="w-full bg-card border border-border rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all shadow-sm"
                     />
                 </div>
-                <button
-                    onClick={handleSearch}
-                    disabled={loading}
-                    className="bg-primary text-primary-foreground px-4 rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50"
-                >
+                {/* Search icon is decorative mainly since it auto-searches, but can force trigger if needed */}
+                <div className="flex items-center justify-center px-4 bg-primary text-primary-foreground rounded-xl">
                     {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                </button>
+                </div>
             </div>
 
             {open && results.length > 0 && (
@@ -92,7 +59,7 @@ export default function LocationSearch({ onLocationSelect, biasLocation }: Locat
                 </div>
             )}
 
-            {open && !loading && results.length === 0 && query && (
+            {open && !loading && results.length === 0 && query.length > 2 && (
                 <div className="absolute top-full mt-2 left-0 w-full bg-card p-4 text-center text-sm text-muted-foreground border border-border rounded-xl shadow-lg z-50">
                     No results found.
                 </div>

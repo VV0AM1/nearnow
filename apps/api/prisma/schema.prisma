@@ -1,86 +1,10 @@
-generator client {
-  provider = "prisma-client-js"
-}
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String?
-  avatar    String?
-  bio       String?
-  password  String? // Storing directly for simplicity in MVP
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  auth      Auth?
-  posts     Post[]
-  comments  Comment[]
-  neighborhoods Neighborhood[]
-}
-
-model Auth {
-  id           String   @id @default(uuid())
-  passwordHash String?
-  googleId     String?  @unique
-  twoFactorSecret String?
-  userId       String   @unique
-  user         User     @relation(fields: [userId], references: [id])
-}
-
-model Post {
-  id        String   @id @default(uuid())
-  title     String
-  content   String?
-  imageUrl  String?
-  category  Category @default(GENERAL)
-  
-  // Location
-  latitude  Float
-  longitude Float
-  
-  authorId  String
-  author    User     @relation(fields: [authorId], references: [id])
-  
-  neighborhoodId String?
-  neighborhood   Neighborhood? @relation(fields: [neighborhoodId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  comments  Comment[]
-}
-
-model Neighborhood {
-  id        String   @id @default(uuid())
-  name      String
-  city      String
-  
-  // Center point
-  latitude  Float
-  longitude Float
-  radiusKm  Float    @default(5.0)
-  
-  posts     Post[]
-  users     User[]   // Users who joined this neighborhood
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Comment {
-  id        String   @id @default(uuid())
-  content   String
-  authorId  String
-  author    User     @relation(fields: [authorId], references: [id])
-  postId    String
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+generator client {
+  provider = "prisma-client-js"
 }
 
 enum Role {
@@ -96,4 +20,189 @@ enum Category {
   LOST_FOUND
   EVENT
   RECOMMENDATION
+}
+
+enum SafetyLevel {
+  SAFE
+  MODERATE
+  CAUTION
+  DANGER
+  CRITICAL
+}
+
+model User {
+  id         String  @id @default(uuid())
+  email      String  @unique
+  name       String?
+  avatar     String?
+  bio        String?
+  role       Role    @default(USER)
+  reputation Int     @default(0)
+
+  auth                 Auth?
+  posts                Post[]
+  comments             Comment[]
+  neighborhoods        Neighborhood[]
+  votes                PostVote[]
+  notifications        Notification[]
+  notificationSettings NotificationSettings?
+  savedPosts           SavedPost[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Auth {
+  id              String  @id @default(uuid())
+  passwordHash    String?
+  googleId        String? @unique
+  twoFactorSecret String?
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String @unique
+
+  emailOtp   String?
+  otpExpires DateTime?
+}
+
+enum NotificationType {
+  INFO
+  ALERT
+  WELCOME
+  POST_NEARBY
+}
+
+model Notification {
+  id      String           @id @default(uuid())
+  type    NotificationType
+  title   String? // Make optional as not all notifs have titles
+  message String
+  read    Boolean          @default(false)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  post   Post?   @relation(fields: [postId], references: [id])
+  postId String?
+
+  createdAt DateTime @default(now())
+}
+
+model NotificationSettings {
+  id String @id @default(uuid())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique
+
+  emailAlerts Boolean @default(true)
+  pushAlerts  Boolean @default(true)
+  pushEnabled Boolean @default(true) // Alias for pushAlerts for consistency? Keep pushAlerts as primary.
+
+  radiusKm   Float      @default(5.0)
+  latitude   Float      @default(0.0)
+  longitude  Float      @default(0.0)
+  categories Category[]
+
+  updatedAt DateTime @updatedAt
+}
+
+model City {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  country   String
+  latitude  Float
+  longitude Float
+  
+  neighborhoods Neighborhood[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Neighborhood {
+  id          String      @id @default(uuid())
+  name        String
+  
+  city        City        @relation(fields: [cityId], references: [id])
+  cityId      String
+
+  latitude    Float
+  longitude   Float
+  radiusKm    Float       @default(1.0)
+  safetyLevel SafetyLevel @default(SAFE)
+
+  users User[]
+  posts Post[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Post {
+  id       String   @id @default(uuid())
+  title    String
+  content  String?
+  imageUrl String?
+  category Category @default(GENERAL)
+
+  latitude  Float
+  longitude Float
+
+  author   User   @relation(fields: [authorId], references: [id])
+  authorId String
+
+  neighborhood   Neighborhood? @relation(fields: [neighborhoodId], references: [id])
+  neighborhoodId String?
+
+  comments      Comment[]
+  votes         PostVote[]
+  notifications Notification[]
+  savedBy       SavedPost[]
+
+  likes Int @default(0) // Cache for performance
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Comment {
+  id      String @id @default(uuid())
+  content String
+
+  author   User   @relation(fields: [authorId], references: [id])
+  authorId String
+
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId String
+
+  createdAt DateTime @default(now())
+}
+
+model PostVote {
+  id   String @id @default(uuid()) // standard uuid
+  type String // "UP" (future proof for "DOWN")
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId String
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+}
+
+model SavedPost {
+  id        String   @id @default(uuid())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
 }

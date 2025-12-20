@@ -11,7 +11,7 @@ export class Neighborhood {
     name: string;
 
     @Field()
-    city: string;
+    cityId: string;
 
     @Field(() => Float)
     latitude: number;

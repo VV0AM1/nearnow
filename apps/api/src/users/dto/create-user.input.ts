@@ -11,7 +11,5 @@ export class CreateUserInput {
   @IsOptional()
   name?: string;
 
-  @Field({ nullable: true })
-  @IsOptional()
-  password?: string;
+
 }

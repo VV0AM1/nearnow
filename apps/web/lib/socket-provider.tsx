@@ -22,6 +22,11 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
         socketInstance.on("connect", () => {
             console.log("Socket connected:", socketInstance.id);
+            // Join user room for notifications
+            const token = document.cookie.split('; ').find(row => row.startsWith('nearnow_user_id='))?.split('=')[1];
+            if (token) {
+                socketInstance.emit('joinRoom', token);
+            }
         });
 
         socketInstance.on("connect_error", (err) => {

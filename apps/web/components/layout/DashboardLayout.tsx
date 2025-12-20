@@ -1,0 +1,53 @@
+"use client";
+
+import { useState } from "react";
+import SearchModal from "../features/search/SearchModal";
+import Sidebar from "./dashboard/Sidebar";
+import NotificationsMenu from "../features/notifications/NotificationsMenu";
+import Link from "next/link";
+import { Search, Menu } from "lucide-react";
+import { User } from "../../types/user";
+
+interface DashboardLayoutProps {
+    children: React.ReactNode;
+    initialUser?: User;
+}
+
+export default function DashboardLayout({ children, initialUser }: DashboardLayoutProps) {
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    return (
+        <div className="flex h-screen bg-background overflow-hidden">
+            <Sidebar initialUser={initialUser} />
+
+            <main className="flex-1 flex flex-col min-w-0">
+                {/* Header */}
+                <header className="h-16 border-b border-border flex items-center justify-between px-6 bg-background/80 backdrop-blur-md sticky top-0 z-30">
+                    {/* Mobile Menu Trigger (Vis only on mobile) */}
+                    <button className="md:hidden p-2 -ml-2 text-muted-foreground">
+                        <Menu className="h-6 w-6" />
+                    </button>
+
+                    {/* Search Bar */}
+                    <button
+                        onClick={() => setIsSearchOpen(true)}
+                        className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-secondary/20 rounded-lg border border-border w-96 hover:bg-secondary/30 transition-colors text-left"
+                    >
+                        <Search className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground/50">Search alerts, areas...</span>
+                    </button>
+                    <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+
+                    <div className="flex items-center gap-4">
+                        <NotificationsMenu />
+                        <Link href="/profile" className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-purple-500 md:hidden" />
+                    </div>
+                </header>
+
+                {/* Page Content */}
+                <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 relative">
+                    {children}
+                </div>
+            </main>
+        </div>
+    );
+}

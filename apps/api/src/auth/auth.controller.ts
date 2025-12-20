@@ -17,9 +17,37 @@ export class AuthController {
         return this.authService.signup(signupInput);
     }
 
+    @Post('google')
+    googleLogin(@Body() input: any) { // using any or specific DTO
+        return this.authService.googleLogin(input);
+    }
+
+    @Post('otp/request')
+    requestOtp(@Body() body: { email: string }) {
+        return this.authService.requestOtp(body.email);
+    }
+
+    @Post('otp/verify')
+    verifyOtp(@Body() input: any) {
+        return this.authService.verifyOtp(input);
+    }
+
+    @Post('forgot-password')
+    forgotPassword(@Body() body: { email: string }) {
+        return this.authService.requestPasswordReset(body.email);
+    }
+
+    @Post('reset-password')
+    resetPassword(@Body() input: any) {
+        return this.authService.resetPassword(input);
+    }
+
     @UseGuards(JwtAuthGuard)
     @Get('me')
-    getProfile(@Request() req) {
-        return req.user;
+    async getProfile(@Request() req) {
+        // req.user contains basic info from JWT. We need fresh stats for gamification.
+        // We can't easily access PrismaService here directly without injecting it, 
+        // but AuthService has UsersService, or we can add a method to AuthService.
+        return this.authService.getProfileStats(req.user.id);
     }
 }

@@ -10,8 +10,11 @@ import { Server, Socket } from 'socket.io';
 
 @WebSocketGateway({
     cors: {
-        origin: '*', // Allow all origins for dev
+        origin: ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001'],
+        credentials: true,
+        methods: ['GET', 'POST'],
     },
+    transports: ['websocket', 'polling'], // Allow polling fallbacks
 })
 export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @WebSocketServer()
@@ -28,5 +31,13 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @SubscribeMessage('locationUpdate')
     handleLocationUpdate(@MessageBody() data: any): string {
         return 'Location received';
+    }
+
+    @SubscribeMessage('joinRoom')
+    handleJoinRoom(client: Socket, userId: string) {
+        if (userId) {
+            client.join(`user_${userId}`);
+            console.log(`Client ${client.id} joined room user_${userId}`);
+        }
     }
 }

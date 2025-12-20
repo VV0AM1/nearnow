@@ -7,11 +7,13 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { EmailModule } from './email/email.module';
 import { PostsModule } from './posts/posts.module';
 import { NeighborhoodsModule } from './neighborhoods/neighborhoods.module';
 import { CommentsModule } from './comments/comments.module';
 import { PrismaModule } from './prisma.module';
 import { GatewayModule } from './gateway.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -26,9 +28,11 @@ import { GatewayModule } from './gateway.module';
     GatewayModule,
     UsersModule,
     AuthModule,
+    EmailModule,
     PostsModule,
     NeighborhoodsModule,
     CommentsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

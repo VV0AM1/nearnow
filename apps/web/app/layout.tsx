@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 // import { ApolloWrapper } from "../lib/apollo-wrapper";
 import { SocketProvider } from "../lib/socket-provider";
+import { AuthProvider } from "../context/AuthContext";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -19,7 +20,9 @@ export default function RootLayout({
         className={`antialiased`}
       >
         <SocketProvider>
-          {children}
+          <AuthProvider>
+            {children}
+          </AuthProvider>
         </SocketProvider>
       </body>
     </html>

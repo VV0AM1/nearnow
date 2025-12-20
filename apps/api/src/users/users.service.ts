@@ -36,4 +36,39 @@ export class UsersService {
       where: { id },
     });
   }
+
+  async getSavedPosts(userId: string) {
+    return this.prisma.savedPost.findMany({
+      where: { userId },
+      include: { post: true }, // Include full post details
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+  async toggleSavedPost(userId: string, postId: string) {
+    const existing = await this.prisma.savedPost.findUnique({
+      where: {
+        userId_postId: { userId, postId }
+      }
+    });
+
+    if (existing) {
+      await this.prisma.savedPost.delete({
+        where: { id: existing.id }
+      });
+      return { saved: false };
+    } else {
+      await this.prisma.savedPost.create({
+        data: { userId, postId }
+      });
+      return { saved: true };
+    }
+  }
+
+  async isPostSaved(userId: string, postId: string) {
+    const count = await this.prisma.savedPost.count({
+      where: { userId, postId }
+    });
+    return count > 0;
+  }
 }
