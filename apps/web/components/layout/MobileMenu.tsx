@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useAuthContext } from "../../context/AuthContext";
-import { Menu, X, LogOut, User, LogIn, UserPlus, Home, Settings, Map, Bell } from "lucide-react";
+import { Menu, X, LogOut, User, LogIn, UserPlus, Home, Settings, Map, Bell, Search } from "lucide-react";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 
 export default function MobileMenu() {
@@ -58,7 +58,7 @@ export default function MobileMenu() {
             {/* Toggle Button */}
             <button
                 onClick={toggleMenu}
-                className="relative z-50 p-2 text-foreground focus:outline-none hover:bg-white/10 rounded-full transition-colors"
+                className="relative z-[2020] p-2 text-foreground focus:outline-none hover:bg-white/10 rounded-full transition-colors"
                 aria-label={isOpen ? "Close menu" : "Open menu"}
             >
                 {isOpen ? <X className="h-7 w-7" /> : <Menu className="h-7 w-7" />}
@@ -74,7 +74,7 @@ export default function MobileMenu() {
                                 animate="open"
                                 exit="closed"
                                 variants={backdropVariants}
-                                className="fixed inset-0 z-[60] bg-black/60"
+                                className="fixed inset-0 z-[2000] bg-black/60"
                                 onClick={toggleMenu}
                             />
 
@@ -84,13 +84,13 @@ export default function MobileMenu() {
                                 animate="open"
                                 exit="closed"
                                 variants={containerVariants}
-                                className="fixed bottom-0 left-0 right-0 z-[70] bg-background border-t border-white/10 rounded-t-3xl p-8 pb-12 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] flex flex-col min-h-[70vh]"
+                                className="fixed bottom-0 left-0 right-0 z-[2010] bg-background border-t border-white/10 rounded-t-3xl p-8 pb-12 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] flex flex-col min-h-[80vh] max-h-[90vh] overflow-y-auto"
                             >
                                 {/* Decorative Handle */}
                                 <div className="w-16 h-1.5 bg-white/20 rounded-full mx-auto mb-8" />
 
                                 <div className="flex flex-col space-y-6 flex-1">
-                                    <motion.div variants={itemVariants} className="mb-4">
+                                    <motion.div variants={itemVariants} className="mb-4 space-y-2">
                                         <h3 className="text-sm uppercase tracking-widest text-muted-foreground mb-4">
                                             Navigation
                                         </h3>
@@ -109,6 +109,55 @@ export default function MobileMenu() {
                                         >
                                             <Map className="h-6 w-6 text-purple-400" />
                                             Live Map
+                                        </Link>
+                                    </motion.div>
+
+                                    <div className="h-px bg-white/10 my-2" />
+
+                                    {/* Features Section */}
+                                    <motion.div variants={itemVariants} className="space-y-2">
+                                        <h3 className="text-sm uppercase tracking-widest text-muted-foreground mb-4">
+                                            Explore
+                                        </h3>
+                                        <button
+                                            onClick={() => {
+                                                // Trigger search modal via custom event or just link to search page if exists
+                                                // Since search modal is in layout, we might need a context or just reliance on DashboardLayout
+                                                // For now, let's keep it consistent
+                                                const searchButton = document.getElementById('mobile-search-trigger');
+                                                if (searchButton) searchButton.click();
+                                                toggleMenu();
+                                            }}
+                                            className="flex items-center gap-4 text-xl font-medium p-2 hover:bg-white/5 rounded-lg transition-colors w-full text-left"
+                                        >
+                                            {/* We trigger the search modal from DashboardLayout */}
+                                            <div className="h-8 w-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
+                                                <Search className="h-4 w-4" />
+                                            </div>
+                                            Search Alerts
+                                        </button>
+
+                                        <Link
+                                            href="/safety"
+                                            onClick={toggleMenu}
+                                            className="flex items-center gap-4 text-xl font-medium p-2 hover:bg-white/5 rounded-lg transition-colors"
+                                        >
+                                            <div className="h-8 w-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
+                                                <Bell className="h-4 w-4" />
+                                            </div>
+                                            Safety Center
+                                        </Link>
+
+                                        <Link
+                                            href="/saved"
+                                            onClick={toggleMenu}
+                                            className="flex items-center gap-4 text-xl font-medium p-2 hover:bg-white/5 rounded-lg transition-colors"
+                                        >
+                                            <div className="h-8 w-8 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400">
+                                                <Bell className="h-4 w-4" />
+                                                {/* Reuse bell or add Bookmark icon import */}
+                                            </div>
+                                            Saved Alerts
                                         </Link>
                                     </motion.div>
 

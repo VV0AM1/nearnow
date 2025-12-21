@@ -29,7 +29,7 @@ export default function FeedContainer({ initialLocation, initialPosts = [] }: Fe
 
     const [radius, setRadius] = useState(10);
     const [categories, setCategories] = useState<string[]>(["ALL"]);
-    const { posts, loading, error, incrementCommentCount } = useFeed(location, radius, categories, initialPosts);
+    const { posts, loading, error, incrementCommentCount, loadMore, hasMore } = useFeed(location, radius, categories, initialPosts);
     const [selectedPost, setSelectedPost] = useState<any>(null);
 
     // Initial load check
@@ -71,6 +71,17 @@ export default function FeedContainer({ initialLocation, initialPosts = [] }: Fe
                     {/* Feed List Section */}
                     <div className="lg:w-1/3 overflow-y-auto no-scrollbar">
                         <FeedList posts={posts} onPostClick={setSelectedPost} />
+                        {hasMore && (
+                            <div className="p-4 flex justify-center">
+                                <button
+                                    onClick={loadMore}
+                                    className="px-6 py-2 bg-secondary/50 hover:bg-secondary rounded-full text-sm font-semibold transition-colors"
+                                    disabled={loading}
+                                >
+                                    {loading ? 'Loading...' : 'Load More Alerts'}
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     {/* Map Visualization Section */}

@@ -27,10 +27,16 @@ export default function ProfilePage() {
     return (
         <DashboardLayout>
             <div className="pt-8 pb-12 max-w-2xl mx-auto">
-                <h1 className="text-3xl font-bold mb-8 flex items-center gap-3">
-                    <UserIcon className="h-8 w-8 text-primary" />
-                    My Profile
-                </h1>
+                <div className="flex items-center justify-between mb-8">
+                    <h1 className="text-3xl font-bold flex items-center gap-3">
+                        <UserIcon className="h-8 w-8 text-primary" />
+                        My Profile
+                    </h1>
+                    <Button variant="ghost" className="gap-2" onClick={() => window.location.href = '/'}>
+                        <ChevronLeft className="h-4 w-4" />
+                        Back Home
+                    </Button>
+                </div>
 
                 <div className="glass-card p-8 border border-border shadow-xl space-y-6">
                     <div className="flex items-center gap-4 py-4 border-b border-border/50">

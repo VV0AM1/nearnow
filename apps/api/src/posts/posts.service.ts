@@ -46,10 +46,11 @@ export class PostsService {
         });
     }
 
-    async getFeed(lat: number, long: number, radiusKm: number, category?: string) {
+    async getFeed(lat: number, long: number, radiusKm: number, category?: string, page: number = 1, limit: number = 20) {
         // Parse categories (comma separated)
         const categories = category ? category.split(',') : ['ALL'];
         const hasAll = categories.includes('ALL');
+        const offset = (page - 1) * limit;
 
         // Raw query for distance
         const posts = await this.prisma.$queryRaw<any[]>`
@@ -59,7 +60,7 @@ export class PostsService {
       WHERE ( 6371 * acos( cos( radians(${lat}) ) * cos( radians( latitude ) ) * cos( radians( longitude ) - radians(${long}) ) + sin( radians(${lat}) ) * sin( radians( latitude ) ) ) ) < ${radiusKm}
       ${!hasAll && categories.length > 0 ? Prisma.sql`AND category::text IN (${Prisma.join(categories)})` : Prisma.sql``}
       ORDER BY distance ASC
-      LIMIT 100;
+      LIMIT ${limit} OFFSET ${offset};
     `;
 
         const ids = posts.map(p => p.id);

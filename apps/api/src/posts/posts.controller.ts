@@ -20,11 +20,15 @@ export class PostsController {
         @Query('longitude') long: string,
         @Query('radius') radius: string,
         @Query('category') category: string,
+        @Query('page') page: string,
+        @Query('limit') limit: string,
     ) {
         const r = radius ? parseFloat(radius) : 10;
         const l1 = lat ? parseFloat(lat) : 0;
         const l2 = long ? parseFloat(long) : 0;
-        return this.postsService.getFeed(l1, l2, r, category);
+        const p = page ? parseInt(page) : 1;
+        const l = limit ? parseInt(limit) : 20;
+        return this.postsService.getFeed(l1, l2, r, category, p, l);
     }
 
     @Get(':id')

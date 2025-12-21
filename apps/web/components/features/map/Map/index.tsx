@@ -9,6 +9,7 @@ import { MapController, ChangeView, MapClickHandler } from "./components/MapCont
 import MapMarkers from "./components/MapMarkers";
 import MapControls from "../MapControls";
 import MapFilterControl from "../MapFilterControl";
+import MobileMapFilter from "../MobileMapFilter";
 
 export default function Map({ posts, center = [37.7749, -122.4194], zoom = 13, radius = 50, onMapClick, interactiveOnly = false }: MapProps) {
     const {
@@ -29,10 +30,17 @@ export default function Map({ posts, center = [37.7749, -122.4194], zoom = 13, r
                         onSelectCategory={setSelectedCategory}
                     />
 
-                    <MapFilterControl
-                        timeRange={timeRange}
-                        onTimeRangeChange={setTimeRange}
+                    <MobileMapFilter
+                        selectedCategory={selectedCategory}
+                        onSelect={setSelectedCategory}
                     />
+
+                    <div className="hidden md:block">
+                        <MapFilterControl
+                            timeRange={timeRange}
+                            onTimeRangeChange={setTimeRange}
+                        />
+                    </div>
                 </>
             )}
 

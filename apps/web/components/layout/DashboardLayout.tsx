@@ -28,7 +28,7 @@ export default function DashboardLayout({ children, initialUser }: DashboardLayo
                         <MobileMenu />
                     </div>
 
-                    {/* Search Bar */}
+                    {/* Search Bar (Desktop) */}
                     <button
                         onClick={() => setIsSearchOpen(true)}
                         className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-secondary/20 rounded-lg border border-border w-96 hover:bg-secondary/30 transition-colors text-left"
@@ -36,6 +36,14 @@ export default function DashboardLayout({ children, initialUser }: DashboardLayo
                         <Search className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm text-muted-foreground/50">Search alerts, areas...</span>
                     </button>
+                    {/* Search Trigger (Hidden ID for Mobile Menu) */}
+                    <button id="mobile-search-trigger" className="hidden" onClick={() => setIsSearchOpen(true)} />
+
+                    {/* Search Trigger (Mobile Icon) */}
+                    <button className="md:hidden p-2 text-muted-foreground" onClick={() => setIsSearchOpen(true)}>
+                        <Search className="h-5 w-5" />
+                    </button>
+
                     <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
 
                     <div className="flex items-center gap-4">
