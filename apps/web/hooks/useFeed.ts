@@ -21,11 +21,14 @@ export function useFeed(location: { lat: number; long: number }, radius: number 
     const [hasMore, setHasMore] = useState(true);
     const socket = useSocket();
 
+    // serialize categories to avoid infinite loop on reference change
+    const categoryString = categories.join(',');
+
     useEffect(() => {
         setPage(1);
         setHasMore(true);
         setPosts([]); // clear on filter change
-    }, [location.lat, location.long, radius, categories]);
+    }, [location.lat, location.long, radius, categoryString]);
 
     useEffect(() => {
         const fetchFeed = async () => {
@@ -35,7 +38,7 @@ export function useFeed(location: { lat: number; long: number }, radius: number 
                     latitude: location.lat.toString(),
                     longitude: location.long.toString(),
                     radius: radius.toString(),
-                    category: categories.join(','),
+                    category: categoryString,
                     page: page.toString(),
                     limit: '20'
                 });
@@ -54,7 +57,7 @@ export function useFeed(location: { lat: number; long: number }, radius: number 
         };
 
         fetchFeed();
-    }, [location.lat, location.long, radius, categories, page]);
+    }, [location.lat, location.long, radius, categoryString, page]);
 
     const loadMore = () => {
         if (!loading && hasMore) {
