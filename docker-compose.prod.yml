@@ -69,12 +69,22 @@ services:
     restart: always
     ports:
       - "80:80"
-      #- "443:443" # Uncomment when adding SSL certs
+      - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
     depends_on:
       - web
       - api
+
+  # 6. Certbot (SSL Certificates)
+  certbot:
+    image: certbot/certbot
+    container_name: nearnow_certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
 
 volumes:
   postgres_data_prod:
