@@ -28,8 +28,8 @@ export default function FeedContainer({ initialLocation, initialPosts = [] }: Fe
     }, [initialLocation]);
 
     const [radius, setRadius] = useState(10);
-    const [category, setCategory] = useState("ALL");
-    const { posts, loading, error, incrementCommentCount } = useFeed(location, radius, category, initialPosts);
+    const [categories, setCategories] = useState<string[]>(["ALL"]);
+    const { posts, loading, error, incrementCommentCount } = useFeed(location, radius, categories, initialPosts);
     const [selectedPost, setSelectedPost] = useState<any>(null);
 
     // Initial load check
@@ -57,7 +57,7 @@ export default function FeedContainer({ initialLocation, initialPosts = [] }: Fe
                     </div>
                 </div>
 
-                <CategoryFilter selected={category} onSelect={setCategory} />
+                <CategoryFilter selected={categories} onSelect={setCategories} />
             </div>
 
             {error && <div className="text-center p-4 text-red-500 bg-red-50 rounded-lg mb-4">Error: {error}</div>}

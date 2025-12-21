@@ -4,6 +4,7 @@ import { useState } from "react";
 import SearchModal from "../features/search/SearchModal";
 import Sidebar from "./dashboard/Sidebar";
 import NotificationsMenu from "../features/notifications/NotificationsMenu";
+import MobileMenu from "./MobileMenu";
 import Link from "next/link";
 import { Search, Menu } from "lucide-react";
 import { User } from "../../types/user";
@@ -23,9 +24,9 @@ export default function DashboardLayout({ children, initialUser }: DashboardLayo
                 {/* Header */}
                 <header className="h-16 border-b border-border flex items-center justify-between px-6 bg-background/80 backdrop-blur-md sticky top-0 z-30">
                     {/* Mobile Menu Trigger (Vis only on mobile) */}
-                    <button className="md:hidden p-2 -ml-2 text-muted-foreground">
-                        <Menu className="h-6 w-6" />
-                    </button>
+                    <div className="md:hidden -ml-2">
+                        <MobileMenu />
+                    </div>
 
                     {/* Search Bar */}
                     <button

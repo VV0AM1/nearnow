@@ -10,8 +10,8 @@ export class PostsController {
     constructor(private readonly postsService: PostsService) { }
 
     @Get()
-    findAll() {
-        return this.postsService.findAll();
+    findAll(@Query('authorId') authorId?: string) {
+        return this.postsService.findAll(authorId);
     }
 
     @Get('feed')

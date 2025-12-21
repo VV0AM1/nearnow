@@ -13,7 +13,7 @@ export interface Post {
     [key: string]: any;
 }
 
-export function useFeed(location: { lat: number; long: number }, radius: number = 10, category: string = 'ALL', initialPosts: Post[] = []) {
+export function useFeed(location: { lat: number; long: number }, radius: number = 10, categories: string[] = ['ALL'], initialPosts: Post[] = []) {
     const [posts, setPosts] = useState<Post[]>(initialPosts);
     const [loading, setLoading] = useState(initialPosts.length === 0);
     const [error, setError] = useState<string | null>(null);
@@ -27,7 +27,7 @@ export function useFeed(location: { lat: number; long: number }, radius: number 
                     latitude: location.lat.toString(),
                     longitude: location.long.toString(),
                     radius: radius.toString(),
-                    category: category,
+                    category: categories.join(','), // Send as comma separated
                 });
                 const res = await fetch(`${API_URL}/posts/feed?${query}`);
                 if (!res.ok) throw new Error("Failed to fetch feed");
@@ -41,7 +41,7 @@ export function useFeed(location: { lat: number; long: number }, radius: number 
         };
 
         fetchFeed();
-    }, [location.lat, location.long, radius, category]);
+    }, [location.lat, location.long, radius, categories]);
 
     // Live updates via Socket
     useEffect(() => {

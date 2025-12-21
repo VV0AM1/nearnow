@@ -16,19 +16,43 @@ export const getCategoryColor = (cat: string) => {
 };
 
 interface CategoryFilterProps {
-    selected: string;
-    onSelect: (id: string) => void;
+    selected: string[];
+    onSelect: (ids: string[]) => void;
 }
 
 export default function CategoryFilter({ selected, onSelect }: CategoryFilterProps) {
+    const handleSelect = (id: string) => {
+        if (id === 'ALL') {
+            onSelect(['ALL']);
+            return;
+        }
+
+        let newSelected = [...selected];
+        if (newSelected.includes('ALL')) {
+            newSelected = [];
+        }
+
+        if (newSelected.includes(id)) {
+            newSelected = newSelected.filter(c => c !== id);
+        } else {
+            newSelected.push(id);
+        }
+
+        if (newSelected.length === 0) {
+            newSelected = ['ALL'];
+        }
+
+        onSelect(newSelected);
+    };
+
     return (
         <div className="flex gap-2 overflow-x-auto p-2 pb-4 no-scrollbar">
             {CATEGORIES.map(cat => (
                 <CategoryBadge
                     key={cat.id}
                     category={cat.id}
-                    isSelected={selected === cat.id}
-                    onClick={() => onSelect(cat.id)}
+                    isSelected={selected.includes(cat.id)}
+                    onClick={() => handleSelect(cat.id)}
                 />
             ))}
         </div>

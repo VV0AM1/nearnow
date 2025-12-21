@@ -35,8 +35,9 @@ export class PostsService {
         return post;
     }
 
-    findAll() {
+    findAll(authorId?: string) {
         return this.prisma.post.findMany({
+            where: authorId ? { authorId } : undefined,
             include: {
                 author: true,
                 neighborhood: true,
@@ -46,13 +47,17 @@ export class PostsService {
     }
 
     async getFeed(lat: number, long: number, radiusKm: number, category?: string) {
+        // Parse categories (comma separated)
+        const categories = category ? category.split(',') : ['ALL'];
+        const hasAll = categories.includes('ALL');
+
         // Raw query for distance
         const posts = await this.prisma.$queryRaw<any[]>`
       SELECT id,
       ( 6371 * acos( cos( radians(${lat}) ) * cos( radians( latitude ) ) * cos( radians( longitude ) - radians(${long}) ) + sin( radians(${lat}) ) * sin( radians( latitude ) ) ) ) AS distance
       FROM "Post"
       WHERE ( 6371 * acos( cos( radians(${lat}) ) * cos( radians( latitude ) ) * cos( radians( longitude ) - radians(${long}) ) + sin( radians(${lat}) ) * sin( radians( latitude ) ) ) ) < ${radiusKm}
-      ${category && category !== 'ALL' ? Prisma.sql`AND category = ${category}::"Category"` : Prisma.sql``}
+      ${!hasAll && categories.length > 0 ? Prisma.sql`AND category::text IN (${Prisma.join(categories)})` : Prisma.sql``}
       ORDER BY distance ASC
       LIMIT 100;
     `;

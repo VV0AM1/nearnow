@@ -24,14 +24,22 @@ export function AlertForm({ title, content, category, onChange }: AlertFormProps
             </div>
 
             <div>
-                <label className="block text-sm font-medium mb-1">Category</label>
-                <select
-                    value={category}
-                    onChange={(e) => onChange("category", e.target.value)}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                    {ALERT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+                <label className="block text-sm font-medium mb-2">Category</label>
+                <div className="flex flex-wrap gap-2">
+                    {ALERT_CATEGORIES.map(c => (
+                        <button
+                            key={c}
+                            type="button"
+                            onClick={() => onChange("category", c)}
+                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${category === c
+                                ? "bg-primary text-primary-foreground border-primary shadow-md scale-105"
+                                : "bg-secondary/50 text-muted-foreground border-transparent hover:bg-secondary hover:text-foreground"
+                                }`}
+                        >
+                            {c}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             <div>
