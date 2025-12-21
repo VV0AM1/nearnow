@@ -23,7 +23,7 @@ export function useAuth() {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch("${API_URL}/auth/login", {
+            const res = await fetch(`${API_URL}/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, password }),
@@ -48,7 +48,7 @@ export function useAuth() {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch("${API_URL}/auth/signup", {
+            const res = await fetch(`${API_URL}/auth/signup`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, password, name }),
@@ -73,7 +73,7 @@ export function useAuth() {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch("${API_URL}/auth/otp/verify", {
+            const res = await fetch(`${API_URL}/auth/otp/verify`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, otp }),
@@ -102,7 +102,7 @@ export function useAuth() {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch("${API_URL}/auth/google", {
+            const res = await fetch(`${API_URL}/auth/google`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ token }),

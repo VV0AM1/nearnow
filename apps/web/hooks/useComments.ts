@@ -48,7 +48,7 @@ export function useComments(postId: string) {
 
         setSubmitting(true);
         try {
-            const res = await fetch("${API_URL}/comments", {
+            const res = await fetch(`${API_URL}/comments`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
