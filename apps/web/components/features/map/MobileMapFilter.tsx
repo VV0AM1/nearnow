@@ -14,7 +14,7 @@ export default function MobileMapFilter({ selectedCategory, onSelect }: MobileMa
     const [isOpen, setIsOpen] = useState(false);
 
     return (
-        <div className="md:hidden absolute top-4 left-4 z-[400]">
+        <div className="md:hidden absolute top-24 left-4 z-[400]">
             <button
                 onClick={() => setIsOpen(true)}
                 className="h-10 w-10 flex items-center justify-center bg-black/60 backdrop-blur-md rounded-full border border-white/10 shadow-lg"
