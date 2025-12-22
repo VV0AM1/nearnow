@@ -25,10 +25,12 @@ export default function Map({ posts, center = [37.7749, -122.4194], zoom = 13, r
 
             {!interactiveOnly && (
                 <>
-                    <MapControls
-                        selectedCategory={selectedCategory}
-                        onSelectCategory={setSelectedCategory}
-                    />
+                    <div className="hidden md:block">
+                        <MapControls
+                            selectedCategory={selectedCategory}
+                            onSelectCategory={setSelectedCategory}
+                        />
+                    </div>
 
                     <MobileMapFilter
                         selectedCategory={selectedCategory}
