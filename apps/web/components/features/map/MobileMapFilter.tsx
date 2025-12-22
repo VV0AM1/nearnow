@@ -10,7 +10,7 @@ interface MobileMapFilterProps {
     onSelect: (id: string) => void;
 }
 
-import { useHaptic } from "../../hooks/useHaptic";
+import { useHaptic } from "../../../hooks/useHaptic";
 import { PanInfo } from "framer-motion";
 
 export default function MobileMapFilter({ selectedCategory, onSelect }: MobileMapFilterProps) {
