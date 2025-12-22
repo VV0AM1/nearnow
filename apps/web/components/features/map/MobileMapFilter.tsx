@@ -10,13 +10,29 @@ interface MobileMapFilterProps {
     onSelect: (id: string) => void;
 }
 
+import { useHaptic } from "../../hooks/useHaptic";
+import { PanInfo } from "framer-motion";
+
 export default function MobileMapFilter({ selectedCategory, onSelect }: MobileMapFilterProps) {
     const [isOpen, setIsOpen] = useState(false);
+    const { triggerHaptic } = useHaptic();
+
+    const handleOpen = () => {
+        triggerHaptic("light");
+        setIsOpen(true);
+    };
+
+    const handleDragEnd = (event: any, info: PanInfo) => {
+        if (info.offset.y > 100) {
+            triggerHaptic("medium");
+            setIsOpen(false);
+        }
+    };
 
     return (
         <div className="md:hidden absolute top-24 left-4 z-[400]">
             <button
-                onClick={() => setIsOpen(true)}
+                onClick={handleOpen}
                 className="h-10 w-10 flex items-center justify-center bg-black/60 backdrop-blur-md rounded-full border border-white/10 shadow-lg"
             >
                 <Filter className="h-4 w-4 text-white" />
@@ -32,11 +48,16 @@ export default function MobileMapFilter({ selectedCategory, onSelect }: MobileMa
                         <div className="absolute inset-0" onClick={() => setIsOpen(false)} />
 
                         <motion.div
+                            drag="y"
+                            dragConstraints={{ top: 0, bottom: 0 }}
+                            dragElastic={{ top: 0, bottom: 0.2 }}
+                            onDragEnd={handleDragEnd}
                             initial={{ y: "100%" }}
                             animate={{ y: 0 }}
                             exit={{ y: "100%" }}
                             className="bg-background w-full rounded-t-3xl p-6 pb-12 border-t border-white/10 relative z-10"
                         >
+                            <div className="w-12 h-1.5 bg-muted/30 rounded-full mx-auto mb-6" />
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="text-xl font-bold">Map Filters</h3>
                                 <button onClick={() => setIsOpen(false)} className="p-2 bg-secondary/50 rounded-full">
