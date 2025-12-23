@@ -65,17 +65,23 @@ export class PostsController implements OnModuleInit {
         @UploadedFile() file: Express.Multer.File,
         @Req() req: any
     ) {
-        const createPostInput: CreatePostInput = {
-            ...body,
-            latitude: parseFloat(body.latitude),
-            longitude: parseFloat(body.longitude),
-        };
-        const authorId = req.user.sub; // From JWT
-        const imageUrl = file ? `/uploads/${file.filename}` : undefined;
+        try {
+            // Force Update Debug
+            const createPostInput: CreatePostInput = {
+                ...body,
+                latitude: parseFloat(body.latitude),
+                longitude: parseFloat(body.longitude),
+            };
+            const authorId = req.user.sub; // From JWT
+            const imageUrl = file ? `/uploads/${file.filename}` : undefined;
 
-        console.log('Creating post', { createPostInput, authorId, imageUrl });
+            this.logger.log(`Creating post for user ${authorId} with image: ${imageUrl}`);
 
-        return this.postsService.create(createPostInput, authorId, imageUrl);
+            return this.postsService.create(createPostInput, authorId, imageUrl);
+        } catch (error) {
+            this.logger.error(`Failed to create post: ${error.message}`, error.stack);
+            throw error; // Let NestJS handle the 500, but now we have logs.
+        }
     }
     @Post(':id/vote')
     vote(
