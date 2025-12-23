@@ -46,7 +46,7 @@ export default function DashboardHeader() {
                 <Link href="/profile" className="relative h-8 w-8 rounded-full bg-secondary/50 overflow-hidden border border-white/10 md:hidden">
                     {user?.avatar ? (
                         <img
-                            src={user.avatar.startsWith('http') ? user.avatar : `${API_URL}${user.avatar}`}
+                            src={user.avatar.startsWith('http') ? user.avatar : user.avatar}
                             alt={user.name || 'Profile'}
                             className="h-full w-full object-cover"
                         />

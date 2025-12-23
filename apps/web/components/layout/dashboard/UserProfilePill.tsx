@@ -18,7 +18,7 @@ export default function UserProfilePill({ user, isSidebarOpen, onLogout }: UserP
         <div className={`flex items-center gap-3 p-2 rounded-xl bg-white/5 ${!isSidebarOpen ? 'justify-center' : ''}`}>
             <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0 border border-primary/20">
                 {user?.avatar ? (
-                    <img src={user.avatar.startsWith('http') ? user.avatar : `${API_URL}${user.avatar}`} alt="Avatar" className="w-full h-full rounded-full object-cover" />
+                    <img src={user.avatar.includes('http') ? user.avatar : user.avatar} alt="Avatar" className="w-full h-full rounded-full object-cover" />
                 ) : (
                     <UserIcon className="h-4 w-4 text-primary" />
                 )}

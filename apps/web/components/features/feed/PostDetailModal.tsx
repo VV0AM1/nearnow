@@ -115,7 +115,7 @@ export default function PostDetailModal({ post, onClose, onCommentAdded }: PostD
                     {post.imageUrl && (
                         <div className="mb-6 rounded-xl overflow-hidden border border-border shadow-sm">
                             <img
-                                src={post.imageUrl.startsWith('http') ? post.imageUrl : `${API_URL}${post.imageUrl}`}
+                                src={post.imageUrl.startsWith('http') ? post.imageUrl : post.imageUrl}
                                 alt={post.title}
                                 className="w-full h-auto max-h-[300px] object-cover"
                             />

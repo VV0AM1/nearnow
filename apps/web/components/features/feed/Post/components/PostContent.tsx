@@ -16,7 +16,7 @@ export default function PostContent({ content, imageUrl, createdAt, neighborhood
             {imageUrl && (
                 <div className="mt-2 rounded-lg overflow-hidden h-32 w-full relative group/img">
                     <img
-                        src={imageUrl.startsWith('http') ? imageUrl : `${API_URL}${imageUrl}`}
+                        src={imageUrl.startsWith('http') ? imageUrl : imageUrl}
                         alt="Incident"
                         className="w-full h-full object-cover"
                     />
