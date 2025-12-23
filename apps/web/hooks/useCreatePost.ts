@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { API_URL } from "../lib/config";
 import { getToken, getUserId } from "../lib/auth";
+import imageCompression from 'browser-image-compression';
 
 interface CreatePostData {
     title: string;
@@ -16,7 +17,7 @@ export function useCreatePost() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    import imageCompression from 'browser-image-compression';
+
 
     // ... existing code ...
 
