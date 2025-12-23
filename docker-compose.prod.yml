@@ -76,9 +76,10 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
+      - uploads_data_prod:/var/www/uploads # Map volume to Nginx for serving
+    depends_on:
       - web
       - api
-      - uploads_data_prod:/var/www/uploads # Map volume to Nginx for serving
 
   # 6. Certbot (SSL Certificates)
   certbot:
