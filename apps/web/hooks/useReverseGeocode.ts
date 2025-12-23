@@ -3,6 +3,7 @@ import { useState, useCallback } from "react";
 export function useReverseGeocode() {
     const [address, setAddress] = useState("");
     const [loading, setLoading] = useState(false);
+    const [addressObject, setAddressObject] = useState<any>(null);
 
     const reverseGeocode = useCallback(async (lat: number, long: number) => {
         setLoading(true);
@@ -13,6 +14,7 @@ export function useReverseGeocode() {
                 // Keep it short: first 3 parts
                 const shortAddress = data.display_name.split(",").slice(0, 3).join(",");
                 setAddress(shortAddress);
+                setAddressObject(data.address);
                 return shortAddress;
             }
         } catch (e) {
@@ -23,5 +25,5 @@ export function useReverseGeocode() {
         return "";
     }, []);
 
-    return { address, setAddress, loading, reverseGeocode };
+    return { address, setAddress, addressObject, loading, reverseGeocode };
 }

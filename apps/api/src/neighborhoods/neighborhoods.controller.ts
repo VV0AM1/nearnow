@@ -5,8 +5,8 @@ import { NeighborhoodsService } from './neighborhoods.service';
 export class NeighborhoodsController {
     constructor(private readonly neighborhoodsService: NeighborhoodsService) { }
 
-    @Get('stats')
-    async getStats(
+    @Get('rankings')
+    async getRankings(
         @Query('lat') lat: string,
         @Query('lng') lng: string,
         @Query('radius') radius: string,
@@ -15,7 +15,7 @@ export class NeighborhoodsController {
         const longitude = parseFloat(lng);
         const radiusKm = parseFloat(radius) || 5;
 
-        return this.neighborhoodsService.getStats(latitude, longitude, radiusKm);
+        return this.neighborhoodsService.getRankings(latitude, longitude, radiusKm);
     }
 
     @Get()

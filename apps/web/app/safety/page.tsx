@@ -10,7 +10,7 @@ import { SafetyLeaderboard } from "../../components/features/safety/SafetyLeader
 
 export default function SafetyPage() {
     const { location } = useGeoLocation();
-    const [stats, setStats] = useState<any[]>([]);
+    const [data, setData] = useState<{ topSafe: any[], topDangerous: any[], ranking: any[] }>({ topSafe: [], topDangerous: [], ranking: [] });
     const [radius, setRadius] = useState(5);
     const [loading, setLoading] = useState(true);
 
@@ -18,27 +18,32 @@ export default function SafetyPage() {
         if (!location.latitude || !location.longitude) return;
 
         setLoading(true);
-        fetch(`${API_URL}/neighborhoods/stats?lat=${location.latitude}&lng=${location.longitude}&radius=${radius}`)
+        fetch(`${API_URL}/neighborhoods/rankings?lat=${location.latitude}&lng=${location.longitude}&radius=${radius}`)
             .then(res => res.json())
-            .then(data => {
-                if (Array.isArray(data)) {
-                    setStats(data);
+            .then(resData => {
+                if (resData && typeof resData === 'object') {
+                    // Map backend fields to frontend component expectations
+                    const mapItem = (item: any) => ({
+                        ...item,
+                        alerts: item.totalCount, // Map totalCount to alerts
+                        trend: Math.random() > 0.5 ? 'up' : 'stable' // Mock trend for now
+                    });
+
+                    setData({
+                        topSafe: (resData.topSafe || []).map(mapItem),
+                        topDangerous: (resData.topDangerous || []).map(mapItem),
+                        ranking: (resData.ranking || []).map(mapItem)
+                    });
                 } else {
-                    console.error("API Error or Invalid Format:", data);
-                    setStats([]); // Fallback to empty
+                    console.error("API Error or Invalid Format:", resData);
                 }
                 setLoading(false);
             })
             .catch(err => {
                 console.error(err);
-                setStats([]);
                 setLoading(false);
             });
     }, [location.latitude, location.longitude, radius]);
-
-    // Derived Lists
-    const safest = stats.slice(0, 3);
-    const dangerous = [...stats].reverse().slice(0, 3);
 
     return (
         <DashboardLayout>
@@ -79,7 +84,7 @@ export default function SafetyPage() {
 
                 {loading ? (
                     <div className="text-center py-20 text-zinc-500 animate-pulse">Calculating safety scores...</div>
-                ) : stats.length === 0 ? (
+                ) : data.ranking.length === 0 ? (
                     <div className="text-center py-20 text-zinc-500">
                         No neighborhoods found nearby. Try increasing the radius.
                     </div>
@@ -93,7 +98,7 @@ export default function SafetyPage() {
                                     <h2 className="text-2xl font-bold">Top 3 Safest Zones</h2>
                                 </div>
                                 <div className="space-y-4">
-                                    {safest.map((hood, i) => (
+                                    {data.topSafe.map((hood, i) => (
                                         <RankingCard key={hood.id} neighborhood={hood} rank={i + 1} type="safe" />
                                     ))}
                                 </div>
@@ -105,7 +110,7 @@ export default function SafetyPage() {
                                     <h2 className="text-2xl font-bold">High Attention Zones</h2>
                                 </div>
                                 <div className="space-y-4">
-                                    {dangerous.map((hood, i) => (
+                                    {data.topDangerous.map((hood, i) => (
                                         <RankingCard key={hood.id} neighborhood={hood} rank={i + 1} type="danger" />
                                     ))}
                                 </div>
@@ -115,7 +120,7 @@ export default function SafetyPage() {
                         {/* Full Leaderboard */}
                         <section>
                             <h2 className="text-2xl font-bold text-white mb-6">Local Safety Index</h2>
-                            <SafetyLeaderboard data={stats} />
+                            <SafetyLeaderboard data={data.ranking} />
                         </section>
                     </>
                 )}

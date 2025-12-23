@@ -5,7 +5,7 @@ import { AlertFormData } from "./CreateAlert.types";
 
 export function useCreateAlert(initialLocation: { lat: number; long: number }, onClose: () => void) {
     const { createPost, loading: submitting } = useCreatePost();
-    const { address: addressDisplay, setAddress: setAddressDisplay, reverseGeocode } = useReverseGeocode();
+    const { address: addressDisplay, setAddress: setAddressDisplay, reverseGeocode, addressObject } = useReverseGeocode();
 
     const [formData, setFormData] = useState<Omit<AlertFormData, 'location' | 'imageFile'> & { imageFile: File | null }>({
         title: "",
@@ -42,11 +42,19 @@ export function useCreateAlert(initialLocation: { lat: number; long: number }, o
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            // Extract location context
+            const neighborhood = addressObject?.suburb || addressObject?.neighbourhood || addressObject?.quarter || addressObject?.residential;
+            const city = addressObject?.city || addressObject?.town || addressObject?.village || addressObject?.municipality || addressObject?.county;
+            const country = addressObject?.country;
+
             await createPost({
                 ...formData,
                 latitude: selectedLocation.lat,
                 longitude: selectedLocation.long,
-                imageFile: formData.imageFile || undefined
+                imageFile: formData.imageFile || undefined,
+                neighborhood,
+                city,
+                country
             });
 
             // Persist location

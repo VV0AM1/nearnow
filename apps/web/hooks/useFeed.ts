@@ -13,7 +13,7 @@ export interface Post {
     [key: string]: any;
 }
 
-export function useFeed(location: { lat: number; long: number }, radius: number = 10, categories: string[] = ['ALL'], initialPosts: Post[] = []) {
+export function useFeed(location: { lat: number; long: number }, radius: number = 10, categories: string[] = ['ALL'], initialPosts: Post[] = [], limit: number = 20) {
     const [posts, setPosts] = useState<Post[]>(initialPosts);
     const [loading, setLoading] = useState(initialPosts.length === 0);
     const [error, setError] = useState<string | null>(null);
@@ -27,8 +27,10 @@ export function useFeed(location: { lat: number; long: number }, radius: number 
     useEffect(() => {
         setPage(1);
         setHasMore(true);
-        setPosts([]); // clear on filter change
-    }, [location.lat, location.long, radius, categoryString]);
+        // setPosts([]); // Don't clear immediately to avoid flicker, just loading state?
+        // Actually clearing is safer for state consistency but flicker is bad.
+        // Let's keep existing posts until new ones load if we want smoothness, but for clarity let's clear or handle in loading.
+    }, [location.lat, location.long, radius, categoryString, limit]);
 
     useEffect(() => {
         const fetchFeed = async () => {
@@ -40,15 +42,17 @@ export function useFeed(location: { lat: number; long: number }, radius: number 
                     radius: radius.toString(),
                     category: categoryString,
                     page: page.toString(),
-                    limit: '20'
+                    limit: limit.toString()
                 });
                 const res = await fetch(`${API_URL}/posts/feed?${query}`);
                 if (!res.ok) throw new Error("Failed to fetch feed");
                 const data = await res.json();
 
-                if (data.length < 20) setHasMore(false);
+                if (data.length < limit) setHasMore(false);
+                else setHasMore(true);
 
-                setPosts(prev => page === 1 ? data : [...prev, ...data]);
+                // Manual Pagination: Replace posts, don't append
+                setPosts(data);
             } catch (err: any) {
                 setError(err.message);
             } finally {
@@ -57,11 +61,17 @@ export function useFeed(location: { lat: number; long: number }, radius: number 
         };
 
         fetchFeed();
-    }, [location.lat, location.long, radius, categoryString, page]);
+    }, [location.lat, location.long, radius, categoryString, page, limit]);
 
-    const loadMore = () => {
+    const nextPage = () => {
         if (!loading && hasMore) {
             setPage(prev => prev + 1);
+        }
+    };
+
+    const prevPage = () => {
+        if (!loading && page > 1) {
+            setPage(prev => prev - 1);
         }
     };
 
@@ -71,29 +81,31 @@ export function useFeed(location: { lat: number; long: number }, radius: number 
 
         socket.on("postCreated", (newPost: Post) => {
             console.log("New post received via socket:", newPost);
-            setPosts((prev) => [newPost, ...prev]);
+            // In pagination, do we prepend? Yes, but only if on page 1?
+            // For now, prepend effectively
+            if (page === 1) {
+                setPosts((prev) => [newPost, ...prev].slice(0, limit)); // Maintain limit
+            }
+            // If not page 1, maybe show a "New posts available" badge? For simplicity, ignore or notify.
         });
 
         return () => {
             socket.off("postCreated");
         };
-    }, [socket]);
+    }, [socket, page, limit]);
 
     const incrementCommentCount = (postId: string) => {
         setPosts(prev => prev.map(p => {
             if (p.id === postId) {
-                // If comments array exists, push placeholder or just rely on length logic if needed
-                // Assuming we just want to update display if we were showing count separately
-                // But PostItem usually uses post.comments.length.
                 const currentComments = p.comments || [];
                 return {
                     ...p,
-                    comments: [...currentComments, { id: 'temp' }] // Fake add to increase length immediately
+                    comments: [...currentComments, { id: 'temp' }]
                 };
             }
             return p;
         }));
     };
 
-    return { posts, loading, error, incrementCommentCount, loadMore, hasMore };
+    return { posts, loading, error, incrementCommentCount, nextPage, prevPage, hasMore, page };
 }

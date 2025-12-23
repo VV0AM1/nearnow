@@ -20,49 +20,45 @@ export class NeighborhoodsService {
         });
     }
 
-    async getStats(lat: number, lng: number, radiusKm: number) {
-        // 1. Fetch ALL neighborhoods (simple MVP, ideally spatial query)
+    async getRankings(lat: number, lng: number, radiusKm: number) {
+        // 1. Fetch relevant neighborhoods (optimization: fetch all for now)
         const allNeighborhoods = await this.prisma.neighborhood.findMany({
             include: { city: true }
         });
 
-        // 2. Filter neighborhoods within radius of User
-        const nearbyNeighborhoods = allNeighborhoods.filter(hood => {
+        // 2. Filter by distance
+        const nearbyById = allNeighborhoods.filter(hood => {
             const dist = this.getDistanceFromLatLonInKm(lat, lng, hood.latitude, hood.longitude);
             return dist <= radiusKm;
-        });
+        }).map(hood => ({
+            ...hood,
+            // Calculate a dynamic score for display if needed, but rely on stored counts
+            score: hood.safetyCount - hood.crimeCount
+        }));
 
-        // 3. For each nearby neighborhood, count real posts within its radius
-        // We fetch ALL posts for now (Optimization: spatial index later)
-        const allPosts = await this.prisma.post.findMany();
+        // 3. Top 3 Dangerous (Highest Crime Count)
+        const topDangerous = [...nearbyById]
+            .sort((a, b) => b.crimeCount - a.crimeCount)
+            .slice(0, 3);
 
-        const stats = nearbyNeighborhoods.map(hood => {
-            // Count posts strictly within this neighborhood's own radius
-            const alertCount = allPosts.filter(post => {
-                const dist = this.getDistanceFromLatLonInKm(hood.latitude, hood.longitude, post.latitude, post.longitude);
-                return dist <= (hood.radiusKm || 1.0);
-            }).length;
+        // 4. Top 3 Safe (Highest Safety Count)
+        const topSafe = [...nearbyById]
+            .sort((a, b) => b.safetyCount - a.safetyCount)
+            .slice(0, 3);
 
-            // Calculate Score: Start at 100, deduct 5 per alert. Floor at 0.
-            const score = Math.max(0, 100 - (alertCount * 5));
+        // 5. General Ranking (Lowest Score = Most Dangerous? Or Highest Score = Safest?)
+        // User asked: "Top 1 is which has lowest safety-crime count".
+        // Safety(2) - Crime(10) = -8 (Lower). Safety(10) - Crime(2) = 8 (Higher).
+        // So Low Score = Dangerous.
+        // If sorting by "Lowest Score" ascending:
+        const generalRanking = [...nearbyById]
+            .sort((a, b) => a.score - b.score);
 
-            // Determine Trend (Random for MVP as we don't have historical data yet)
-            const trend = Math.random() > 0.5 ? 'up' : 'down';
-
-            return {
-                id: hood.id,
-                name: hood.name,
-                city: hood.city?.name || 'Unknown',
-                score,
-                alerts: alertCount,
-                trend,
-                latitude: hood.latitude,
-                longitude: hood.longitude
-            };
-        });
-
-        // Sort by Score Descending (Safest First)
-        return stats.sort((a, b) => b.score - a.score);
+        return {
+            topDangerous,
+            topSafe,
+            ranking: generalRanking
+        };
     }
 
     // Helper: Haversine Formula

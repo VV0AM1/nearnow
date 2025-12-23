@@ -35,4 +35,19 @@ export class CreatePostInput {
     @IsOptional()
     @IsString()
     neighborhoodId?: string;
+
+    @Field({ nullable: true })
+    @IsOptional()
+    @IsString()
+    neighborhood?: string;
+
+    @Field({ nullable: true })
+    @IsOptional()
+    @IsString()
+    city?: string;
+
+    @Field({ nullable: true })
+    @IsOptional()
+    @IsString()
+    country?: string;
 }

@@ -11,6 +11,9 @@ interface CreatePostData {
     longitude: number;
     imageUrl?: string;
     imageFile?: File;
+    neighborhood?: string;
+    city?: string;
+    country?: string;
 }
 
 export function useCreatePost() {
@@ -36,6 +39,9 @@ export function useCreatePost() {
             formData.append('category', data.category);
             formData.append('latitude', data.latitude.toString());
             formData.append('longitude', data.longitude.toString());
+            if (data.neighborhood) formData.append('neighborhood', data.neighborhood);
+            if (data.city) formData.append('city', data.city);
+            if (data.country) formData.append('country', data.country);
 
             if (data.imageFile) {
                 console.log(`Original size: ${data.imageFile.size / 1024 / 1024} MB`);

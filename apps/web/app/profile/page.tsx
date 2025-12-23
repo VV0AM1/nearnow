@@ -44,7 +44,7 @@ export default function ProfilePage() {
                             <div className="h-16 w-16 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden border-2 border-transparent group-hover:border-primary transition-all cursor-pointer">
                                 {user.avatar ? (
                                     <img
-                                        src={user.avatar.startsWith('http') ? user.avatar : `${API_URL}${user.avatar}`}
+                                        src={user.avatar.includes('http') ? user.avatar : user.avatar}
                                         alt={user.name || 'User'}
                                         className="h-full w-full object-cover"
                                     />

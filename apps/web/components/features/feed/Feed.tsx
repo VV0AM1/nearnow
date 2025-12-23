@@ -29,7 +29,17 @@ export default function FeedContainer({ initialLocation, initialPosts = [] }: Fe
 
     const [radius, setRadius] = useState(10);
     const [categories, setCategories] = useState<string[]>(["ALL"]);
-    const { posts, loading, error, incrementCommentCount, loadMore, hasMore } = useFeed(location, radius, categories, initialPosts);
+
+    // Responsive Limit Logic
+    const [limit, setLimit] = useState(4);
+    useEffect(() => {
+        const updateLimit = () => setLimit(window.innerWidth < 768 ? 2 : 4);
+        updateLimit();
+        window.addEventListener('resize', updateLimit);
+        return () => window.removeEventListener('resize', updateLimit);
+    }, []);
+
+    const { posts, loading, error, incrementCommentCount, nextPage, prevPage, hasMore, page } = useFeed(location, radius, categories, initialPosts, limit);
     const [selectedPost, setSelectedPost] = useState<any>(null);
 
     // Initial load check
@@ -69,13 +79,16 @@ export default function FeedContainer({ initialLocation, initialPosts = [] }: Fe
             ) : (
                 <div className="flex flex-col lg:flex-row gap-6 h-[600px]">
                     {/* Feed List Section */}
-                    <div className="lg:w-1/3 h-full">
+                    <div className="lg:w-1/3 h-full flex flex-col">
                         <FeedList
                             posts={posts}
                             onPostClick={setSelectedPost}
-                            loadMore={loadMore}
+                            onNext={nextPage}
+                            onPrev={prevPage}
                             hasMore={hasMore}
+                            hasPrev={page > 1}
                             loading={loading}
+                            page={page}
                         />
                     </div>
 

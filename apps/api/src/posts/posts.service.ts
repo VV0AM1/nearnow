@@ -14,9 +14,66 @@ export class PostsService {
     ) { }
 
     async create(createPostInput: CreatePostInput, authorId: string, imageUrl?: string) {
+        const { neighborhood: neighborhoodName, city: cityName, country: countryName, ...postData } = createPostInput;
+
+        let neighborhoodId = postData.neighborhoodId;
+
+        // Auto-detect/Update Neighborhood Logic
+        if (neighborhoodName && cityName) {
+            // 1. Upsert City
+            const city = await this.prisma.city.upsert({
+                where: { name: cityName },
+                update: {},
+                create: {
+                    name: cityName,
+                    country: countryName || 'Unknown',
+                    latitude: postData.latitude,
+                    longitude: postData.longitude
+                }
+            });
+
+            // 2. Prepare Scoring Updates based on Category
+            let scoreUpdate: any = {
+                totalCount: { increment: 1 }
+            };
+
+            if (['CRIME', 'DANGER'].includes(postData.category)) {
+                scoreUpdate.crimeCount = { increment: 1 };
+                // Decrease Safety Level? Simple Logic for now:
+                // We'll calculate Level on read or periodic cron, simplified here.
+            } else if (postData.category === 'SAFETY') {
+                scoreUpdate.safetyCount = { increment: 1 };
+            }
+
+            // 3. Upsert Neighborhood
+            const neighborhood = await this.prisma.neighborhood.upsert({
+                where: {
+                    name_cityId: {
+                        name: neighborhoodName,
+                        cityId: city.id
+                    }
+                },
+                update: scoreUpdate,
+                create: {
+                    name: neighborhoodName,
+                    cityId: city.id,
+                    latitude: postData.latitude,
+                    longitude: postData.longitude,
+                    ...scoreUpdate,
+                    // Initialize with 0s if not set by scoreUpdate (prisma defaults handle this?)
+                    // explicitly setting counts for create if defaults don't cover increment syntax in create (they don't usually)
+                    crimeCount: scoreUpdate.crimeCount?.increment || 0,
+                    safetyCount: scoreUpdate.safetyCount?.increment || 0,
+                    totalCount: 1
+                }
+            });
+            neighborhoodId = neighborhood.id;
+        }
+
         const post = await this.prisma.post.create({
             data: {
-                ...createPostInput,
+                ...postData,
+                neighborhoodId,
                 authorId,
                 imageUrl,
             },
