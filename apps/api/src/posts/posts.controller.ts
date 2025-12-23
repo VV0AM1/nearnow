@@ -72,7 +72,7 @@ export class PostsController implements OnModuleInit {
                 latitude: parseFloat(body.latitude),
                 longitude: parseFloat(body.longitude),
             };
-            const authorId = req.user.sub; // From JWT
+            const authorId = req.user.id; // Corrected: JwtStrategy returns full User object, so use .id
             const imageUrl = file ? `/uploads/${file.filename}` : undefined;
 
             this.logger.log(`Creating post for user ${authorId} with image: ${imageUrl}`);
