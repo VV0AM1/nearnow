@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Body, Query, UseGuards, UseInterceptors, UploadedFile, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, UseGuards, UseInterceptors, UploadedFile, Param, Req } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { PostsService } from './posts.service';
 import { CreatePostInput } from './dto/create-post.input';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('posts')
 export class PostsController {
@@ -37,6 +38,7 @@ export class PostsController {
     }
 
     @Post()
+    @UseGuards(JwtAuthGuard)
     @UseInterceptors(FileInterceptor('file', {
         storage: diskStorage({
             destination: './uploads',
@@ -49,15 +51,18 @@ export class PostsController {
     }))
     create(
         @Body() body: any,
-        @UploadedFile() file?: Express.Multer.File
+        @UploadedFile() file: Express.Multer.File,
+        @Req() req: any
     ) {
         const createPostInput: CreatePostInput = {
             ...body,
             latitude: parseFloat(body.latitude),
             longitude: parseFloat(body.longitude),
         };
-        const authorId = body.authorId;
+        const authorId = req.user.sub; // From JWT
         const imageUrl = file ? `/uploads/${file.filename}` : undefined;
+
+        console.log('Creating post', { createPostInput, authorId, imageUrl });
 
         return this.postsService.create(createPostInput, authorId, imageUrl);
     }

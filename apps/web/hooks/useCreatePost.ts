@@ -31,9 +31,6 @@ export function useCreatePost() {
             formData.append('category', data.category);
             formData.append('latitude', data.latitude.toString());
             formData.append('longitude', data.longitude.toString());
-            // formData.append('authorId', getUserId() || "demo-user"); // authorId is handled by backend or separate field if needed, but here we usually pass it in body if guard is off. 
-            // Controller expects authorId in Body currently (from my previous edits).
-            formData.append('authorId', getUserId() || "demo-user");
 
             if (data.imageFile) {
                 formData.append('file', data.imageFile);
@@ -42,8 +39,7 @@ export function useCreatePost() {
             const res = await fetch(`${API_URL}/posts`, {
                 method: "POST",
                 headers: {
-                    // "Content-Type": "multipart/form-data" // Browser sets this automatically
-                    // "Authorization": `Bearer ${token}` 
+                    "Authorization": `Bearer ${token}`
                 },
                 body: formData,
             });
