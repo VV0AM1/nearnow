@@ -22,7 +22,7 @@ export default function CreateAlertModal({ isOpen, onClose, userLocation }: Crea
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[2030] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
             <div className="glass-card max-w-lg w-full p-6 border-border shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
                 <button onClick={onClose} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
                     <X className="h-5 w-5" />

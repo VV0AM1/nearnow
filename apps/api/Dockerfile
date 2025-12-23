@@ -19,6 +19,9 @@ WORKDIR /app
 
 RUN apk add --no-cache openssl libc6-compat
 
+# Create uploads directory and set permissions
+RUN mkdir -p /app/uploads && chmod 777 /app/uploads
+
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/dist ./dist
