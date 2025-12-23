@@ -15,6 +15,4 @@ export const USER_NAV_ITEMS: NavItem[] = [
 // Items specifically for mobile exploration that might differ or include actions
 export const MOBILE_EXPLORE_ITEMS: NavItem[] = [
     { icon: Search, label: "Search Alerts", href: "#", onClick: "toggleSearch" }, // Special handling
-    { icon: ShieldAlert, label: "Safety Center", href: "/safety" },
-    { icon: Bookmark, label: "Saved Alerts", href: "/saved" },
 ];

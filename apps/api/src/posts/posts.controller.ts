@@ -1,14 +1,25 @@
-import { Controller, Get, Post, Body, Query, UseGuards, UseInterceptors, UploadedFile, Param, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, UseGuards, UseInterceptors, UploadedFile, Param, Req, OnModuleInit, Logger } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { extname, join } from 'path';
+import { existsSync, mkdirSync } from 'fs';
 import { PostsService } from './posts.service';
 import { CreatePostInput } from './dto/create-post.input';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('posts')
-export class PostsController {
+export class PostsController implements OnModuleInit {
+    private readonly logger = new Logger(PostsController.name);
+
     constructor(private readonly postsService: PostsService) { }
+
+    onModuleInit() {
+        const uploadDir = './uploads';
+        if (!existsSync(uploadDir)) {
+            this.logger.log(`Creating upload directory: ${uploadDir}`);
+            mkdirSync(uploadDir, { recursive: true });
+        }
+    }
 
     @Get()
     findAll(@Query('authorId') authorId?: string) {

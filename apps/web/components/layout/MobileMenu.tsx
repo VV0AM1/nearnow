@@ -54,7 +54,7 @@ export default function MobileMenu() {
                                 animate="open"
                                 exit="closed"
                                 variants={containerVariants}
-                                className="fixed bottom-0 left-0 right-0 z-[2010] bg-background border-t border-white/10 rounded-t-3xl p-8 pb-12 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] flex flex-col min-h-[80vh] max-h-[90vh] overflow-y-auto"
+                                className="fixed bottom-0 left-0 right-0 z-[2010] bg-[#0B1120] border-t border-white/10 rounded-t-3xl p-8 pb-12 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] flex flex-col min-h-[80vh] max-h-[90vh] overflow-y-auto"
                             >
                                 {/* Decorative Handle */}
                                 <div className="w-16 h-1.5 bg-white/20 rounded-full mx-auto mb-8" />

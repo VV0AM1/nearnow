@@ -50,10 +50,12 @@ export function useCreatePost() {
                 try {
                     const compressedFile = await imageCompression(data.imageFile, options);
                     console.log(`Compressed size: ${compressedFile.size / 1024 / 1024} MB`);
-                    formData.append('file', compressedFile);
+
+                    // IMPORTANT: Pass the filename, otherwise it might be 'blob' and fail extname check
+                    formData.append('file', compressedFile, data.imageFile.name);
                 } catch (error) {
                     console.error("Compression failed, using original", error);
-                    formData.append('file', data.imageFile);
+                    formData.append('file', data.imageFile, data.imageFile.name);
                 }
             }
 
