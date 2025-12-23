@@ -7,44 +7,13 @@ import { useAuthContext } from "../../context/AuthContext";
 import { Menu, X, LogOut, User, LogIn, UserPlus, Home, Settings, Map, Bell, Search } from "lucide-react";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 
+import { backdropVariants, containerVariants, itemVariants } from "./mobile/MobileMenu.animations";
+
 export default function MobileMenu() {
     const { isAuthenticated, user, logout } = useAuthContext();
     const [isOpen, setIsOpen] = useState(false);
 
     const toggleMenu = () => setIsOpen(!isOpen);
-
-    const backdropVariants: Variants = {
-        closed: { opacity: 0, backdropFilter: "blur(0px)" },
-        open: {
-            opacity: 1,
-            backdropFilter: "blur(12px)",
-            transition: { duration: 0.4 }
-        }
-    };
-
-    const containerVariants: Variants = {
-        closed: {
-            opacity: 0,
-            y: "100%",
-            transition: {
-                type: "spring", stiffness: 400, damping: 40
-            }
-        },
-        open: {
-            opacity: 1,
-            y: 0,
-            transition: {
-                type: "spring", stiffness: 400, damping: 40,
-                delayChildren: 0.1,
-                staggerChildren: 0.1
-            }
-        }
-    };
-
-    const itemVariants: Variants = {
-        closed: { opacity: 0, x: -20 },
-        open: { opacity: 1, x: 0 }
-    };
 
     const [mounted, setMounted] = useState(false);
 

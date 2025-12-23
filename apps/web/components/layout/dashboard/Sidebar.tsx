@@ -8,14 +8,10 @@ import { useAuthContext } from "../../../context/AuthContext";
 import { NavItem } from "../../../types/ui";
 import { User } from "../../../types/user";
 
-const NAV_ITEMS: NavItem[] = [
-    { icon: Home, label: "Home", href: "/" },
-    { icon: Map, label: "Map", href: "/map" },
-    { icon: ShieldAlert, label: "Safety", href: "/safety" },
-    { icon: Bookmark, label: "Saved", href: "/saved" },
-    { icon: UserIcon, label: "Profile", href: "/profile" },
-    // { icon: Settings, label: "Settings", href: "/settings" },
-];
+import { MAIN_NAV_ITEMS, USER_NAV_ITEMS } from "../config/navigation";
+
+// Combine items or use mainly MAIN for sidebar
+const NAV_ITEMS = [...MAIN_NAV_ITEMS, ...USER_NAV_ITEMS];
 
 interface SidebarProps {
     initialUser?: User;
