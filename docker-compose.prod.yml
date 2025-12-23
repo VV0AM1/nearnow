@@ -29,7 +29,8 @@ services:
     container_name: nearnow_api
     restart: always
     volumes:
-      - uploads_data_prod:/usr/src/app/uploads # Persist uploads
+    volumes:
+      - uploads_data_prod:/app/uploads # Persist uploads (Matches Dockerfile WORKDIR /app)
     environment:
       DATABASE_URL: postgresql://nearnow_admin:production_password_change_me@postgres:5432/nearnow_db?schema=public
       REDIS_URL: redis://redis:6379
