@@ -69,19 +69,14 @@ export default function FeedContainer({ initialLocation, initialPosts = [] }: Fe
             ) : (
                 <div className="flex flex-col lg:flex-row gap-6 h-[600px]">
                     {/* Feed List Section */}
-                    <div className="lg:w-1/3 overflow-y-auto no-scrollbar">
-                        <FeedList posts={posts} onPostClick={setSelectedPost} />
-                        {hasMore && (
-                            <div className="p-4 flex justify-center">
-                                <button
-                                    onClick={loadMore}
-                                    className="px-6 py-2 bg-secondary/50 hover:bg-secondary rounded-full text-sm font-semibold transition-colors"
-                                    disabled={loading}
-                                >
-                                    {loading ? 'Loading...' : 'Load More Alerts'}
-                                </button>
-                            </div>
-                        )}
+                    <div className="lg:w-1/3 h-full">
+                        <FeedList
+                            posts={posts}
+                            onPostClick={setSelectedPost}
+                            loadMore={loadMore}
+                            hasMore={hasMore}
+                            loading={loading}
+                        />
                     </div>
 
                     {/* Map Visualization Section */}

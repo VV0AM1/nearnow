@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Filter, X } from "lucide-react";
-import { CATEGORIES } from "../feed/CategoryFilter";
+import { CATEGORIES } from "../../../config/categories";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface MobileMapFilterProps {

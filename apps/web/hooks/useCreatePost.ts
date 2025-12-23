@@ -16,6 +16,10 @@ export function useCreatePost() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    import imageCompression from 'browser-image-compression';
+
+    // ... existing code ...
+
     const createPost = async (data: CreatePostData) => {
         const token = getToken();
         if (!token) {
@@ -33,7 +37,23 @@ export function useCreatePost() {
             formData.append('longitude', data.longitude.toString());
 
             if (data.imageFile) {
-                formData.append('file', data.imageFile);
+                console.log(`Original size: ${data.imageFile.size / 1024 / 1024} MB`);
+
+                const options = {
+                    maxSizeMB: 0.5, // 500KB max
+                    maxWidthOrHeight: 1920,
+                    useWebWorker: true,
+                    fileType: "image/jpeg"
+                };
+
+                try {
+                    const compressedFile = await imageCompression(data.imageFile, options);
+                    console.log(`Compressed size: ${compressedFile.size / 1024 / 1024} MB`);
+                    formData.append('file', compressedFile);
+                } catch (error) {
+                    console.error("Compression failed, using original", error);
+                    formData.append('file', data.imageFile);
+                }
             }
 
             const res = await fetch(`${API_URL}/posts`, {
