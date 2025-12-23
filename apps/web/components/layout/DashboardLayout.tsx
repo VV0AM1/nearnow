@@ -2,30 +2,13 @@
 
 import { useState } from "react";
 import { useAuthContext } from "../../context/AuthContext";
-
-// ... inside component ...
-const { user } = useAuthContext();
-// ... inside jsx ...
-<div className="flex items-center gap-4">
-    <NotificationsMenu />
-    <Link href="/profile" className="relative h-8 w-8 rounded-full bg-secondary/50 overflow-hidden border border-white/10 md:hidden">
-        {user?.avatar ? (
-            <img
-                src={user.avatar.startsWith('http') ? user.avatar : `${process.env.NEXT_PUBLIC_API_URL}${user.avatar}`}
-                alt={user.name || 'Profile'}
-                className="h-full w-full object-cover"
-            />
-        ) : (
-            <div className="h-full w-full bg-gradient-to-br from-primary to-purple-500" />
-        )}
-    </Link>
-</div>
 import Sidebar from "./dashboard/Sidebar";
 import NotificationsMenu from "../features/notifications/NotificationsMenu";
 import MobileMenu from "./MobileMenu";
 import Link from "next/link";
 import { Search, Menu } from "lucide-react";
 import { User } from "../../types/user";
+import SearchModal from "../features/search/SearchModal";
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -34,6 +17,8 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children, initialUser }: DashboardLayoutProps) {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const { user } = useAuthContext();
+
     return (
         <div className="flex h-screen bg-background overflow-hidden">
             <Sidebar initialUser={initialUser} />
@@ -66,7 +51,17 @@ export default function DashboardLayout({ children, initialUser }: DashboardLayo
 
                     <div className="flex items-center gap-4">
                         <NotificationsMenu />
-                        <Link href="/profile" className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-purple-500 md:hidden" />
+                        <Link href="/profile" className="relative h-8 w-8 rounded-full bg-secondary/50 overflow-hidden border border-white/10 md:hidden">
+                            {user?.avatar ? (
+                                <img
+                                    src={user.avatar.startsWith('http') ? user.avatar : `${process.env.NEXT_PUBLIC_API_URL}${user.avatar}`}
+                                    alt={user.name || 'Profile'}
+                                    className="h-full w-full object-cover"
+                                />
+                            ) : (
+                                <div className="h-full w-full bg-gradient-to-br from-primary to-purple-500" />
+                            )}
+                        </Link>
                     </div>
                 </header>
 
