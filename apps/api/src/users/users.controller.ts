@@ -23,7 +23,7 @@ export class UsersController {
     }))
     async uploadAvatar(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
         if (!file) throw new Error('No file uploaded');
-        const userId = req.user.sub; // From JWT
+        const userId = req.user.id; // Corrected: JwtStrategy returns full User object, so use .id (not .sub)
         const avatarUrl = `/uploads/${file.filename}`;
         return this.usersService.update(userId, { id: userId, avatar: avatarUrl });
     }
