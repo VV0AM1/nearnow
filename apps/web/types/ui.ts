@@ -4,6 +4,7 @@ export interface NavItem {
     label: string;
     href: string;
     icon: LucideIcon;
+    onClick?: string;
 }
 
 export interface FeatureCardProps {

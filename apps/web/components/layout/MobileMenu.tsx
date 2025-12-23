@@ -8,6 +8,7 @@ import { Menu, X, LogOut, User, LogIn, UserPlus, Home, Settings, Map, Bell, Sear
 import { motion, AnimatePresence, Variants } from "framer-motion";
 
 import { backdropVariants, containerVariants, itemVariants } from "./mobile/MobileMenu.animations";
+import { MAIN_NAV_ITEMS, MOBILE_EXPLORE_ITEMS } from "./config/navigation";
 
 export default function MobileMenu() {
     const { isAuthenticated, user, logout } = useAuthContext();
@@ -63,22 +64,17 @@ export default function MobileMenu() {
                                         <h3 className="text-sm uppercase tracking-widest text-muted-foreground mb-4">
                                             Navigation
                                         </h3>
-                                        <Link
-                                            href="/"
-                                            onClick={toggleMenu}
-                                            className="flex items-center gap-4 text-2xl font-bold p-2 hover:translate-x-2 transition-transform"
-                                        >
-                                            <Home className="h-6 w-6 text-primary" />
-                                            Home
-                                        </Link>
-                                        <Link
-                                            href="/map"
-                                            onClick={toggleMenu}
-                                            className="flex items-center gap-4 text-2xl font-bold p-2 hover:translate-x-2 transition-transform"
-                                        >
-                                            <Map className="h-6 w-6 text-purple-400" />
-                                            Live Map
-                                        </Link>
+                                        {MAIN_NAV_ITEMS.map((item) => (
+                                            <Link
+                                                key={item.href}
+                                                href={item.href}
+                                                onClick={toggleMenu}
+                                                className="flex items-center gap-4 text-2xl font-bold p-2 hover:translate-x-2 transition-transform"
+                                            >
+                                                <item.icon className={`h-6 w-6 ${item.href === '/map' ? 'text-purple-400' : 'text-primary'}`} />
+                                                {item.label}
+                                            </Link>
+                                        ))}
                                     </motion.div>
 
                                     <div className="h-px bg-white/10 my-2" />
@@ -88,46 +84,39 @@ export default function MobileMenu() {
                                         <h3 className="text-sm uppercase tracking-widest text-muted-foreground mb-4">
                                             Explore
                                         </h3>
-                                        <button
-                                            onClick={() => {
-                                                // Trigger search modal via custom event or just link to search page if exists
-                                                // Since search modal is in layout, we might need a context or just reliance on DashboardLayout
-                                                // For now, let's keep it consistent
-                                                const searchButton = document.getElementById('mobile-search-trigger');
-                                                if (searchButton) searchButton.click();
-                                                toggleMenu();
-                                            }}
-                                            className="flex items-center gap-4 text-xl font-medium p-2 hover:bg-white/5 rounded-lg transition-colors w-full text-left"
-                                        >
-                                            {/* We trigger the search modal from DashboardLayout */}
-                                            <div className="h-8 w-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
-                                                <Search className="h-4 w-4" />
-                                            </div>
-                                            Search Alerts
-                                        </button>
-
-                                        <Link
-                                            href="/safety"
-                                            onClick={toggleMenu}
-                                            className="flex items-center gap-4 text-xl font-medium p-2 hover:bg-white/5 rounded-lg transition-colors"
-                                        >
-                                            <div className="h-8 w-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
-                                                <Bell className="h-4 w-4" />
-                                            </div>
-                                            Safety Center
-                                        </Link>
-
-                                        <Link
-                                            href="/saved"
-                                            onClick={toggleMenu}
-                                            className="flex items-center gap-4 text-xl font-medium p-2 hover:bg-white/5 rounded-lg transition-colors"
-                                        >
-                                            <div className="h-8 w-8 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400">
-                                                <Bell className="h-4 w-4" />
-                                                {/* Reuse bell or add Bookmark icon import */}
-                                            </div>
-                                            Saved Alerts
-                                        </Link>
+                                        {MOBILE_EXPLORE_ITEMS.map((item) => {
+                                            if (item.onClick === 'toggleSearch') {
+                                                return (
+                                                    <button
+                                                        key={item.label}
+                                                        onClick={() => {
+                                                            const searchButton = document.getElementById('mobile-search-trigger');
+                                                            if (searchButton) searchButton.click();
+                                                            toggleMenu();
+                                                        }}
+                                                        className="flex items-center gap-4 text-xl font-medium p-2 hover:bg-white/5 rounded-lg transition-colors w-full text-left"
+                                                    >
+                                                        <div className="h-8 w-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
+                                                            <item.icon className="h-4 w-4" />
+                                                        </div>
+                                                        {item.label}
+                                                    </button>
+                                                );
+                                            }
+                                            return (
+                                                <Link
+                                                    key={item.href}
+                                                    href={item.href}
+                                                    onClick={toggleMenu}
+                                                    className="flex items-center gap-4 text-xl font-medium p-2 hover:bg-white/5 rounded-lg transition-colors"
+                                                >
+                                                    <div className="h-8 w-8 rounded-full bg-secondary/50 flex items-center justify-center text-foreground">
+                                                        <item.icon className="h-4 w-4" />
+                                                    </div>
+                                                    {item.label}
+                                                </Link>
+                                            );
+                                        })}
                                     </motion.div>
 
                                     <div className="h-px bg-white/10 my-2" />
