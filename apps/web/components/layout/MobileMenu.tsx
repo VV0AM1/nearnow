@@ -174,8 +174,16 @@ export default function MobileMenu() {
                                                     onClick={toggleMenu}
                                                     className="flex items-center gap-4 p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
                                                 >
-                                                    <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
-                                                        <User className="h-5 w-5 text-primary" />
+                                                    <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
+                                                        {user?.avatar ? (
+                                                            <img
+                                                                src={user.avatar.startsWith('http') ? user.avatar : `${process.env.NEXT_PUBLIC_API_URL}${user.avatar}`}
+                                                                alt={user.name || 'User'}
+                                                                className="h-full w-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <User className="h-5 w-5 text-primary" />
+                                                        )}
                                                     </div>
                                                     <div>
                                                         <p className="font-semibold text-lg">{user?.name || 'Neighbor'}</p>

@@ -68,7 +68,7 @@ export default function ProfilePage() {
                                             // Optimistic update could go here, but simple reload is safer
                                             try {
                                                 const token = document.cookie.split('; ').find(row => row.startsWith('nearnow_token='))?.split('=')[1];
-                                                const res = await fetch('${API_URL}/users/avatar', {
+                                                const res = await fetch(`${API_URL}/users/avatar`, {
                                                     method: 'POST',
                                                     headers: {
                                                         'Authorization': `Bearer ${token}`

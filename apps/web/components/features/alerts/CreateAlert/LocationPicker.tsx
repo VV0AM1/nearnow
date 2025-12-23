@@ -23,7 +23,7 @@ export function LocationPicker({
         <div className="pt-2">
             {isPicking ? (
                 <div className="space-y-2">
-                    <div className="h-[300px] w-full rounded-xl overflow-hidden border border-border relative">
+                    <div className="h-[200px] md:h-[300px] w-full rounded-xl overflow-hidden border border-border relative">
                         <MapLoader
                             posts={[]}
                             center={selectedLocation}
