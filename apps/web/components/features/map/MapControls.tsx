@@ -2,8 +2,8 @@ import FloatingDock from "./FloatingDock";
 
 
 interface MapControlsProps {
-    selectedCategory: string;
-    onSelectCategory: (id: string) => void;
+    selectedCategory: string[];
+    onSelectCategory: (ids: string[]) => void;
 }
 
 export default function MapControls({

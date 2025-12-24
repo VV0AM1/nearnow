@@ -1,12 +1,12 @@
 import { useState } from "react";
 
 export function useMapFilters(posts: any[]) {
-    const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
+    const [selectedCategory, setSelectedCategory] = useState<string[]>(["ALL"]);
     const [timeRange, setTimeRange] = useState<string>("all");
 
     const filteredPosts = posts.filter(p => {
         // Category Filter
-        if (selectedCategory !== "ALL" && p.category !== selectedCategory) return false;
+        if (!selectedCategory.includes("ALL") && !selectedCategory.includes(p.category)) return false;
 
         // Time Filter
         if (timeRange !== "all") {

@@ -34,7 +34,32 @@ export default function Map({ posts, center = [37.7749, -122.4194], zoom = 13, r
 
                     <MobileMapFilter
                         selectedCategory={selectedCategory}
-                        onSelect={setSelectedCategory}
+                        onSelect={(id) => {
+                            // Adapter for MobileMapFilter's internal toggle logic if it returns single id to handleSelect?
+                            // Wait, MobileMapFilter.tsx in previous step had onSelect: (id: string) => void signature 
+                            // But useMapFilters setSelectedCategory expects (ids: string[]) => void.
+                            // We need to bridge this or update MobileMapFilter to handle the "toggle" internally and return the new array?
+                            // Actually, MobileMapFilter usually implements its own toggle but it receives `onSelect`.
+                            // Let's check MobileMapFilter implementation carefully.
+                            // Step 7772: MobileMapFilter calls `onSelect(cat.id)`. It does NOT calculate new array.
+                            // So we need to handle the toggle logic HERE or in a wrapper.
+                            // Better: Let's create a helper `handleSelectCategory` in this component or useMapFilters.
+                            const handleToggle = (id: string) => {
+                                if (id === 'ALL') {
+                                    setSelectedCategory(['ALL']);
+                                    return;
+                                }
+                                let newSelected = selectedCategory.includes('ALL') ? [] : [...selectedCategory];
+                                if (newSelected.includes(id)) {
+                                    newSelected = newSelected.filter(c => c !== id);
+                                } else {
+                                    newSelected.push(id);
+                                }
+                                if (newSelected.length === 0) newSelected = ['ALL'];
+                                setSelectedCategory(newSelected);
+                            };
+                            handleToggle(id);
+                        }}
                     />
 
                     <div className="hidden md:block">

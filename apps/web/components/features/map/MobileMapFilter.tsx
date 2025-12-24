@@ -6,7 +6,7 @@ import { CATEGORIES } from "../../../config/categories";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface MobileMapFilterProps {
-    selectedCategory: string;
+    selectedCategory: string[];
     onSelect: (id: string) => void;
 }
 
@@ -29,6 +29,8 @@ export default function MobileMapFilter({ selectedCategory, onSelect }: MobileMa
         }
     };
 
+    const selectedCount = selectedCategory.includes('ALL') ? 0 : selectedCategory.length;
+
     return (
         <div className="md:hidden absolute top-24 left-4 z-[400]">
             <button
@@ -36,8 +38,10 @@ export default function MobileMapFilter({ selectedCategory, onSelect }: MobileMa
                 className="h-10 w-10 flex items-center justify-center bg-black/60 backdrop-blur-md rounded-full border border-white/10 shadow-lg"
             >
                 <Filter className="h-4 w-4 text-white" />
-                {selectedCategory !== 'ALL' && (
-                    <div className="absolute -top-1 -right-1 h-3 w-3 bg-primary rounded-full border border-black" />
+                {selectedCount > 0 && (
+                    <div className="absolute -top-1 -right-1 h-4 w-4 bg-primary rounded-full border border-black flex items-center justify-center text-[10px] font-bold text-white">
+                        {selectedCount}
+                    </div>
                 )}
             </button>
 
@@ -71,9 +75,8 @@ export default function MobileMapFilter({ selectedCategory, onSelect }: MobileMa
                                         key={cat.id}
                                         onClick={() => {
                                             onSelect(cat.id);
-                                            setIsOpen(false);
                                         }}
-                                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${selectedCategory === cat.id
+                                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${selectedCategory.includes(cat.id)
                                             ? 'bg-primary/20 border-primary text-primary'
                                             : 'bg-secondary/20 border-transparent hover:bg-secondary/40'
                                             }`}
@@ -83,6 +86,13 @@ export default function MobileMapFilter({ selectedCategory, onSelect }: MobileMa
                                     </button>
                                 ))}
                             </div>
+
+                            <button
+                                onClick={() => setIsOpen(false)}
+                                className="w-full mt-8 bg-primary text-primary-foreground font-bold py-3 rounded-xl"
+                            >
+                                Apply Filters
+                            </button>
                         </motion.div>
                     </div>
                 )}

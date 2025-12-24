@@ -25,7 +25,7 @@ export default function FeedList({ posts, onPostClick, onNext, onPrev, hasMore, 
     return (
         <div className="flex flex-col h-full bg-black/20 rounded-xl border border-white/5 overflow-hidden backdrop-blur-sm">
             {/* List Content */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
                 {posts.map((post) => (
                     <Post
                         key={post.id}
