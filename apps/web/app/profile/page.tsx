@@ -196,43 +196,17 @@ function UserPostHistory({ userId }: { userId: string }) {
     };
 
     return (
-        <div className="space-y-6">
-            <FeedList posts={paginatedPosts} onPostClick={() => { }} />
-
-            {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-4">
-                    <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => handlePageChange(page - 1)}
-                        disabled={page === 1}
-                    >
-                        <ChevronLeft className="h-4 w-4" />
-                    </Button>
-
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Page</span>
-                        <input
-                            type="number"
-                            min={1}
-                            max={totalPages}
-                            value={page}
-                            onChange={(e) => handlePageChange(parseInt(e.target.value) || 1)}
-                            className="w-12 h-8 rounded-md border border-border bg-background text-center text-sm"
-                        />
-                        <span className="text-sm text-muted-foreground">of {totalPages}</span>
-                    </div>
-
-                    <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => handlePageChange(page + 1)}
-                        disabled={page === totalPages}
-                    >
-                        <ChevronRight className="h-4 w-4" />
-                    </Button>
-                </div>
-            )}
+        <div className="space-y-6 h-[500px]">
+            <FeedList
+                posts={paginatedPosts}
+                onPostClick={() => { }}
+                onNext={() => handlePageChange(page + 1)}
+                onPrev={() => handlePageChange(page - 1)}
+                hasMore={page < totalPages}
+                hasPrev={page > 1}
+                loading={loading}
+                page={page}
+            />
         </div>
     );
 }
