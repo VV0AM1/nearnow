@@ -3,6 +3,7 @@ import "./globals.css";
 // import { ApolloWrapper } from "../lib/apollo-wrapper";
 import { SocketProvider } from "../lib/socket-provider";
 import { AuthProvider } from "../context/AuthContext";
+import { Toaster } from "@/components/ui/toaster";
 
 import type { Metadata, Viewport } from "next";
 
@@ -38,6 +39,7 @@ export default function RootLayout({
         <SocketProvider>
           <AuthProvider>
             {children}
+            <Toaster />
           </AuthProvider>
         </SocketProvider>
       </body>

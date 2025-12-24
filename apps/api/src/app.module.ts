@@ -14,6 +14,8 @@ import { CommentsModule } from './comments/comments.module';
 import { PrismaModule } from './prisma.module';
 import { GatewayModule } from './gateway.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { ReportsModule } from './reports/reports.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -33,6 +35,8 @@ import { NotificationsModule } from './notifications/notifications.module';
     NeighborhoodsModule,
     CommentsModule,
     NotificationsModule,
+    ReportsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

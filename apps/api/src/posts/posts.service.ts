@@ -1,7 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreatePostInput } from './dto/create-post.input';
 import { Category, Prisma } from '@prisma/client';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const Filter = require('bad-words');
 import { AppGateway } from '../app.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
 
@@ -14,6 +16,12 @@ export class PostsService {
     ) { }
 
     async create(createPostInput: CreatePostInput, authorId: string, imageUrl?: string) {
+        // Automated Content Filtering
+        const filter = new Filter();
+        if (filter.isProfane(createPostInput.title) || (createPostInput.content && filter.isProfane(createPostInput.content))) {
+            throw new BadRequestException("Post contains inappropriate language.");
+        }
+
         const { neighborhood: neighborhoodName, city: cityName, country: countryName, ...postData } = createPostInput;
 
         let neighborhoodId = postData.neighborhoodId;
