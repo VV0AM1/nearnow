@@ -28,8 +28,8 @@ export const RankingCard = ({ neighborhood, rank, type }: { neighborhood: any, r
 
                 <div className="flex items-center justify-between mt-4">
                     <div>
-                        <div className="text-xs text-zinc-500 uppercase">Safety Score</div>
-                        <div className={`text-2xl font-bold ${color}`}>{neighborhood.score}</div>
+                        <div className="text-xs text-zinc-500 uppercase">{isSafe ? 'Safety Alerts' : 'Crime Alerts'}</div>
+                        <div className={`text-2xl font-bold ${color}`}>{isSafe ? neighborhood.safetyCount : neighborhood.crimeCount}</div>
                     </div>
                     <div>
                         <div className="text-xs text-zinc-500 uppercase">Weekly Alerts</div>

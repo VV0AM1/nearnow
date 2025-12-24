@@ -25,8 +25,9 @@ export default function SafetyPage() {
                     // Map backend fields to frontend component expectations
                     const mapItem = (item: any) => ({
                         ...item,
-                        alerts: item.totalCount, // Map totalCount to alerts
-                        trend: Math.random() > 0.5 ? 'up' : 'stable' // Mock trend for now
+                        alerts: item.totalCount,
+                        // Mock Trend: High Score (Safe) -> Improving/Stable, Low Score (Danger) -> Rising
+                        trend: item.score > 5 ? 'stable' : (Math.random() > 0.5 ? 'up' : 'stable')
                     });
 
                     setData({
