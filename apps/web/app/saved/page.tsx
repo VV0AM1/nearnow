@@ -46,6 +46,18 @@ export default function SavedPage() {
         fetchSaved();
     }, []);
 
+    const [page, setPage] = useState(1);
+    const ITEMS_PER_PAGE = 5;
+
+    const totalPages = Math.ceil(posts.length / ITEMS_PER_PAGE);
+    const paginatedPosts = posts.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+
+    const handlePageChange = (newPage: number) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            setPage(newPage);
+        }
+    };
+
     return (
         <DashboardLayout>
             <div className="max-w-4xl mx-auto space-y-6">
@@ -72,7 +84,18 @@ export default function SavedPage() {
                         </p>
                     </div>
                 ) : (
-                    <FeedList posts={posts} onPostClick={(post) => router.push(`/post/${post.id}`)} />
+                    <div className="h-[600px] flex flex-col">
+                        <FeedList
+                            posts={paginatedPosts}
+                            onPostClick={(post) => router.push(`/post/${post.id}`)}
+                            onNext={() => handlePageChange(page + 1)}
+                            onPrev={() => handlePageChange(page - 1)}
+                            hasMore={page < totalPages}
+                            hasPrev={page > 1}
+                            loading={loading}
+                            page={page}
+                        />
+                    </div>
                 )}
             </div>
         </DashboardLayout>
