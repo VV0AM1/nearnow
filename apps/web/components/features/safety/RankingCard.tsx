@@ -23,7 +23,7 @@ export const RankingCard = ({ neighborhood, rank, type }: { neighborhood: any, r
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-1">{neighborhood.name}</h3>
                 <div className="flex items-center gap-2 text-zinc-400 text-sm mb-4">
-                    <span>{neighborhood.city}</span>
+                    <span>{neighborhood.city?.name}</span>
                 </div>
 
                 <div className="flex items-center justify-between mt-4">
