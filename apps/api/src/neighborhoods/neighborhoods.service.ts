@@ -46,13 +46,9 @@ export class NeighborhoodsService {
             .sort((a, b) => b.safetyCount - a.safetyCount)
             .slice(0, 3);
 
-        // 5. General Ranking (Lowest Score = Most Dangerous? Or Highest Score = Safest?)
-        // User asked: "Top 1 is which has lowest safety-crime count".
-        // Safety(2) - Crime(10) = -8 (Lower). Safety(10) - Crime(2) = 8 (Higher).
-        // So Low Score = Dangerous.
-        // If sorting by "Lowest Score" ascending:
+        // 5. General Ranking (Highest Score = Safest)
         const generalRanking = [...nearbyById]
-            .sort((a, b) => a.score - b.score);
+            .sort((a, b) => b.score - a.score);
 
         return {
             topDangerous,

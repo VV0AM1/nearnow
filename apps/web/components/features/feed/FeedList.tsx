@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import Post from "./Post";
 
 interface FeedListProps {
@@ -28,13 +29,22 @@ export default function FeedList({ posts, onPostClick, onNext, onPrev, hasMore, 
                         </p>
                     </div>
                 ) : (
-                    posts.map((post) => (
-                        <Post
-                            key={post.id}
-                            post={post}
-                            onClick={onPostClick}
-                        />
-                    ))
+                    <AnimatePresence mode="popLayout">
+                        {posts.map((post, index) => (
+                            <motion.div
+                                key={post.id}
+                                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                transition={{ duration: 0.3, delay: index * 0.05 }}
+                            >
+                                <Post
+                                    post={post}
+                                    onClick={onPostClick}
+                                />
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
                 )}
 
                 {loading && (
