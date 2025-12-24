@@ -116,7 +116,7 @@ export class PostsService {
       FROM "Post"
       WHERE ( 6371 * acos( cos( radians(${lat}) ) * cos( radians( latitude ) ) * cos( radians( longitude ) - radians(${long}) ) + sin( radians(${lat}) ) * sin( radians( latitude ) ) ) ) < ${radiusKm}
       ${!hasAll && categories.length > 0 ? Prisma.sql`AND category::text IN (${Prisma.join(categories)})` : Prisma.sql``}
-      ORDER BY distance ASC
+      ORDER BY "createdAt" DESC, distance ASC
       LIMIT ${limit} OFFSET ${offset};
     `;
 

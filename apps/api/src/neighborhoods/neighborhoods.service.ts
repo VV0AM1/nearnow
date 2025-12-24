@@ -33,7 +33,7 @@ export class NeighborhoodsService {
         }).map(hood => ({
             ...hood,
             // Calculate a dynamic score for display if needed, but rely on stored counts
-            score: hood.safetyCount - hood.crimeCount
+            score: Math.max(0, hood.safetyCount - hood.crimeCount)
         }));
 
         // 3. Top 3 Dangerous (Highest Crime Count)

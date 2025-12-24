@@ -12,17 +12,13 @@ export default function Post({ post, onClick }: PostProps) {
     return (
         <div
             onClick={() => onClick && onClick(post)}
-            className="group relative overflow-hidden p-3 md:p-4 rounded-xl border border-border/70
-                        bg-gradient-to-br from-background/80 via-background/95 to-card/95
-                        shadow-[0_18px_45px_rgba(15,23,42,0.55)]
-                        flex gap-3 md:gap-4 cursor-pointer
-                        hover:border-primary/60 hover:shadow-[0_22px_55px_rgba(15,23,42,0.85)]
-                        transition-all"
+            className="group relative overflow-hidden p-4 rounded-2xl border border-white/5 bg-black/40 backdrop-blur-sm
+                        hover:bg-white/5 hover:border-white/10 hover:shadow-2xl hover:-translate-y-0.5
+                        flex gap-4 cursor-pointer transition-all duration-300"
         >
             <div
-                className={`h-9 w-9 md:h-10 md:w-10 rounded-full flex items-center justify-center text-lg md:text-xl shrink-0
-                    bg-gradient-to-tr from-primary/25 via-accent/15 to-secondary/25
-                    text-primary-foreground shadow-inner`}
+                className={`h-10 w-10 rounded-full flex items-center justify-center text-lg shrink-0
+                    bg-white/5 text-white/80 border border-white/5 shadow-inner`}
             >
                 📝
             </div>
