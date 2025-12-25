@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { getToken } from "@/lib/auth";
 
 interface ReportModalProps {
     isOpen: boolean;
@@ -29,7 +30,7 @@ export default function ReportModal({ isOpen, onClose, postId }: ReportModalProp
         setIsSubmitting(true);
 
         try {
-            const token = localStorage.getItem('token');
+            const token = getToken();
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/reports`, {
                 method: 'POST',
                 headers: {

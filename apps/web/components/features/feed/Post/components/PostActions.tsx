@@ -50,7 +50,10 @@ export default function PostActions({ id, title, content, commentsCount, likes, 
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10 text-white">
                             <DropdownMenuItem
-                                onClick={() => setIsReportModalOpen(true)}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsReportModalOpen(true);
+                                }}
                                 className="text-red-400 focus:text-red-400 focus:bg-red-500/10 cursor-pointer gap-2"
                             >
                                 <Flag className="h-4 w-4" />
