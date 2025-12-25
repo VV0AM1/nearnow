@@ -22,6 +22,11 @@ export class AuthController {
         return this.authService.googleLogin(input);
     }
 
+    @Post('facebook')
+    facebookLogin(@Body() input: any) {
+        return this.authService.facebookLogin(input);
+    }
+
     @Post('otp/request')
     requestOtp(@Body() body: { email: string }) {
         return this.authService.requestOtp(body.email);

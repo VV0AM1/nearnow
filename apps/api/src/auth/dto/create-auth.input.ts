@@ -28,6 +28,12 @@ export class GoogleLoginInput {
 }
 
 @InputType()
+export class FacebookLoginInput {
+  @Field()
+  token: string;
+}
+
+@InputType()
 export class VerifyOtpInput {
   @Field()
   email: string;

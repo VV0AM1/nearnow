@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
-import { LoginInput, SignupInput, GoogleLoginInput, VerifyOtpInput } from './dto/create-auth.input';
+import { LoginInput, SignupInput, GoogleLoginInput, FacebookLoginInput, VerifyOtpInput } from './dto/create-auth.input';
 import { AuthResponse } from './entities/auth-response.entity';
 import { User } from '../users/entities/user.entity';
 import { OAuth2Client } from 'google-auth-library';
@@ -156,6 +156,60 @@ export class AuthService {
       return this.generateToken(user);
     } catch (error) {
       throw new UnauthorizedException('Google Auth Failed: ' + error.message);
+    }
+  }
+
+  // --- Facebook Auth ---
+  async facebookLogin(input: FacebookLoginInput): Promise<AuthResponse> {
+    try {
+      // Validate Token via Graph API
+      const res = await fetch(`https://graph.facebook.com/me?fields=id,name,email,picture&access_token=${input.token}`);
+      if (!res.ok) {
+        throw new UnauthorizedException('Invalid Facebook Token');
+      }
+      const data = await res.json();
+
+      const email = data.email;
+      const facebookId = data.id;
+      const name = data.name;
+      // Facebook picture is nested: data.picture.data.url
+      const avatar = data.picture?.data?.url;
+
+      if (!email) {
+        // Facebook might not return email if user disallowed it.
+        // For MVP we require email.
+        throw new BadRequestException('Facebook account must have an email address.');
+      }
+
+      let user = await this.prisma.user.findUnique({ where: { email } });
+
+      if (!user) {
+        user = await this.prisma.user.create({
+          data: {
+            email,
+            name: name || 'User',
+            avatar,
+            auth: {
+              create: { facebookId }
+            }
+          },
+        });
+      } else {
+        const auth = await this.prisma.auth.findUnique({ where: { userId: user.id } });
+        if (!auth) {
+          await this.prisma.auth.create({ data: { userId: user.id, facebookId } });
+        } else if (!auth.facebookId) {
+          await this.prisma.auth.update({ where: { id: auth.id }, data: { facebookId } });
+        }
+      }
+
+      if (user.isBlocked) {
+        throw new UnauthorizedException('Your account has been blocked.');
+      }
+
+      return this.generateToken(user);
+    } catch (error) {
+      throw new UnauthorizedException('Facebook Auth Failed: ' + (error.message || 'Unknown error'));
     }
   }
 

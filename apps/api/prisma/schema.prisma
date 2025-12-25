@@ -63,6 +63,7 @@ model Auth {
   id              String  @id @default(uuid())
   passwordHash    String?
   googleId        String? @unique
+  facebookId      String? @unique
   twoFactorSecret String?
 
   user   User   @relation(fields: [userId], references: [id])
