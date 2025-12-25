@@ -26,13 +26,13 @@ export default function NotificationsMenu() {
                 {isOpen && (
                     <>
                         {/* Backdrop to close */}
-                        <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+                        <div className="fixed inset-0 z-[2999]" onClick={() => setIsOpen(false)} />
 
                         <motion.div
                             initial={{ opacity: 0, y: 10, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                            className="absolute right-0 mt-2 w-80 max-w-[90vw] bg-background/95 backdrop-blur-md border border-border shadow-xl rounded-xl z-50 overflow-hidden flex flex-col max-h-[400px]"
+                            className="absolute right-0 mt-2 w-80 max-w-[90vw] bg-background/95 backdrop-blur-md border border-border shadow-xl rounded-xl z-[3000] overflow-hidden flex flex-col max-h-[400px]"
                         >
                             <div className="p-3 border-b border-border font-semibold text-sm bg-muted/50">
                                 Notifications

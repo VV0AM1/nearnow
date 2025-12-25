@@ -34,6 +34,8 @@ export default function Map({ posts, center = [37.7749, -122.4194], zoom = 13, r
 
                     <MobileMapFilter
                         selectedCategory={selectedCategory}
+                        timeRange={timeRange}
+                        onTimeRangeChange={setTimeRange}
                         onSelect={(id) => {
                             // Adapter for MobileMapFilter's internal toggle logic if it returns single id to handleSelect?
                             // Wait, MobileMapFilter.tsx in previous step had onSelect: (id: string) => void signature 
