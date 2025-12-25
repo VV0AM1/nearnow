@@ -22,24 +22,23 @@ export default function AdminReportsPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        const fetchReports = async () => {
+            try {
+                const token = getToken();
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/reports`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error("Failed to fetch reports");
+                const data = await res.json();
+                setReports(data);
+            } catch (error) {
+                toast({ title: "Error", description: "Could not load reports", variant: "destructive" });
+            } finally {
+                setLoading(false);
+            }
+        };
         fetchReports();
-    }, []);
-
-    const fetchReports = async () => {
-        try {
-            const token = getToken();
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/reports`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (!res.ok) throw new Error("Failed to fetch reports");
-            const data = await res.json();
-            setReports(data);
-        } catch (error) {
-            toast({ title: "Error", description: "Could not load reports", variant: "destructive" });
-        } finally {
-            setLoading(false);
-        }
-    };
+    }, [toast]);
 
     const resolveReport = async (reportId: string, status: 'RESOLVED' | 'DISMISSED') => {
         try {

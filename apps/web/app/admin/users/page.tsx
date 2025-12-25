@@ -24,24 +24,23 @@ export default function AdminUsersPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const token = getToken();
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error("Failed to fetch users");
+                const data = await res.json();
+                setUsers(data);
+            } catch (error) {
+                toast({ title: "Error", description: "Could not load users", variant: "destructive" });
+            } finally {
+                setLoading(false);
+            }
+        };
         fetchUsers();
-    }, []);
-
-    const fetchUsers = async () => {
-        try {
-            const token = getToken();
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (!res.ok) throw new Error("Failed to fetch users");
-            const data = await res.json();
-            setUsers(data);
-        } catch (error) {
-            toast({ title: "Error", description: "Could not load users", variant: "destructive" });
-        } finally {
-            setLoading(false);
-        }
-    };
+    }, [toast]);
 
     const toggleBlock = async (userId: string) => {
         try {
