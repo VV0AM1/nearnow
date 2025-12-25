@@ -9,6 +9,13 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 export class UsersController {
     constructor(private readonly usersService: UsersService) { }
 
+    @Get('me')
+    @UseGuards(JwtAuthGuard)
+    async getProfile(@Req() req: any) {
+        return req.user;
+    }
+
+
     @Post('avatar')
     @UseGuards(JwtAuthGuard)
     @UseInterceptors(FileInterceptor('file', {

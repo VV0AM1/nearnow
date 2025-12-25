@@ -87,7 +87,7 @@ export function useAuth() {
             const data: AuthResponse = await res.json();
             setToken(data.accessToken);
             setUserId(data.user.id);
-            contextLogin(data.accessToken, data.user.id);
+            contextLogin(data.accessToken, data.user as any);
             router.push("/");
             return true;
         } catch (err: any) {
@@ -118,7 +118,7 @@ export function useAuth() {
             setUserId(data.user.id);
 
             // Sync with context
-            contextLogin(data.accessToken, data.user.id);
+            contextLogin(data.accessToken, data.user as any);
 
             router.push("/");
             return true;

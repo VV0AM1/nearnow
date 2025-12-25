@@ -9,7 +9,7 @@ interface AuthContextType {
     user: User | null;
     loading: boolean;
     isAuthenticated: boolean;
-    login: (token: string, userId: string) => void;
+    login: (token: string, user: User) => void;
     logout: () => void;
 }
 
@@ -21,22 +21,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const router = useRouter();
 
     useEffect(() => {
-        // Hydrate auth state on mount
-        const token = getToken();
-        const userId = getUserId();
+        const hydrateAuth = async () => {
+            const token = getToken();
+            if (!token) {
+                setLoading(false);
+                return;
+            }
 
-        if (token && userId) {
-            setUser({ id: userId });
-        }
-        setLoading(false);
+            try {
+                // Fetch full profile to get Role
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002'}/users/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (res.ok) {
+                    const userData = await res.json();
+                    setUser(userData);
+                } else {
+                    // Token invalid or expired
+                    authLogout();
+                    setUser(null);
+                }
+            } catch (error) {
+                console.error("Auth hydration failed:", error);
+                // Don't logout on network error, but maybe don't set user either?
+                // For now, let's play safe.
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        hydrateAuth();
     }, []);
 
-    const login = (token: string, userId: string) => {
+    const login = (token: string, userData: User) => {
         // Note: The actual cookie/localStorage setting is likely handled by the caller (hooks/useAuth)
         // or we should move it here. For now, we assume useAuth sets it, 
         // OR we can make this the source of truth.
         // Let's assume the helper `setToken` was called.
-        setUser({ id: userId });
+        setUser(userData);
         router.refresh(); // Refresh to update server components/middleware if any
     };
 
