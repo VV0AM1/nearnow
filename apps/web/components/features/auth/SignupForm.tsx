@@ -5,6 +5,7 @@ import { Mail, Lock, User, ArrowRight } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth";
 import Button from "../../common/button/Button";
 import GoogleButton from "./GoogleButton";
+import FacebookButton from "./FacebookButton";
 
 export default function SignupForm() {
     const { signup, verifyOtp, loading, error } = useAuth();
@@ -122,6 +123,7 @@ export default function SignupForm() {
             </div>
 
             <GoogleButton />
+            <FacebookButton />
         </form>
     );
 }

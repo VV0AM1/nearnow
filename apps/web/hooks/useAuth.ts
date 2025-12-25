@@ -130,5 +130,37 @@ export function useAuth() {
         }
     };
 
-    return { login, signup, verifyOtp, googleLogin, loading, error };
+    const facebookLogin = async (token: string) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const res = await fetch(`${API_URL}/auth/facebook`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token }),
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.message || "Facebook Login failed");
+            }
+
+            const data: AuthResponse = await res.json();
+            setToken(data.accessToken);
+            setUserId(data.user.id);
+
+            // Sync with context
+            contextLogin(data.accessToken, data.user as any);
+
+            router.push("/");
+            return true;
+        } catch (err: any) {
+            setError(err.message);
+            return false;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return { login, signup, verifyOtp, googleLogin, facebookLogin, loading, error };
 }

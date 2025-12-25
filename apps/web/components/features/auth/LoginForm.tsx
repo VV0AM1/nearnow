@@ -7,6 +7,7 @@ import { useAuth } from "../../../hooks/useAuth";
 import Button from "../../common/button/Button";
 import ForgotPasswordModal from "./ForgotPasswordModal";
 import GoogleButton from "./GoogleButton";
+import FacebookButton from "./FacebookButton";
 
 export default function LoginForm() {
     const { login, verifyOtp, loading, error } = useAuth();
@@ -117,6 +118,7 @@ export default function LoginForm() {
                 </div>
 
                 <GoogleButton />
+                <FacebookButton />
             </form>
 
             <ForgotPasswordModal
