@@ -20,13 +20,20 @@ export default function CommentSection({ postId, initialComments, onCommentAdded
         } else {
             fetchComments();
         }
-        onSubmit = { async(content) => {
-            const success = await createComment(content);
-            if (success) onCommentAdded?.();
-        }
-    }
-                    isSubmitting = { submitting }
-        />
-            </div >
-        );
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Run once on mount
+
+    return (
+        <div className="mt-4 space-y-4">
+            <h3 className="font-semibold text-sm text-muted-foreground mb-2">Comments ({comments.length})</h3>
+            <CommentList comments={comments} loading={loading} />
+            <CreateCommentForm
+                onSubmit={async (content) => {
+                    const success = await createComment(content);
+                    if (success) onCommentAdded?.();
+                }}
+                isSubmitting={submitting}
+            />
+        </div>
+    );
 }
