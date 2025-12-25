@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -14,8 +15,14 @@ export default function ReportModal({ isOpen, onClose, postId }: ReportModalProp
     const { toast } = useToast();
     const [reason, setReason] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [mounted, setMounted] = useState(false);
 
-    if (!isOpen) return null;
+    useEffect(() => {
+        setMounted(true);
+        return () => setMounted(false);
+    }, []);
+
+    if (!isOpen || !mounted) return null;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -51,18 +58,21 @@ export default function ReportModal({ isOpen, onClose, postId }: ReportModalProp
         }
     };
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-            <div className="bg-zinc-900 border border-white/10 rounded-2xl w-full max-w-md p-6 relative">
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+            <div
+                className="bg-zinc-900 border border-white/10 rounded-2xl w-full max-w-md p-6 relative shadow-2xl scale-100 animate-in zoom-in-95 duration-200"
+                onClick={(e) => e.stopPropagation()}
+            >
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 text-zinc-400 hover:text-white"
+                    className="absolute top-4 right-4 text-zinc-400 hover:text-white p-2 rounded-full hover:bg-white/5 transition-colors"
                 >
                     ✕
                 </button>
 
                 <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
                         <AlertTriangle className="text-red-500 w-5 h-5" />
                     </div>
                     <h2 className="text-xl font-bold text-white">Report Content</h2>
@@ -75,9 +85,9 @@ export default function ReportModal({ isOpen, onClose, postId }: ReportModalProp
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
                             required
-                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500/50"
+                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
                         >
-                            <option value="">Select a reason</option>
+                            <option value="" disabled>Select a reason</option>
                             <option value="spam">Spam or Misleading</option>
                             <option value="harassment">Harassment or Hate Speech</option>
                             <option value="inappropriate_image">Inappropriate Image</option>
@@ -105,6 +115,7 @@ export default function ReportModal({ isOpen, onClose, postId }: ReportModalProp
                     </div>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
