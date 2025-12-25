@@ -47,4 +47,18 @@ export class AdminService {
     async deletePost(postId: string) {
         return this.prisma.post.delete({ where: { id: postId } });
     }
+    async getStats() {
+        const totalUsers = await this.prisma.user.count();
+        const pendingReports = await this.prisma.report.count({
+            where: { status: 'PENDING' }
+        });
+        // Assuming 'Active Alerts' refers to active posts for now
+        const activeAlerts = await this.prisma.post.count();
+
+        return {
+            totalUsers,
+            activeAlerts,
+            pendingReports
+        };
+    }
 }

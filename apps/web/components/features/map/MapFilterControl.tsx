@@ -18,7 +18,7 @@ export default function MapFilterControl({ timeRange, onTimeRangeChange }: MapFi
     const [isOpen, setIsOpen] = useState(false);
 
     return (
-        <div className="absolute top-20 right-4 z-[400] flex flex-col items-end gap-2">
+        <div className="absolute top-20 right-4 z-[20] flex flex-col items-end gap-2">
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className={`p-3 rounded-full shadow-lg border border-white/10 backdrop-blur-md transition-all ${isOpen ? 'bg-primary text-white rotate-90' : 'bg-black/60 text-white hover:bg-black/80'

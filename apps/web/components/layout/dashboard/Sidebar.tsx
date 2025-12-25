@@ -44,6 +44,16 @@ export default function Sidebar({ initialUser }: SidebarProps) {
                         isSidebarOpen={isOpen}
                     />
                 ))}
+                {user?.role === 'ADMIN' && (
+                    <SidebarItem
+                        item={{
+                            label: 'Admin',
+                            href: '/admin',
+                            icon: ShieldAlert
+                        }}
+                        isSidebarOpen={isOpen}
+                    />
+                )}
             </nav>
 
             {/* Footer / Profile */}

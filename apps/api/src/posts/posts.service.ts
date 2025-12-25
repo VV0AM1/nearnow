@@ -14,20 +14,16 @@ export class PostsService {
     ) { }
 
     private isProfane(text: string): boolean {
-        const badWords = ['badword1', 'badword2']; // TODO: Add a comprehensive list or use a better compatible library later
+        const badWords = ['bad', 'badword', 'worst']; // Simple list for validation demo
         const lowerText = text.toLowerCase();
         return badWords.some(word => lowerText.includes(word));
     }
 
     async create(createPostInput: CreatePostInput, authorId: string, imageUrl?: string) {
         // Automated Content Filtering
-        // const filter = new Filter(); 
-        // TEMPORARY FIX: bad-words library causing crash in API container. 
-        // Using simple check/passing for now to restore service availability.
-
-        // if (this.isProfane(createPostInput.title) || (createPostInput.content && this.isProfane(createPostInput.content))) {
-        //    throw new BadRequestException("Post contains inappropriate language.");
-        // }
+        if (this.isProfane(createPostInput.title) || (createPostInput.content && this.isProfane(createPostInput.content))) {
+            throw new BadRequestException("Post contains inappropriate language.");
+        }
 
         const { neighborhood: neighborhoodName, city: cityName, country: countryName, ...postData } = createPostInput;
 

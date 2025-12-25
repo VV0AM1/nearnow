@@ -35,4 +35,8 @@ export class AdminController {
   deletePost(@Param('id') id: string) {
     return this.adminService.deletePost(id);
   }
+  @Get('stats')
+  getStats() {
+    return this.adminService.getStats();
+  }
 }

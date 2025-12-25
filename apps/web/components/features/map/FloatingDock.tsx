@@ -29,7 +29,7 @@ export default function FloatingDock({ selectedCategory, onSelectCategory }: Flo
     };
 
     return (
-        <div className="hidden md:flex absolute bottom-6 left-1/2 -translate-x-1/2 z-[1000] items-end gap-2 px-2 pointer-events-none">
+        <div className="hidden md:flex absolute bottom-6 left-1/2 -translate-x-1/2 z-[20] items-end gap-2 px-2 pointer-events-none">
             <motion.div
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
