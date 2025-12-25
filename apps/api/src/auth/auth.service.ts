@@ -47,6 +47,10 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
+    if (user.isBlocked) {
+      throw new UnauthorizedException('Your account has been blocked.');
+    }
+
     // Auto-heal: If user exists but no Auth record, create it now (Migration Logic)
     if (!user.auth) {
       console.warn(`[Auto-Heal] Creating missing Auth record for user ${user.id}`);
@@ -143,6 +147,10 @@ export class AuthService {
         } else if (!auth.googleId) {
           await this.prisma.auth.update({ where: { id: auth.id }, data: { googleId } });
         }
+      }
+
+      if (user.isBlocked) {
+        throw new UnauthorizedException('Your account has been blocked.');
       }
 
       return this.generateToken(user);
