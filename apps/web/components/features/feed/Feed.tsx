@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import MapLoader from "../map/MapLoader";
 import PostDetailModal from "./PostDetailModal";
 import { useFeed } from "../../../hooks/useFeed";
+import { useMapPosts } from "../../../hooks/useMapPosts";
 import LocationSearch from "./LocationSearch";
 import RadiusSlider from "./RadiusSlider";
 import CategoryFilter from "./CategoryFilter";
@@ -44,6 +45,8 @@ export default function FeedContainer({ initialLocation, initialPosts = [] }: Fe
 
     // Initial load check
     const isLoading = loading && posts.length === 0;
+
+    const { posts: mapPosts, loading: mapLoading } = useMapPosts(location, radius);
 
     return (
         <>
@@ -94,15 +97,15 @@ export default function FeedContainer({ initialLocation, initialPosts = [] }: Fe
 
                     {/* Map Visualization Section */}
                     <div className="lg:w-2/3 h-full rounded-xl overflow-hidden shadow-sm border border-border relative">
-                        <div className="absolute top-4 right-4 z-[400] flex gap-2 pointer-events-none">
+                        <div className="absolute top-4 right-4 z-10 flex gap-2 pointer-events-none">
                             <div className="bg-black/80 text-white backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold shadow-lg border border-white/10">
                                 {radius}km Radius
                             </div>
                             <div className="bg-black/80 text-white backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold shadow-lg border border-white/10">
-                                {posts.length} Active Alerts
+                                {mapPosts.length} Active Alerts
                             </div>
                         </div>
-                        <MapLoader posts={posts} center={location} radius={radius} />
+                        <MapLoader posts={mapPosts} center={location} radius={radius} />
                     </div>
                 </div>
             )}

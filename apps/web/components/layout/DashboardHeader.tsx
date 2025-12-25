@@ -14,7 +14,7 @@ export default function DashboardHeader() {
     const { user } = useAuthContext();
 
     return (
-        <header className="h-16 border-b border-border flex items-center justify-between px-6 bg-background/80 backdrop-blur-md sticky top-0 z-30">
+        <header className="h-16 border-b border-border flex items-center justify-between px-6 bg-background/80 backdrop-blur-md sticky top-0 z-50">
             {/* Mobile Menu Trigger */}
             <div className="md:hidden -ml-2">
                 <MobileMenu />
