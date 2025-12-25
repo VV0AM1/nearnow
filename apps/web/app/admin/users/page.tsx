@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, Ban, CheckCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { getToken } from "@/lib/auth";
 
 interface User {
     id: string;
@@ -28,7 +29,7 @@ export default function AdminUsersPage() {
 
     const fetchUsers = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = getToken();
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -44,7 +45,7 @@ export default function AdminUsersPage() {
 
     const toggleBlock = async (userId: string) => {
         try {
-            const token = localStorage.getItem('token');
+            const token = getToken();
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users/${userId}/block`, {
                 method: 'PATCH',
                 headers: { 'Authorization': `Bearer ${token}` }

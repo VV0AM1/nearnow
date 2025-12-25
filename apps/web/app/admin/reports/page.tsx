@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Loader2, Trash2, CheckCircle, ExternalLink } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import Link from "next/link";
+import { getToken } from "@/lib/auth";
 import { formatDistanceToNow } from "date-fns";
 
 interface Report {
@@ -26,7 +27,7 @@ export default function AdminReportsPage() {
 
     const fetchReports = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = getToken();
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/reports`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -42,7 +43,7 @@ export default function AdminReportsPage() {
 
     const resolveReport = async (reportId: string, status: 'RESOLVED' | 'DISMISSED') => {
         try {
-            const token = localStorage.getItem('token');
+            const token = getToken();
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/reports/${reportId}/resolve`, {
                 method: 'PATCH',
                 headers: {
@@ -66,7 +67,7 @@ export default function AdminReportsPage() {
         if (!confirm("Are you sure you want to delete this post? This cannot be undone.")) return;
 
         try {
-            const token = localStorage.getItem('token');
+            const token = getToken();
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/posts/${postId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
