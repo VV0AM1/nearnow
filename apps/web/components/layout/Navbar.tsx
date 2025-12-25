@@ -15,7 +15,7 @@ export default function Navbar({
     logoText = "NearNow",
     className = ""
 }: NavbarProps) {
-    const { isAuthenticated, logout } = useAuthContext();
+    const { isAuthenticated, user, logout } = useAuthContext();
 
     return (
         <nav className={`fixed w-full z-50 glass border-b border-border ${className}`}>
@@ -31,6 +31,11 @@ export default function Navbar({
                     <div className="hidden md:flex items-center space-x-8">
                         {isAuthenticated ? (
                             <>
+                                {user?.role === 'ADMIN' && (
+                                    <NavButton href="/admin" variant="text" className="text-red-400 hover:text-red-300">
+                                        Admin
+                                    </NavButton>
+                                )}
                                 <NavButton href="/profile" variant="text">
                                     Profile
                                 </NavButton>

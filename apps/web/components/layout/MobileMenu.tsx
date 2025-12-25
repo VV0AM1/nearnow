@@ -149,6 +149,22 @@ export default function MobileMenu() {
                                                     </div>
                                                 </Link>
 
+                                                {user?.role === 'ADMIN' && (
+                                                    <Link
+                                                        href="/admin"
+                                                        onClick={toggleMenu}
+                                                        className="flex items-center gap-4 p-4 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors"
+                                                    >
+                                                        <div className="h-10 w-10 rounded-full bg-red-500/20 flex items-center justify-center">
+                                                            <Settings className="h-5 w-5" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-semibold text-lg">Admin Dashboard</p>
+                                                            <p className="text-xs text-red-400/70">Manage Users & Reports</p>
+                                                        </div>
+                                                    </Link>
+                                                )}
+
                                                 <button
                                                     onClick={() => {
                                                         logout();
