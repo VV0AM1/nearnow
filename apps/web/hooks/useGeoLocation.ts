@@ -68,5 +68,5 @@ export function useGeoLocation() {
         );
     };
 
-    return { location, getUserLocation };
+    return { location, getUserLocation, isLoading: location.loading };
 }

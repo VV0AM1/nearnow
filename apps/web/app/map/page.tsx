@@ -22,7 +22,7 @@ export default function MapPage() {
     const defaultLoc = { lat: 37.7749, long: -122.4194 };
     const center = feedLoc || defaultLoc;
 
-    const { posts, loading: isLoadingPosts } = useMapPosts(center, 50);
+    const { posts } = useMapPosts(center, 50);
 
     // Show loading screen until we have location (or timeout)
     const showLoading = isLocating && !feedLoc;
