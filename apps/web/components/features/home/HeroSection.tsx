@@ -8,10 +8,9 @@ interface HeroSectionProps {
     onLocationSelect: (lat: number, long: number) => void;
     onExplore: () => void;
     onPost: () => void;
-    isLoadingLocation: boolean;
 }
 
-export default function HeroSection({ onLocationSelect, onExplore, onPost, isLoadingLocation }: HeroSectionProps) {
+export default function HeroSection({ onLocationSelect, onExplore, onPost }: HeroSectionProps) {
     const { isAuthenticated } = useAuthContext();
 
     return (

@@ -34,6 +34,7 @@ export default function AdminUsersPage() {
                 const data = await res.json();
                 setUsers(data);
             } catch (error) {
+                console.error("Failed to fetch users", error);
                 toast({ title: "Error", description: "Could not load users", variant: "destructive" });
             } finally {
                 setLoading(false);

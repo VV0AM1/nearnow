@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useAuthContext } from "../../context/AuthContext";
-import { Menu, X, LogOut, User, LogIn, UserPlus, Home, Settings, Map, Bell, Search } from "lucide-react";
+import { Menu, X, LogOut, User, LogIn, UserPlus, Settings } from "lucide-react";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 
 import { backdropVariants, containerVariants, itemVariants } from "./mobile/MobileMenu.animations";

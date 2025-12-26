@@ -5,6 +5,7 @@ import LandingHero from "./LandingHero";
 import LandingFeatures from "./LandingFeatures";
 import LandingSafety from "./LandingSafety";
 import LandingCTA from "./LandingCTA";
+import Footer from "../../layout/Footer";
 
 export default function LandingPage() {
     return (
@@ -27,13 +28,34 @@ export default function LandingPage() {
             </nav>
 
             <LandingHero />
+
+            {/* New Stats Section */}
+            <section className="py-20 border-y border-white/5 bg-black/50 backdrop-blur-sm relative overflow-hidden">
+                <div className="absolute inset-0 bg-blue-500/5 blur-3xl" />
+                <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center relative z-10">
+                    {[
+                        { label: 'Active Users', value: '50k+' },
+                        { label: 'Alerts Resolved', value: '120k' },
+                        { label: 'Cities', value: '15' },
+                        { label: 'Safety Score', value: '4.8/5' }
+                    ].map((stat, i) => (
+                        <div key={i} className="space-y-2">
+                            <div className="text-4xl md:text-5xl font-black bg-clip-text text-transparent bg-gradient-to-b from-white to-white/50">
+                                {stat.value}
+                            </div>
+                            <div className="text-sm font-bold tracking-widest text-primary uppercase">
+                                {stat.label}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </section>
+
             <LandingFeatures />
             <LandingSafety />
             <LandingCTA />
 
-            <footer className="py-12 px-6 border-t border-white/10 text-center text-sm text-muted-foreground">
-                <p>&copy; 2025 NearNow Inc. San Francisco, CA.</p>
-            </footer>
+            <Footer />
         </div>
     );
 }

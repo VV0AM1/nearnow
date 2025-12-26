@@ -32,6 +32,7 @@ export default function AdminReportsPage() {
                 const data = await res.json();
                 setReports(data);
             } catch (error) {
+                console.error("Failed to fetch reports", error);
                 toast({ title: "Error", description: "Could not load reports", variant: "destructive" });
             } finally {
                 setLoading(false);

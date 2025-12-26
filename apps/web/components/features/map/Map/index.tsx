@@ -11,7 +11,7 @@ import MapControls from "../MapControls";
 import MapFilterControl from "../MapFilterControl";
 import MobileMapFilter from "../MobileMapFilter";
 
-export default function Map({ posts, center = [37.7749, -122.4194], zoom = 13, radius = 50, onMapClick, interactiveOnly = false }: MapProps) {
+export default function Map({ posts, center = [37.7749, -122.4194], zoom = 13, radius, onMapClick, interactiveOnly = false }: MapProps) {
     const {
         selectedCategory,
         setSelectedCategory,

@@ -1,5 +1,3 @@
-import { useState } from "react";
-import { API_URL } from "@/lib/config";
 import { formatDistanceToNow } from "date-fns";
 
 interface PostContentProps {
