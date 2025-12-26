@@ -79,7 +79,7 @@ export default function SOSButton() {
         <>
             <button
                 onClick={handleTrigger}
-                className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-red-600/10 hover:bg-red-600/20 border border-red-600/50 text-red-500 rounded-lg transition-all font-bold uppercase tracking-wider"
+                className="group relative flex items-center justify-center gap-2 p-2 md:px-4 md:py-2 bg-red-600/10 hover:bg-red-600/20 md:border md:border-red-600/50 text-red-500 rounded-lg transition-all font-bold uppercase tracking-wider"
             >
                 <div className="absolute inset-0 bg-red-600/20 rounded-lg animate-ping opacity-0 group-hover:opacity-100 transition-opacity" />
                 <AlertTriangle className="h-5 w-5" />

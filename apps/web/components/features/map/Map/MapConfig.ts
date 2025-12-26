@@ -37,3 +37,15 @@ export const createClusterIcon = (count: number) => {
         iconSize: L.point(40, 40, true),
     });
 };
+
+export const createPulseIcon = () => {
+    return L.divIcon({
+        className: "pulse-marker",
+        html: `<div style="position: relative; width: 20px; height: 20px;">
+                <div style="position: absolute; top:0; left:0; width: 100%; height: 100%; border-radius: 50%; background-color: rgba(239, 68, 68, 0.4); animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+                <div style="position: absolute; top:5px; left:5px; width: 10px; height: 10px; background-color: #ef4444; border-radius: 50%; box-shadow: 0 0 10px #ef4444;"></div>
+               </div>`,
+        iconSize: [20, 20],
+        iconAnchor: [10, 10],
+    });
+};

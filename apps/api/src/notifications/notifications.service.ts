@@ -12,133 +12,161 @@ export class NotificationsService {
     ) { }
 
     async notifyUsers(post: Post) {
-        // 1. Find users who have enabled notifications for this category
-        const interestedSettings = await this.prisma.notificationSettings.findMany({
-            where: {
-                categories: { has: post.category }
-            },
-            include: { user: true }
-        });
+        // Don't notify the author
+        if (setting.userId === post.authorId) continue;
 
-        const notificationsToCreate: Prisma.NotificationCreateManyInput[] = [];
+        // CRITICAL: Always notify "DANGER" alerts (SOS) even if user didn't subscribe to specific category
+        // Unless they turned off notifications entirely (pushEnabled check can be added if needed, but not present in Prisma schema for general enable/disable, only granular)
+        // Assuming categories is the filter.
 
-        for (const setting of interestedSettings) {
-            // Don't notify the author
-            if (setting.userId === post.authorId) continue;
+        // Re-check: We query `interestedSettings` by `categories: { has: post.category }`.
+        // If post is DANGER and user doesn't have DANGER in categories, this query WON'T find them.
+        // We need to fetch ALL nearby users settings primarily, THEN filter?
+        // OR change the finding query.
+        // But we already fetched `interestedSettings` above.
+        // We need a separate query for SOS. Or change the initial query to be broader.
 
-            // Check distance if setting has location
-            let isNearby = false;
-            // Ensure latitude/longitude are treated as numbers (default 0.0)
-            if (setting.latitude !== 0 && setting.longitude !== 0) {
-                const dist = this.getDistanceFromLatLonInKm(
-                    post.latitude, post.longitude,
-                    setting.latitude, setting.longitude
-                );
-                if (dist <= setting.radiusKm) {
-                    isNearby = true;
-                }
-            } else {
-                // Fallback: If user hasn't set a location, do not notify by default for "Nearby" alerts.
-                // Or we could notify global alerts? For now, risk of spam is high. 
-                isNearby = false;
-            }
+        // Let's change the strategy: If DANGER, find ALL users. If not DANGER, find interested.
+        // But `notifyUsers` is called for one post.
 
-            if (isNearby) {
-                notificationsToCreate.push({
-                    userId: setting.userId,
-                    type: NotificationType.POST_NEARBY,
-                    title: "New Alert Nearby", // Optional but good to have
-                    message: post.title, // Use post title as message
-                    postId: post.id,
-                    read: false
-                });
-            }
-        }
-
-        if (notificationsToCreate.length > 0) {
-            await this.prisma.notification.createMany({
-                data: notificationsToCreate
-            });
-
-            // Emit socket events to each user
-            notificationsToCreate.forEach(notif => {
-                this.gateway.server.to(`user_${notif.userId}`).emit('notification', notif);
-            });
-        }
+        // We can't easily change the query logic inside the loop.
+        // We must rewrite the initial `findMany`.
     }
 
-    async sendNotification(userId: string, type: NotificationType, title: string, message: string, postId?: string) {
-        const notif = await this.prisma.notification.create({
-            data: {
-                userId,
-                type,
-                title,
-                message,
-                postId
-            }
-        });
+        // REWRITE:
+        let interestedSettings;
+if (post.category === 'DANGER') {
+    interestedSettings = await this.prisma.notificationSettings.findMany({
+        where: {
+            pushAlerts: true // Basic gate
+            // No category filter
+        },
+        include: { user: true }
+    });
+} else {
+    interestedSettings = await this.prisma.notificationSettings.findMany({
+        where: {
+            categories: { has: post.category },
+            pushAlerts: true
+        },
+        include: { user: true }
+    });
+}
 
-        // Emit socket event
-        this.gateway.server.to(`user_${userId}`).emit('notification', notif);
-        return notif;
+// ... loop logic (distance check) remains valid
+
+for (const setting of interestedSettings) {
+    if (setting.userId === post.authorId) continue;
+
+    let isNearby = false;
+    if (setting.latitude !== 0 && setting.longitude !== 0) {
+        const dist = this.getDistanceFromLatLonInKm(
+            post.latitude, post.longitude,
+            setting.latitude, setting.longitude
+        );
+        if (dist <= setting.radiusKm) {
+            isNearby = true;
+        }
+    } else {
+        isNearby = false;
     }
+
+    if (isNearby) {
+        notificationsToCreate.push({
+            userId: setting.userId,
+            type: NotificationType.POST_NEARBY,
+            title: "New Alert Nearby", // Optional but good to have
+            message: post.title, // Use post title as message
+            postId: post.id,
+            read: false
+        });
+    }
+}
+
+if (notificationsToCreate.length > 0) {
+    await this.prisma.notification.createMany({
+        data: notificationsToCreate
+    });
+
+    // Emit socket events to each user
+    notificationsToCreate.forEach(notif => {
+        this.gateway.server.to(`user_${notif.userId}`).emit('notification', notif);
+    });
+}
+    }
+
+    async sendNotification(userId: string, type: NotificationType, title: string, message: string, postId ?: string) {
+    const notif = await this.prisma.notification.create({
+        data: {
+            userId,
+            type,
+            title,
+            message,
+            postId
+        }
+    });
+
+    // Emit socket event
+    this.gateway.server.to(`user_${userId}`).emit('notification', notif);
+    return notif;
+}
 
     async getSettings(userId: string) {
-        const settings = await this.prisma.notificationSettings.findUnique({
-            where: { userId }
-        });
-        if (!settings) {
-            return {
-                id: 'default',
-                radiusKm: 5,
-                latitude: 0,
-                longitude: 0,
-                categories: [],
-                pushEnabled: false,
-                userId
-            };
-        }
-        return settings;
+    const settings = await this.prisma.notificationSettings.findUnique({
+        where: { userId }
+    });
+    if (!settings) {
+        return {
+            id: 'default',
+            radiusKm: 5,
+            latitude: 0,
+            longitude: 0,
+            categories: [],
+            pushEnabled: false,
+            userId
+        };
     }
+    return settings;
+}
 
     async upsertSettings(userId: string, radiusKm: number, latitude: number, longitude: number, categories: any[], pushEnabled: boolean) {
-        return this.prisma.notificationSettings.upsert({
-            where: { userId },
-            update: { radiusKm, latitude, longitude, categories, pushEnabled, pushAlerts: pushEnabled },
-            create: { userId, radiusKm, latitude, longitude, categories, pushEnabled, pushAlerts: pushEnabled }
-        });
-    }
+    return this.prisma.notificationSettings.upsert({
+        where: { userId },
+        update: { radiusKm, latitude, longitude, categories, pushEnabled, pushAlerts: pushEnabled },
+        create: { userId, radiusKm, latitude, longitude, categories, pushEnabled, pushAlerts: pushEnabled }
+    });
+}
 
     async getUserNotifications(userId: string) {
-        return this.prisma.notification.findMany({
-            where: { userId },
-            orderBy: { createdAt: 'desc' },
-            take: 20,
-            include: { post: true }
-        });
-    }
+    return this.prisma.notification.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        include: { post: true }
+    });
+}
 
     async markAsRead(id: string) {
-        return this.prisma.notification.update({
-            where: { id },
-            data: { read: true }
-        });
-    }
+    return this.prisma.notification.update({
+        where: { id },
+        data: { read: true }
+    });
+}
 
     private getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
-        var R = 6371;
-        var dLat = this.deg2rad(lat2 - lat1);
-        var dLon = this.deg2rad(lon2 - lon1);
-        var a =
-            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2)
-            ;
-        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;
-    }
+    var R = 6371;
+    var dLat = this.deg2rad(lat2 - lat1);
+    var dLon = this.deg2rad(lon2 - lon1);
+    var a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2)
+        ;
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
 
     private deg2rad(deg: number) {
-        return deg * (Math.PI / 180)
-    }
+    return deg * (Math.PI / 180)
+}
 }

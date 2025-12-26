@@ -1,7 +1,7 @@
 import { Marker, Popup } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import { getCategoryColor } from "../../../feed/CategoryFilter";
-import { createCustomIcon, createClusterIcon } from "../MapConfig";
+import { createCustomIcon, createClusterIcon, createPulseIcon } from "../MapConfig";
 
 interface MapMarkersProps {
     posts: any[];
@@ -19,11 +19,13 @@ export default function MapMarkers({ posts }: MapMarkersProps) {
             {posts.map((post) => {
                 if (!post.latitude || !post.longitude) return null;
                 const colorClass = getCategoryColor(post.category);
+                const isDanger = post.category === 'DANGER';
+
                 return (
                     <Marker
                         key={post.id}
                         position={[post.latitude, post.longitude]}
-                        icon={createCustomIcon(colorClass)}
+                        icon={isDanger ? createPulseIcon() : createCustomIcon(colorClass)}
                     >
                         <Popup className="glass-popup">
                             <div className="p-1 min-w-[150px]">

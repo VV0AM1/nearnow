@@ -10,9 +10,9 @@ interface PostContentProps {
 export default function PostContent({ content, imageUrl, createdAt, neighborhoodName }: PostContentProps) {
     return (
         <>
-            <p className="text-xs text-muted-foreground line-clamp-2 mt-1 break-words">{content}</p>
+            <p className="text-[11px] text-muted-foreground line-clamp-2 mt-1 break-words leading-relaxed">{content}</p>
             {imageUrl && (
-                <div className="mt-2 rounded-lg overflow-hidden h-32 w-full relative group/img">
+                <div className="mt-2 rounded-md overflow-hidden h-24 w-full relative group/img">
                     <img
                         src={imageUrl.startsWith('http') ? imageUrl : imageUrl}
                         alt="Incident"

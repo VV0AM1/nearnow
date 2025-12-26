@@ -80,9 +80,9 @@ export default function FeedContainer({ initialLocation, initialPosts = [] }: Fe
                     <FeedListSkeleton />
                 </div>
             ) : (
-                <div className="flex flex-col lg:flex-row gap-6 h-[600px]">
-                    {/* Feed List Section */}
-                    <div className="lg:w-1/3 h-full flex flex-col">
+                <div className="flex flex-col-reverse lg:flex-row gap-6 h-auto lg:h-[calc(100vh-200px)]">
+                    {/* Feed List Section - Scrollable */}
+                    <div className="lg:w-[350px] shrink-0 h-[500px] lg:h-full flex flex-col">
                         <FeedList
                             posts={posts}
                             onPostClick={setSelectedPost}
@@ -95,8 +95,8 @@ export default function FeedContainer({ initialLocation, initialPosts = [] }: Fe
                         />
                     </div>
 
-                    {/* Map Visualization Section */}
-                    <div className="lg:w-2/3 h-full rounded-xl overflow-hidden shadow-sm border border-border relative">
+                    {/* Map Visualization Section - Flexible */}
+                    <div className="w-full h-[400px] lg:h-full lg:flex-1 rounded-xl overflow-hidden shadow-sm border border-border relative order-first lg:order-last">
                         <div className="absolute top-4 right-4 z-10 flex gap-2 pointer-events-none">
                             <div className="bg-black/80 text-white backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold shadow-lg border border-white/10">
                                 {radius}km Radius
