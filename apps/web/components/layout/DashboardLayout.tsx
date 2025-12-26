@@ -1,6 +1,5 @@
 import Sidebar from "./dashboard/Sidebar";
 import DashboardHeader from "./DashboardHeader";
-import Footer from "./Footer";
 import { User } from "../../types/user";
 
 interface DashboardLayoutProps {
@@ -19,9 +18,6 @@ export default function DashboardLayout({ children, initialUser }: DashboardLayo
                 {/* Page Content */}
                 <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 relative">
                     {children}
-                    <div className="mt-20">
-                        <Footer />
-                    </div>
                 </div>
             </main>
         </div>
