@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useMemo } from "react";
 
-export default function MapLoader({ posts, center, radius, onMapClick, interactiveOnly }: { posts: any[], center?: { lat: number; long: number }, radius?: number, onMapClick?: (lat: number, long: number) => void, interactiveOnly?: boolean }) {
+export default function MapLoader({ posts, center, radius, onMapClick, interactiveOnly, highlightedPostId }: { posts: any[], center?: { lat: number; long: number }, radius?: number, onMapClick?: (lat: number, long: number) => void, interactiveOnly?: boolean, highlightedPostId?: string | null }) {
     const Map = useMemo(() => dynamic(
         () => import("./Map"),
         {
@@ -14,5 +14,5 @@ export default function MapLoader({ posts, center, radius, onMapClick, interacti
 
     const mapCenter: [number, number] | undefined = center ? [center.lat, center.long] : undefined;
 
-    return <Map posts={posts} center={mapCenter} radius={radius} onMapClick={onMapClick} interactiveOnly={interactiveOnly} />;
+    return <Map posts={posts} center={mapCenter} radius={radius} onMapClick={onMapClick} interactiveOnly={interactiveOnly} highlightedPostId={highlightedPostId} />;
 }

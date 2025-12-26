@@ -71,8 +71,8 @@ export default function AdminUsersPage() {
         <div>
             <h1 className="text-3xl font-bold text-white mb-6">User Management</h1>
 
-            <div className="bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden">
-                <table className="w-full text-left">
+            <div className="bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden overflow-x-auto">
+                <table className="w-full text-left min-w-[800px]">
                     <thead>
                         <tr className="border-b border-white/10 text-zinc-500 text-xs uppercase tracking-wider bg-black/20">
                             <th className="p-4 font-medium">User</th>

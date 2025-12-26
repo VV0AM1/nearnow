@@ -43,6 +43,8 @@ export default function FeedContainer({ initialLocation, initialPosts = [] }: Fe
     const { posts, loading, error, incrementCommentCount, nextPage, prevPage, hasMore, page } = useFeed(location, radius, categories, initialPosts, limit);
     const [selectedPost, setSelectedPost] = useState<any>(null);
 
+    const [highlightedPostId, setHighlightedPostId] = useState<string | null>(null);
+
     // Initial load check
     const isLoading = loading && posts.length === 0;
 
@@ -86,6 +88,7 @@ export default function FeedContainer({ initialLocation, initialPosts = [] }: Fe
                         <FeedList
                             posts={posts}
                             onPostClick={setSelectedPost}
+                            onPostHover={setHighlightedPostId}
                             onNext={nextPage}
                             onPrev={prevPage}
                             hasMore={hasMore}
@@ -105,7 +108,8 @@ export default function FeedContainer({ initialLocation, initialPosts = [] }: Fe
                                 {mapPosts.length} Active Alerts
                             </div>
                         </div>
-                        <MapLoader posts={mapPosts} center={location} radius={radius} />
+                        {/* MapLoader is likely just a wrapper, we need to pass props down through it or check its definition */}
+                        <MapLoader posts={mapPosts} center={location} radius={radius} highlightedPostId={highlightedPostId} />
                     </div>
                 </div>
             )}

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Marker, Popup } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import { getCategoryColor } from "../../../feed/CategoryFilter";
@@ -5,9 +6,26 @@ import { createCustomIcon, createClusterIcon, createPulseIcon } from "../MapConf
 
 interface MapMarkersProps {
     posts: any[];
+    highlightedPostId?: string | null;
 }
 
-export default function MapMarkers({ posts }: MapMarkersProps) {
+export default function MapMarkers({ posts, highlightedPostId }: MapMarkersProps) {
+    const markerRefs = useRef<{ [key: string]: any }>({});
+
+    // Effect to handle highlighting
+    useEffect(() => {
+        if (highlightedPostId && markerRefs.current[highlightedPostId]) {
+            const marker = markerRefs.current[highlightedPostId];
+            marker.openPopup();
+        } else {
+            // Optional: Close all popups when nothing is highlighted? 
+            // Or just leave them alone. User might have clicked one.
+            // If we really want "peak" behavior, we should probably close them.
+            // But Leaflet single popup behavior might handle it if we just open.
+        }
+    }, [highlightedPostId]);
+
+
     return (
         <MarkerClusterGroup
             chunkedLoading
@@ -28,9 +46,11 @@ export default function MapMarkers({ posts }: MapMarkersProps) {
                         icon={isDanger ? createPulseIcon() : createCustomIcon(colorClass)}
                     >
                         <Popup className="glass-popup">
-                            <div className="p-1 min-w-[150px]">
-                                <strong className="block text-sm font-bold mb-1 text-slate-800">{post.title}</strong>
-                                <span className="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded">{post.category}</span>
+                            <div className="p-2 min-w-[160px]">
+                                <strong className="block text-sm font-bold mb-2 text-white/90 tracking-wide">{post.title}</strong>
+                                <span className={`text-[10px] ${colorClass} text-white px-2 py-0.5 rounded-full font-bold shadow-sm ring-1 ring-white/10 uppercase tracking-wider`}>
+                                    {post.category}
+                                </span>
                             </div>
                         </Popup>
                     </Marker>

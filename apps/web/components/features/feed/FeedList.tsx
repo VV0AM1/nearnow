@@ -5,6 +5,7 @@ import Post from "./Post";
 interface FeedListProps {
     posts: any[];
     onPostClick: (post: any) => void;
+    onPostHover?: (id: string | null) => void;
     onNext: () => void;
     onPrev: () => void;
     hasMore: boolean;
@@ -13,7 +14,7 @@ interface FeedListProps {
     page: number;
 }
 
-export default function FeedList({ posts, onPostClick, onNext, onPrev, hasMore, hasPrev, loading, page }: FeedListProps) {
+export default function FeedList({ posts, onPostClick, onPostHover, onNext, onPrev, hasMore, hasPrev, loading, page }: FeedListProps) {
     return (
         <div className="flex flex-col h-full bg-black/40 rounded-xl border border-white/10 overflow-hidden backdrop-blur-md shadow-2xl">
             {/* List Content */}
@@ -41,6 +42,7 @@ export default function FeedList({ posts, onPostClick, onNext, onPrev, hasMore, 
                                 <Post
                                     post={post}
                                     onClick={onPostClick}
+                                    onHover={onPostHover}
                                 />
                             </motion.div>
                         ))}

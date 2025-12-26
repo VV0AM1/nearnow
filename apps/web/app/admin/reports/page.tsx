@@ -97,9 +97,9 @@ export default function AdminReportsPage() {
             ) : (
                 <div className="grid gap-4">
                     {reports.map((report) => (
-                        <div key={report.id} className="bg-zinc-900 border border-white/10 rounded-xl p-6 flex gap-6">
+                        <div key={report.id} className="bg-zinc-900 border border-white/10 rounded-xl p-4 md:p-6 flex flex-col md:flex-row gap-4 md:gap-6">
                             <div className="flex-1 space-y-2">
-                                <div className="flex items-center gap-2 mb-2">
+                                <div className="flex flex-wrap items-center gap-2 mb-2">
                                     <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs font-bold rounded uppercase tracking-wider">{report.reason}</span>
                                     <span className="text-xs text-zinc-500" title={report.createdAt}>
                                         Reported {formatDistanceToNow(new Date(report.createdAt))} ago
@@ -107,7 +107,7 @@ export default function AdminReportsPage() {
                                     <span className="text-xs text-zinc-500">by {report.reporter?.name || 'Unknown'}</span>
                                 </div>
 
-                                <div className="bg-black/40 rounded-lg p-4 border border-white/5">
+                                <div className="bg-black/40 rounded-lg p-3 md:p-4 border border-white/5">
                                     <h3 className="font-bold text-white mb-1 flex items-center gap-2">
                                         {report.post?.title}
                                         <Link href={`/post/${report.post?.id}`} target="_blank" className="text-blue-400 hover:text-blue-300">
@@ -121,19 +121,21 @@ export default function AdminReportsPage() {
                                 </div>
                             </div>
 
-                            <div className="flex flex-col gap-2 justify-center shrink-0 border-l border-white/10 pl-6">
+                            <div className="flex md:flex-col gap-2 justify-start md:justify-center shrink-0 border-t md:border-t-0 md:border-l border-white/10 pt-4 md:pt-0 md:pl-6">
                                 <button
                                     onClick={() => deletePost(report.post.id, report.id)}
-                                    className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
+                                    className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
                                 >
                                     <Trash2 className="w-4 h-4" />
-                                    Delete Post & Resolve
+                                    <span className="md:hidden lg:inline">Delete & Resolve</span>
+                                    <span className="hidden md:inline lg:hidden">Delete</span>
                                 </button>
                                 <button
                                     onClick={() => resolveReport(report.id, 'DISMISSED')}
-                                    className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white rounded-lg text-sm font-medium transition-colors"
+                                    className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white rounded-lg text-sm font-medium transition-colors"
                                 >
-                                    Dismiss Report
+                                    <span className="md:hidden lg:inline">Dismiss Report</span>
+                                    <span className="hidden md:inline lg:hidden">Dismiss</span>
                                 </button>
                             </div>
                         </div>

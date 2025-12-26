@@ -5,4 +5,5 @@ export interface MapProps {
     radius?: number;
     onMapClick?: (lat: number, long: number) => void;
     interactiveOnly?: boolean;
+    highlightedPostId?: string | null;
 }

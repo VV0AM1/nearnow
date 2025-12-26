@@ -11,7 +11,7 @@ import MapControls from "../MapControls";
 import MapFilterControl from "../MapFilterControl";
 import MobileMapFilter from "../MobileMapFilter";
 
-export default function Map({ posts, center = [37.7749, -122.4194], zoom = 13, radius, onMapClick, interactiveOnly = false }: MapProps) {
+export default function Map({ posts, center = [37.7749, -122.4194], zoom = 16, radius, onMapClick, interactiveOnly = false, highlightedPostId }: MapProps) {
     const {
         selectedCategory,
         setSelectedCategory,
@@ -94,10 +94,12 @@ export default function Map({ posts, center = [37.7749, -122.4194], zoom = 13, r
                     </Popup>
                 </Marker>
 
-                <MapMarkers posts={filteredPosts} />
+                <MapMarkers posts={filteredPosts} highlightedPostId={highlightedPostId} />
 
             </MapContainer>
             <div className="absolute inset-0 pointer-events-none rounded-3xl ring-1 ring-white/10 z-[500]"></div>
         </div>
     );
 }
+
+
