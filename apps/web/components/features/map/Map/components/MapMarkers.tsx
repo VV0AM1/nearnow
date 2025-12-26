@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Marker, Popup } from "react-leaflet";
+import { Marker, Popup, useMap } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import { getCategoryColor } from "../../../feed/CategoryFilter";
 import { createCustomIcon, createClusterIcon, createPulseIcon } from "../MapConfig";
@@ -10,20 +10,24 @@ interface MapMarkersProps {
 }
 
 export default function MapMarkers({ posts, highlightedPostId }: MapMarkersProps) {
+    const map = useMap();
     const markerRefs = useRef<{ [key: string]: any }>({});
 
     // Effect to handle highlighting
     useEffect(() => {
         if (highlightedPostId && markerRefs.current[highlightedPostId]) {
             const marker = markerRefs.current[highlightedPostId];
+            // Fly to marker to ensure it's visible (handles off-screen & clustering)
+            map.flyTo(marker.getLatLng(), 18, {
+                animate: true,
+                duration: 1.0
+            });
+
+            // Allow time for flyTo to start/finish before trying to open popup
+            // Leaflet handles popup opening during animation gracefully usually
             marker.openPopup();
-        } else {
-            // Optional: Close all popups when nothing is highlighted? 
-            // Or just leave them alone. User might have clicked one.
-            // If we really want "peak" behavior, we should probably close them.
-            // But Leaflet single popup behavior might handle it if we just open.
         }
-    }, [highlightedPostId]);
+    }, [highlightedPostId, map]);
 
 
     return (

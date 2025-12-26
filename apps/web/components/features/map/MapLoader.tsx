@@ -12,7 +12,9 @@ export default function MapLoader({ posts, center, radius, onMapClick, interacti
         }
     ), []);
 
-    const mapCenter: [number, number] | undefined = center ? [center.lat, center.long] : undefined;
+    const mapCenter: [number, number] | undefined = useMemo(() =>
+        center ? [center.lat, center.long] : undefined
+        , [center?.lat, center?.long]);
 
     return <Map posts={posts} center={mapCenter} radius={radius} onMapClick={onMapClick} interactiveOnly={interactiveOnly} highlightedPostId={highlightedPostId} />;
 }
