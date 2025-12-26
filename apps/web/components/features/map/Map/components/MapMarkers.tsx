@@ -44,6 +44,7 @@ export default function MapMarkers({ posts, highlightedPostId }: MapMarkersProps
                         key={post.id}
                         position={[post.latitude, post.longitude]}
                         icon={isDanger ? createPulseIcon() : createCustomIcon(colorClass)}
+                        ref={(el) => { markerRefs.current[post.id] = el; }}
                     >
                         <Popup className="glass-popup">
                             <div className="p-2 min-w-[160px]">
