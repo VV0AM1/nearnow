@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Menu, Home, Map, Bookmark, User as UserIcon, ShieldAlert } from "lucide-react";
 import SidebarItem from "./SidebarItem";
 import UserProfilePill from "./UserProfilePill";
+import SOSButton from "../../features/safety/SOSButton";
 import { useAuthContext } from "../../../context/AuthContext";
 import { NavItem } from "../../../types/ui";
 import { User } from "../../../types/user";
@@ -57,7 +58,8 @@ export default function Sidebar({ initialUser }: SidebarProps) {
             </nav>
 
             {/* Footer / Profile */}
-            <div className="p-4 border-t border-border">
+            <div className="p-4 border-t border-border flex flex-col gap-4">
+                <SOSButton />
                 <UserProfilePill
                     user={user}
                     isSidebarOpen={isOpen}

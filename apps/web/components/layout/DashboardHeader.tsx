@@ -7,6 +7,7 @@ import { useAuthContext } from "../../context/AuthContext";
 import NotificationsMenu from "../features/notifications/NotificationsMenu";
 import MobileMenu from "./MobileMenu";
 import SearchModal from "../features/search/SearchModal";
+import SOSButton from "../features/safety/SOSButton";
 import { API_URL } from "@/lib/config";
 
 export default function DashboardHeader() {
@@ -40,6 +41,9 @@ export default function DashboardHeader() {
             <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
 
             <div className="flex items-center gap-4">
+                <div className="md:hidden">
+                    <SOSButton />
+                </div>
                 <NotificationsMenu />
 
                 {/* Mobile Profile Avatar (Desktop Sidebar handles it generally, but good to have fallback or specific mobile placement) */}
