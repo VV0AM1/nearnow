@@ -44,11 +44,17 @@ export default function Footer() {
                     <div>
                         <h4 className="font-bold text-white mb-6">Platform</h4>
                         <ul className="space-y-4">
-                            {['Live Map', 'Safety Score', 'Community Feed', 'Download App', 'SOS Feature'].map((item) => (
-                                <li key={item}>
-                                    <Link href="#" className="text-zinc-400 hover:text-primary transition-colors flex items-center gap-2 group">
+                            {[
+                                { label: 'Live Map', href: '/signup' },
+                                { label: 'Safety Score', href: '/safety' },
+                                { label: 'Community Feed', href: '/signup' },
+                                { label: 'Download App', href: '/download' },
+                                { label: 'SOS Feature', href: '/safety' }
+                            ].map((item) => (
+                                <li key={item.label}>
+                                    <Link href={item.href} className="text-zinc-400 hover:text-primary transition-colors flex items-center gap-2 group">
                                         <span className="w-1.5 h-1.5 rounded-full bg-primary/0 group-hover:bg-primary transition-colors" />
-                                        {item}
+                                        {item.label}
                                     </Link>
                                 </li>
                             ))}
@@ -61,7 +67,7 @@ export default function Footer() {
                         <ul className="space-y-4">
                             {['San Francisco', 'New York', 'Los Angeles', 'Chicago', 'Miami'].map((city) => (
                                 <li key={city}>
-                                    <Link href="#" className="text-zinc-400 hover:text-white transition-colors flex items-center gap-2">
+                                    <Link href="/signup" className="text-zinc-400 hover:text-white transition-colors flex items-center gap-2">
                                         <MapPin className="h-3 w-3" />
                                         {city}
                                     </Link>
@@ -102,9 +108,9 @@ export default function Footer() {
                 <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-zinc-500">
                     <p>&copy; {new Date().getFullYear()} NearNow Inc. All rights reserved.</p>
                     <div className="flex items-center gap-8">
-                        <Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link>
-                        <Link href="#" className="hover:text-white transition-colors">Terms of Service</Link>
-                        <Link href="#" className="hover:text-white transition-colors">Cookie Settings</Link>
+                        <Link href="/legal" className="hover:text-white transition-colors">Privacy Policy</Link>
+                        <Link href="/legal" className="hover:text-white transition-colors">Terms of Service</Link>
+                        <Link href="/legal" className="hover:text-white transition-colors">Cookie Settings</Link>
                     </div>
                 </div>
             </div>

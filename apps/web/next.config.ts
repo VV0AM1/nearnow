@@ -4,7 +4,7 @@ const withPWA = require("@ducanh2912/next-pwa").default({
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
-  swcMinify: true,
+  swcMinify: false, // Fix for _ref error
   disable: process.env.NODE_ENV === "development",
   workboxOptions: {
     disableDevLogs: true,

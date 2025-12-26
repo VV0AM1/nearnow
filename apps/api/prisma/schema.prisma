@@ -21,6 +21,7 @@ enum Category {
   LOST_FOUND
   EVENT
   RECOMMENDATION
+  DANGER
 }
 
 enum SafetyLevel {
