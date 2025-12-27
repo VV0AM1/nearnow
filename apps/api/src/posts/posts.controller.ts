@@ -32,7 +32,6 @@ export class PostsController implements OnModuleInit {
         @Query('longitude') long: string,
         @Query('radius') radius: string,
         @Query('category') category: string,
-        @Query('search') search: string,
         @Query('page') page: string,
         @Query('limit') limit: string,
     ) {
@@ -41,7 +40,7 @@ export class PostsController implements OnModuleInit {
         const l2 = long ? parseFloat(long) : 0;
         const p = page ? parseInt(page) : 1;
         const l = limit ? parseInt(limit) : 20;
-        return this.postsService.getFeed(l1, l2, r, category, search, p, l);
+        return this.postsService.getFeed(l1, l2, r, category, p, l);
     }
 
     @Get(':id')

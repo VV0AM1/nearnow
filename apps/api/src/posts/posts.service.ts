@@ -114,7 +114,7 @@ export class PostsService {
         });
     }
 
-    async getFeed(lat: number, long: number, radiusKm: number, category?: string, search?: string, page: number = 1, limit: number = 20) {
+    async getFeed(lat: number, long: number, radiusKm: number, category?: string, page: number = 1, limit: number = 20) {
         // Parse categories (comma separated)
         const categories = category ? category.split(',') : ['ALL'];
         const hasAll = categories.includes('ALL');
@@ -127,7 +127,6 @@ export class PostsService {
       FROM "Post"
       WHERE ( 6371 * acos( cos( radians(${lat}) ) * cos( radians( latitude ) ) * cos( radians( longitude ) - radians(${long}) ) + sin( radians(${lat}) ) * sin( radians( latitude ) ) ) ) < ${radiusKm}
       ${!hasAll && categories.length > 0 ? Prisma.sql`AND category::text IN (${Prisma.join(categories)})` : Prisma.sql``}
-      ${search ? Prisma.sql`AND (title ILIKE ${`%${search}%`} OR content ILIKE ${`%${search}%`})` : Prisma.sql``}
       ORDER BY "createdAt" DESC, distance ASC
       LIMIT ${limit} OFFSET ${offset};
     `;
