@@ -8,6 +8,7 @@ import * as Location from 'expo-location';
 import { CATEGORIES } from "@/constants/categories";
 import { FeedPost } from "@/components/FeedPost";
 import { useTheme } from "@/context/ThemeContext";
+import CreatePostModal from "@/components/CreatePostModal";
 
 export default function Home() {
     const [posts, setPosts] = useState([]);
@@ -20,6 +21,7 @@ export default function Home() {
     // Filter States
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+    const [modalVisible, setModalVisible] = useState(false);
 
     const fetchPosts = useCallback(async () => {
         try {
@@ -138,10 +140,19 @@ export default function Home() {
             {/* Create Post FAB */}
             <TouchableOpacity
                 className="absolute bottom-6 right-6 bg-blue-600 w-14 h-14 rounded-full items-center justify-center shadow-lg elevation-5"
-                onPress={() => alert('Open Create Modal')}
+                onPress={() => setModalVisible(true)}
             >
                 <Ionicons name="add" size={30} color="white" />
             </TouchableOpacity>
+
+            <CreatePostModal
+                visible={modalVisible}
+                onClose={() => setModalVisible(false)}
+                onSuccess={() => {
+                    fetchPosts();
+                    setModalVisible(false);
+                }}
+            />
         </SafeAreaView>
     );
 }

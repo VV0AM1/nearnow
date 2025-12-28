@@ -76,17 +76,24 @@ let PostsService = class PostsService {
             });
             neighborhoodId = neighborhood.id;
         }
-        const post = await this.prisma.post.create({
-            data: {
-                ...postData,
-                neighborhoodId,
-                authorId,
-                imageUrl,
-            },
-            include: {
-                author: true,
-                neighborhood: true,
-            },
+        const post = await this.prisma.$transaction(async (tx) => {
+            const newPost = await tx.post.create({
+                data: {
+                    ...postData,
+                    neighborhoodId,
+                    authorId,
+                    imageUrl,
+                },
+                include: {
+                    author: true,
+                    neighborhood: true,
+                },
+            });
+            await tx.user.update({
+                where: { id: authorId },
+                data: { reputation: { increment: 5 } }
+            });
+            return newPost;
         });
         this.gateway.server.emit('postCreated', post);
         this.notificationsService.notifyUsers(post);

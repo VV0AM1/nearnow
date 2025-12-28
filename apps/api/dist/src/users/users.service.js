@@ -30,6 +30,44 @@ let UsersService = class UsersService {
             where: { id },
         });
     }
+    async findProfile(id) {
+        const user = await this.prisma.user.findUnique({
+            where: { id },
+            include: {
+                _count: {
+                    select: { posts: true, votes: true, comments: true }
+                }
+            }
+        });
+        if (!user)
+            return null;
+        const points = user.reputation || 0;
+        const POINTS_PER_LEVEL = 5;
+        const level = Math.floor(points / POINTS_PER_LEVEL) + 1;
+        let rank = 'Novice';
+        if (level >= 50)
+            rank = 'Platinum';
+        else if (level >= 30)
+            rank = 'Gold';
+        else if (level >= 15)
+            rank = 'Silver';
+        else if (level >= 5)
+            rank = 'Bronze';
+        const nextLevelPoints = level * POINTS_PER_LEVEL;
+        const currentLevelStartPoints = (level - 1) * POINTS_PER_LEVEL;
+        const pointsInCurrentLevel = points - currentLevelStartPoints;
+        const progress = (pointsInCurrentLevel / POINTS_PER_LEVEL) * 100;
+        return {
+            ...user,
+            gamification: {
+                level,
+                rank,
+                points,
+                nextLevelPoints,
+                progress
+            }
+        };
+    }
     update(id, updateUserInput) {
         const { id: _, ...data } = updateUserInput;
         return this.prisma.user.update({

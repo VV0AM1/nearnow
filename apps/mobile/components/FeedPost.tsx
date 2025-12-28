@@ -1,9 +1,36 @@
-
+import { API_URL } from "../services/api";
+import api from "../services/api";
+import { useState } from "react";
 import { View, Text, Image, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { formatDistanceToNow } from "date-fns";
+import { Link } from "expo-router";
 
 export function FeedPost({ item }: { item: any }) {
+    const [votes, setVotes] = useState(item._count?.votes || 0);
+    const [liked, setLiked] = useState(false); // Optimistic state, ideally check from backend
+
+    // Fix Image URL: If relative path, prepend API URL.
+    const ROOT_URL = API_URL.replace('/api', '');
+    const imageUrl = item.imageUrl
+        ? (item.imageUrl.startsWith('http') ? item.imageUrl : `${ROOT_URL}${item.imageUrl}`)
+        : null;
+
+    const handleVote = async () => {
+        try {
+            setLiked(!liked);
+            setVotes((prev: number) => liked ? prev - 1 : prev + 1);
+            await api.post(`/posts/${item.id}/vote`, {
+                userId: item.authorId,
+                type: 'UP'
+            });
+        } catch (e) {
+            console.error(e);
+            // Revert on error
+            setLiked(!liked);
+            setVotes((prev: number) => liked ? prev + 1 : prev - 1);
+        }
+    };
 
     return (
         <View className="bg-white dark:bg-neutral-900 p-4 mb-4 rounded-lg shadow-sm mx-4">
@@ -25,9 +52,9 @@ export function FeedPost({ item }: { item: any }) {
 
             <Text className="text-gray-600 dark:text-gray-300 mb-3 leading-5">{item.content}</Text>
 
-            {item.imageUrl && (
+            {imageUrl && (
                 <Image
-                    source={{ uri: item.imageUrl }}
+                    source={{ uri: imageUrl }}
                     className="w-full h-48 rounded-lg mb-3 bg-gray-100 dark:bg-neutral-800"
                     resizeMode="cover"
                 />
@@ -35,19 +62,27 @@ export function FeedPost({ item }: { item: any }) {
 
             <View className="flex-row justify-between items-center border-t border-gray-100 dark:border-white/10 pt-3">
                 <View className="flex-row items-center space-x-4">
-                    <TouchableOpacity className="flex-row items-center">
-                        <Ionicons name="heart-outline" size={20} color="gray" />
-                        <Text className="ml-1 text-gray-500">{item._count?.votes || 0}</Text>
+                    <TouchableOpacity className="flex-row items-center" onPress={handleVote}>
+                        <Ionicons name={liked ? "heart" : "heart-outline"} size={20} color={liked ? "red" : "gray"} />
+                        <Text className="ml-1 text-gray-500">{votes}</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity className="flex-row items-center ml-4">
-                        <Ionicons name="chatbubble-outline" size={20} color="gray" />
-                        <Text className="ml-1 text-gray-500">{item._count?.comments || 0}</Text>
-                    </TouchableOpacity>
+                    {/* @ts-ignore */}
+                    <Link href={`/post/${item.id}`} asChild>
+                        <TouchableOpacity className="flex-row items-center ml-4">
+                            <Ionicons name="chatbubble-outline" size={20} color="gray" />
+                            <Text className="ml-1 text-gray-500">{item._count?.comments || 0}</Text>
+                        </TouchableOpacity>
+                    </Link>
                 </View>
-                <Text className="text-xs text-gray-400">
-                    {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
-                </Text>
+                {/* @ts-ignore */}
+                <Link href={`/post/${item.id}`} asChild>
+                    <TouchableOpacity>
+                        <Text className="text-xs text-gray-400">
+                            {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+                        </Text>
+                    </TouchableOpacity>
+                </Link>
             </View>
         </View>
     );

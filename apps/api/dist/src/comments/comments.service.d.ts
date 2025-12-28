@@ -6,18 +6,6 @@ export declare class CommentsService {
     private notificationsService;
     constructor(prisma: PrismaService, notificationsService: NotificationsService);
     create(userId: string, createCommentInput: CreateCommentInput): Promise<{
-        author: {
-            id: string;
-            email: string;
-            name: string | null;
-            avatar: string | null;
-            bio: string | null;
-            role: import(".prisma/client").$Enums.Role;
-            reputation: number;
-            isBlocked: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-        };
         post: {
             id: string;
             title: string;
@@ -29,6 +17,18 @@ export declare class CommentsService {
             authorId: string;
             neighborhoodId: string | null;
             likes: number;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        author: {
+            id: string;
+            email: string;
+            name: string | null;
+            avatar: string | null;
+            bio: string | null;
+            role: import(".prisma/client").$Enums.Role;
+            reputation: number;
+            isBlocked: boolean;
             createdAt: Date;
             updatedAt: Date;
         };

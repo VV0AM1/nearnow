@@ -5,18 +5,6 @@ export declare class PostsResolver {
     private readonly postsService;
     constructor(postsService: PostsService);
     createPost(user: User, createPostInput: CreatePostInput): Promise<{
-        author: {
-            id: string;
-            email: string;
-            name: string | null;
-            avatar: string | null;
-            bio: string | null;
-            role: import(".prisma/client").$Enums.Role;
-            reputation: number;
-            isBlocked: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-        };
         neighborhood: {
             id: string;
             name: string;
@@ -31,6 +19,18 @@ export declare class PostsResolver {
             createdAt: Date;
             updatedAt: Date;
         } | null;
+        author: {
+            id: string;
+            email: string;
+            name: string | null;
+            avatar: string | null;
+            bio: string | null;
+            role: import(".prisma/client").$Enums.Role;
+            reputation: number;
+            isBlocked: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
     } & {
         id: string;
         title: string;
@@ -46,18 +46,6 @@ export declare class PostsResolver {
         updatedAt: Date;
     }>;
     findAll(): import(".prisma/client").Prisma.PrismaPromise<({
-        author: {
-            id: string;
-            email: string;
-            name: string | null;
-            avatar: string | null;
-            bio: string | null;
-            role: import(".prisma/client").$Enums.Role;
-            reputation: number;
-            isBlocked: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-        };
         neighborhood: {
             id: string;
             name: string;
@@ -72,6 +60,18 @@ export declare class PostsResolver {
             createdAt: Date;
             updatedAt: Date;
         } | null;
+        author: {
+            id: string;
+            email: string;
+            name: string | null;
+            avatar: string | null;
+            bio: string | null;
+            role: import(".prisma/client").$Enums.Role;
+            reputation: number;
+            isBlocked: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
     } & {
         id: string;
         title: string;
@@ -87,18 +87,6 @@ export declare class PostsResolver {
         updatedAt: Date;
     })[]>;
     feed(latitude: number, longitude: number, radius: number): Promise<(({
-        author: {
-            id: string;
-            email: string;
-            name: string | null;
-            avatar: string | null;
-            bio: string | null;
-            role: import(".prisma/client").$Enums.Role;
-            reputation: number;
-            isBlocked: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-        };
         neighborhood: {
             id: string;
             name: string;
@@ -113,6 +101,18 @@ export declare class PostsResolver {
             createdAt: Date;
             updatedAt: Date;
         } | null;
+        author: {
+            id: string;
+            email: string;
+            name: string | null;
+            avatar: string | null;
+            bio: string | null;
+            role: import(".prisma/client").$Enums.Role;
+            reputation: number;
+            isBlocked: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
         comments: {
             id: string;
             content: string;

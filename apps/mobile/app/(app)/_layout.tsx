@@ -45,6 +45,13 @@ export default function AppLayout() {
                     tabBarIcon: ({ color }) => <Ionicons name="person" size={24} color={color} />,
                 }}
             />
+            <Tabs.Screen
+                name="post/[id]"
+                options={{
+                    href: null,
+                    headerShown: false,
+                }}
+            />
         </Tabs>
     );
 }

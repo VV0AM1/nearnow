@@ -33,6 +33,10 @@ let CommentsService = class CommentsService {
                     post: true
                 },
             });
+            await tx.user.update({
+                where: { id: userId },
+                data: { reputation: { increment: 2 } }
+            });
             if (comment.post.authorId !== userId) {
             }
             return comment;

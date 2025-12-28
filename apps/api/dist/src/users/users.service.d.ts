@@ -40,6 +40,30 @@ export declare class UsersService {
         createdAt: Date;
         updatedAt: Date;
     } | null, null, import("@prisma/client/runtime/library").DefaultArgs>;
+    findProfile(id: string): Promise<{
+        gamification: {
+            level: number;
+            rank: string;
+            points: number;
+            nextLevelPoints: number;
+            progress: number;
+        };
+        _count: {
+            posts: number;
+            comments: number;
+            votes: number;
+        };
+        id: string;
+        email: string;
+        name: string | null;
+        avatar: string | null;
+        bio: string | null;
+        role: import(".prisma/client").$Enums.Role;
+        reputation: number;
+        isBlocked: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+    } | null>;
     update(id: string, updateUserInput: UpdateUserInput): import(".prisma/client").Prisma.Prisma__UserClient<{
         id: string;
         email: string;

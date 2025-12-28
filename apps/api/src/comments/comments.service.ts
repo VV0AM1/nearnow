@@ -25,6 +25,12 @@ export class CommentsService {
                 },
             });
 
+            // Award 2 points for commenting
+            await tx.user.update({
+                where: { id: userId },
+                data: { reputation: { increment: 2 } }
+            });
+
             // Notify Post Author (if not self)
             if (comment.post.authorId !== userId) {
                 // We need to call NotificationsService here. Since it's outside transaction usually (to emit socket), we can do it after or use a robust queue.

@@ -12,7 +12,8 @@ export class UsersController {
     @Get('me')
     @UseGuards(JwtAuthGuard)
     async getProfile(@Req() req: any) {
-        return req.user;
+        // Fetch fresh profile with stats instead of just returning JWT payload user
+        return this.usersService.findProfile(req.user.id);
     }
 
 

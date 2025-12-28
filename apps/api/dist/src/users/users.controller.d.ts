@@ -2,7 +2,30 @@ import { UsersService } from './users.service';
 export declare class UsersController {
     private readonly usersService;
     constructor(usersService: UsersService);
-    getProfile(req: any): Promise<any>;
+    getProfile(req: any): Promise<{
+        gamification: {
+            level: number;
+            rank: string;
+            points: number;
+            nextLevelPoints: number;
+            progress: number;
+        };
+        _count: {
+            posts: number;
+            comments: number;
+            votes: number;
+        };
+        id: string;
+        email: string;
+        name: string | null;
+        avatar: string | null;
+        bio: string | null;
+        role: import(".prisma/client").$Enums.Role;
+        reputation: number;
+        isBlocked: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+    } | null>;
     uploadAvatar(file: Express.Multer.File, req: any): Promise<{
         id: string;
         email: string;

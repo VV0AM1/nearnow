@@ -24,7 +24,7 @@ let UsersController = class UsersController {
         this.usersService = usersService;
     }
     async getProfile(req) {
-        return req.user;
+        return this.usersService.findProfile(req.user.id);
     }
     async uploadAvatar(file, req) {
         if (!file)

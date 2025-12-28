@@ -81,17 +81,28 @@ export class PostsService {
             neighborhoodId = neighborhood.id;
         }
 
-        const post = await this.prisma.post.create({
-            data: {
-                ...postData,
-                neighborhoodId,
-                authorId,
-                imageUrl,
-            },
-            include: {
-                author: true,
-                neighborhood: true,
-            },
+        // Transaction to create post and update user reputation
+        const post = await this.prisma.$transaction(async (tx) => {
+            const newPost = await tx.post.create({
+                data: {
+                    ...postData,
+                    neighborhoodId,
+                    authorId,
+                    imageUrl,
+                },
+                include: {
+                    author: true,
+                    neighborhood: true,
+                },
+            });
+
+            // Award 5 points for creating a post
+            await tx.user.update({
+                where: { id: authorId },
+                data: { reputation: { increment: 5 } }
+            });
+
+            return newPost;
         });
 
         // Emit event to all clients
