@@ -11,7 +11,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         await this.$disconnect();
     }
 
-    private async connectWithRetry(retries = 5, delay = 3000) {
+    private async connectWithRetry(retries = 30, delay = 3000) {
         for (let i = 0; i < retries; i++) {
             try {
                 await this.$connect();
