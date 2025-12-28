@@ -4,15 +4,18 @@ const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
 async function main() {
     console.log('Start seeding ...');
-    const user = await prisma.user.create({
-        data: {
+    const user = await prisma.user.upsert({
+        where: { email: 'seed@example.com' },
+        update: {},
+        create: {
             email: 'seed@example.com',
-            username: 'SeedUser',
-            password: 'password123',
+            name: 'SeedUser',
         },
     });
-    const city = await prisma.city.create({
-        data: {
+    const city = await prisma.city.upsert({
+        where: { name: 'Seed City' },
+        update: {},
+        create: {
             name: 'Seed City',
             country: 'Seedland',
             latitude: 0,
@@ -21,7 +24,7 @@ async function main() {
     });
     const neighborhood = await prisma.neighborhood.create({
         data: {
-            name: 'Central Seed',
+            name: 'Central Seed ' + Date.now(),
             cityId: city.id,
             latitude: 0,
             longitude: 0,
@@ -33,7 +36,7 @@ async function main() {
             {
                 title: 'Lost Dog: Golden Retriever',
                 content: 'My dog ran away near the park. Please help!',
-                category: 'MISSING',
+                category: 'LOST_FOUND',
                 latitude: 0.001,
                 longitude: 0.001,
                 authorId: user.id,
