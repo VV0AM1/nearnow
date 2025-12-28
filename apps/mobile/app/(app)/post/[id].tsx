@@ -19,6 +19,7 @@ export default function PostDetails() {
     // Vote Logic
     const [votes, setVotes] = useState(0);
     const [liked, setLiked] = useState(false);
+    const [isSaved, setIsSaved] = useState(false);
 
     const fetchDetails = async () => {
         try {
@@ -28,7 +29,7 @@ export default function PostDetails() {
                 api.get(`/comments/${id}`)
             ]);
             setPost(postRes.data);
-            setVotes(postRes.data?._count?.votes || 0); // Init votes
+            setVotes(postRes.data?.likes || 0); // Use .likes
             setComments(commentsRes.data);
         } catch (error) {
             console.error("Failed to load details", error);
@@ -49,6 +50,11 @@ export default function PostDetails() {
                         }
                     })
                     .catch(e => console.log('Vote check err', e));
+
+                // Check Saved
+                api.get(`/users/me/saved/${id}/check`)
+                    .then(res => setIsSaved(res.data.isSaved))
+                    .catch(err => console.log('Save check err', err));
             }
         }
     }, [id, user]);
@@ -58,7 +64,10 @@ export default function PostDetails() {
         try {
             const newLikedState = !liked;
             setLiked(newLikedState);
-            setVotes((prev: number) => newLikedState ? prev + 1 : prev - 1);
+            setVotes((prev: number) => {
+                const newVal = newLikedState ? prev + 1 : prev - 1;
+                return Math.max(0, newVal);
+            });
 
             await api.post(`/posts/${id}/vote`, { type: 'UP' });
         } catch (e) {
@@ -75,6 +84,17 @@ export default function PostDetails() {
                 url: `https://nearnow.app/post/${id}`,
             });
         } catch (error) { console.log(error); }
+    };
+
+    const handleSave = async () => {
+        try {
+            const newState = !isSaved;
+            setIsSaved(newState);
+            await api.post(`/users/me/saved/${id}`);
+        } catch (error) {
+            console.error("Save failed", error);
+            setIsSaved(!isSaved);
+        }
     };
 
     const handleReport = () => {
@@ -182,6 +202,10 @@ export default function PostDetails() {
 
                     <TouchableOpacity onPress={handleShare} className="bg-gray-50 dark:bg-neutral-800 p-2.5 rounded-full">
                         <Ionicons name="share-social-outline" size={24} color="gray" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity onPress={handleSave} className="bg-gray-50 dark:bg-neutral-800 p-2.5 rounded-full">
+                        <Ionicons name={isSaved ? "bookmark" : "bookmark-outline"} size={24} color={isSaved ? "#2563eb" : "gray"} />
                     </TouchableOpacity>
                 </View>
 

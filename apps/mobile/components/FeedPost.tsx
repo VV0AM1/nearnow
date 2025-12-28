@@ -9,12 +9,14 @@ import { useAuth } from "@/context/AuthContext";
 
 export function FeedPost({ item }: { item: any }) {
     const { user } = useAuth();
-    const [votes, setVotes] = useState(item._count?.votes || 0);
+    const [votes, setVotes] = useState(item.likes || 0); // Use .likes, not _count
     const [liked, setLiked] = useState(false);
+    const [isSaved, setIsSaved] = useState(false);
 
     // Initial Check
     useEffect(() => {
-        if (user) { // user is just the token string existence check
+        if (user) {
+            // Check Vote
             api.get(`/posts/${item.id}/vote/check`)
                 .then(res => {
                     if (res.data.hasVoted && res.data.type === 'UP') {
@@ -22,6 +24,11 @@ export function FeedPost({ item }: { item: any }) {
                     }
                 })
                 .catch(err => console.log("Vote check failed", err));
+
+            // Check Saved
+            api.get(`/users/me/saved/${item.id}/check`)
+                .then(res => setIsSaved(res.data.isSaved))
+                .catch(err => console.log("Save check failed", err));
         }
     }, [user, item.id]);
 
@@ -35,7 +42,10 @@ export function FeedPost({ item }: { item: any }) {
         try {
             const newLikedState = !liked;
             setLiked(newLikedState);
-            setVotes((prev: number) => newLikedState ? prev + 1 : prev - 1);
+            setVotes((prev: number) => {
+                const newVal = newLikedState ? prev + 1 : prev - 1;
+                return Math.max(0, newVal); // Prevent negative
+            });
 
             await api.post(`/posts/${item.id}/vote`, {
                 type: 'UP'
@@ -52,10 +62,21 @@ export function FeedPost({ item }: { item: any }) {
         try {
             await Share.share({
                 message: `Check out this post on Nearnow: ${item.title}`,
-                url: `https://nearnow.app/post/${item.id}`, // Mock URL
+                url: `https://nearnow.app/post/${item.id}`,
             });
         } catch (error) {
             console.log(error);
+        }
+    };
+
+    const handleSave = async () => {
+        try {
+            const newState = !isSaved;
+            setIsSaved(newState);
+            await api.post(`/users/me/saved/${item.id}`);
+        } catch (error) {
+            console.error("Save failed", error);
+            setIsSaved(!isSaved); // Revert
         }
     };
 
@@ -115,7 +136,7 @@ export function FeedPost({ item }: { item: any }) {
                     <Link href={`/post/${item.id}`} asChild>
                         <TouchableOpacity className="flex-row items-center px-2 py-2">
                             <Ionicons name="chatbubble-outline" size={22} color="gray" />
-                            <Text className="ml-2 text-gray-500 font-medium">{item._count?.comments || 0}</Text>
+                            <Text className="ml-2 text-gray-500 font-medium">{item.comments?.length || item._count?.comments || 0}</Text>
                         </TouchableOpacity>
                     </Link>
 
@@ -131,6 +152,10 @@ export function FeedPost({ item }: { item: any }) {
                         </Text>
                     </TouchableOpacity>
                 </Link>
+
+                <TouchableOpacity onPress={handleSave} className="ml-4">
+                    <Ionicons name={isSaved ? "bookmark" : "bookmark-outline"} size={22} color={isSaved ? "#2563eb" : "gray"} />
+                </TouchableOpacity>
             </View>
         </View>
     );

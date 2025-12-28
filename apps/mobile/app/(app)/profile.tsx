@@ -117,6 +117,31 @@ export default function ProfileScreen() {
                 </View>
             </View>
 
+            {/* Menu Links */}
+            <View style={{ backgroundColor: cardBg, borderRadius: 16, padding: 0, margin: 16, marginTop: 0, overflow: 'hidden', shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 }}>
+                <TouchableOpacity
+                    onPress={() => router.push('/(app)/saved' as any)}
+                    className="flex-row items-center p-4 border-b border-gray-100 dark:border-gray-800"
+                >
+                    <View className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg mr-4">
+                        <Ionicons name="bookmark" size={20} color="#2563eb" />
+                    </View>
+                    <Text className="flex-1 font-bold text-base dark:text-white">Saved Posts</Text>
+                    <Ionicons name="chevron-forward" size={20} color={isDark ? '#4b5563' : '#d1d5db'} />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    className="flex-row items-center p-4"
+                    onPress={() => router.push('/(app)/notifications' as any)}
+                >
+                    <View className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded-lg mr-4">
+                        <Ionicons name="notifications" size={20} color="#9333ea" />
+                    </View>
+                    <Text className="flex-1 font-bold text-base dark:text-white">Notifications</Text>
+                    <Ionicons name="chevron-forward" size={20} color={isDark ? '#4b5563' : '#d1d5db'} />
+                </TouchableOpacity>
+            </View>
+
             {/* Theme Selector */}
             <View style={{ backgroundColor: cardBg, borderRadius: 16, padding: 16, margin: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 }}>
                 <Text style={{ fontSize: 14, fontWeight: 'bold', color: textSub, textTransform: 'uppercase', marginBottom: 16 }}>

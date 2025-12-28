@@ -36,6 +36,25 @@ export class UsersController {
         return this.usersService.update(userId, { id: userId, avatar: avatarUrl });
     }
 
+    @Get('me/saved')
+    @UseGuards(JwtAuthGuard)
+    async getMySavedPosts(@Req() req: any) {
+        return this.usersService.getSavedPosts(req.user.id);
+    }
+
+    @Post('me/saved/:postId')
+    @UseGuards(JwtAuthGuard)
+    async toggleMySavedPost(@Req() req: any, @Param('postId') postId: string) {
+        return this.usersService.toggleSavedPost(req.user.id, postId);
+    }
+
+    @Get('me/saved/:postId/check')
+    @UseGuards(JwtAuthGuard)
+    async checkMySavedStatus(@Req() req: any, @Param('postId') postId: string) {
+        const isSaved = await this.usersService.isPostSaved(req.user.id, postId);
+        return { isSaved };
+    }
+
     @Get(':id/saved')
     @UseGuards(JwtAuthGuard)
     async getSavedPosts(@Param('id') id: string) {
