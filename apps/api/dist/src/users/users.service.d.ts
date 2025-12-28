@@ -12,6 +12,7 @@ export declare class UsersService {
         bio: string | null;
         role: import(".prisma/client").$Enums.Role;
         reputation: number;
+        isBlocked: boolean;
         createdAt: Date;
         updatedAt: Date;
     }, never, import("@prisma/client/runtime/library").DefaultArgs>;
@@ -23,6 +24,7 @@ export declare class UsersService {
         bio: string | null;
         role: import(".prisma/client").$Enums.Role;
         reputation: number;
+        isBlocked: boolean;
         createdAt: Date;
         updatedAt: Date;
     }[]>;
@@ -34,6 +36,7 @@ export declare class UsersService {
         bio: string | null;
         role: import(".prisma/client").$Enums.Role;
         reputation: number;
+        isBlocked: boolean;
         createdAt: Date;
         updatedAt: Date;
     } | null, null, import("@prisma/client/runtime/library").DefaultArgs>;
@@ -45,6 +48,7 @@ export declare class UsersService {
         bio: string | null;
         role: import(".prisma/client").$Enums.Role;
         reputation: number;
+        isBlocked: boolean;
         createdAt: Date;
         updatedAt: Date;
     }, never, import("@prisma/client/runtime/library").DefaultArgs>;
@@ -56,6 +60,7 @@ export declare class UsersService {
         bio: string | null;
         role: import(".prisma/client").$Enums.Role;
         reputation: number;
+        isBlocked: boolean;
         createdAt: Date;
         updatedAt: Date;
     }, never, import("@prisma/client/runtime/library").DefaultArgs>;

@@ -5,17 +5,6 @@ export declare class PostsResolver {
     private readonly postsService;
     constructor(postsService: PostsService);
     createPost(user: User, createPostInput: CreatePostInput): Promise<{
-        neighborhood: {
-            id: string;
-            name: string;
-            cityId: string;
-            latitude: number;
-            longitude: number;
-            radiusKm: number;
-            safetyLevel: import(".prisma/client").$Enums.SafetyLevel;
-            createdAt: Date;
-            updatedAt: Date;
-        } | null;
         author: {
             id: string;
             email: string;
@@ -24,9 +13,24 @@ export declare class PostsResolver {
             bio: string | null;
             role: import(".prisma/client").$Enums.Role;
             reputation: number;
+            isBlocked: boolean;
             createdAt: Date;
             updatedAt: Date;
         };
+        neighborhood: {
+            id: string;
+            name: string;
+            cityId: string;
+            latitude: number;
+            longitude: number;
+            radiusKm: number;
+            safetyLevel: import(".prisma/client").$Enums.SafetyLevel;
+            crimeCount: number;
+            safetyCount: number;
+            totalCount: number;
+            createdAt: Date;
+            updatedAt: Date;
+        } | null;
     } & {
         id: string;
         title: string;
@@ -42,17 +46,6 @@ export declare class PostsResolver {
         updatedAt: Date;
     }>;
     findAll(): import(".prisma/client").Prisma.PrismaPromise<({
-        neighborhood: {
-            id: string;
-            name: string;
-            cityId: string;
-            latitude: number;
-            longitude: number;
-            radiusKm: number;
-            safetyLevel: import(".prisma/client").$Enums.SafetyLevel;
-            createdAt: Date;
-            updatedAt: Date;
-        } | null;
         author: {
             id: string;
             email: string;
@@ -61,9 +54,24 @@ export declare class PostsResolver {
             bio: string | null;
             role: import(".prisma/client").$Enums.Role;
             reputation: number;
+            isBlocked: boolean;
             createdAt: Date;
             updatedAt: Date;
         };
+        neighborhood: {
+            id: string;
+            name: string;
+            cityId: string;
+            latitude: number;
+            longitude: number;
+            radiusKm: number;
+            safetyLevel: import(".prisma/client").$Enums.SafetyLevel;
+            crimeCount: number;
+            safetyCount: number;
+            totalCount: number;
+            createdAt: Date;
+            updatedAt: Date;
+        } | null;
     } & {
         id: string;
         title: string;
@@ -79,24 +87,6 @@ export declare class PostsResolver {
         updatedAt: Date;
     })[]>;
     feed(latitude: number, longitude: number, radius: number): Promise<(({
-        comments: {
-            id: string;
-            content: string;
-            authorId: string;
-            postId: string;
-            createdAt: Date;
-        }[];
-        neighborhood: {
-            id: string;
-            name: string;
-            cityId: string;
-            latitude: number;
-            longitude: number;
-            radiusKm: number;
-            safetyLevel: import(".prisma/client").$Enums.SafetyLevel;
-            createdAt: Date;
-            updatedAt: Date;
-        } | null;
         author: {
             id: string;
             email: string;
@@ -105,9 +95,31 @@ export declare class PostsResolver {
             bio: string | null;
             role: import(".prisma/client").$Enums.Role;
             reputation: number;
+            isBlocked: boolean;
             createdAt: Date;
             updatedAt: Date;
         };
+        neighborhood: {
+            id: string;
+            name: string;
+            cityId: string;
+            latitude: number;
+            longitude: number;
+            radiusKm: number;
+            safetyLevel: import(".prisma/client").$Enums.SafetyLevel;
+            crimeCount: number;
+            safetyCount: number;
+            totalCount: number;
+            createdAt: Date;
+            updatedAt: Date;
+        } | null;
+        comments: {
+            id: string;
+            content: string;
+            authorId: string;
+            postId: string;
+            createdAt: Date;
+        }[];
     } & {
         id: string;
         title: string;

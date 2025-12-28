@@ -13,6 +13,7 @@ export declare class CommentsResolver {
             bio: string | null;
             role: import(".prisma/client").$Enums.Role;
             reputation: number;
+            isBlocked: boolean;
             createdAt: Date;
             updatedAt: Date;
         };
@@ -46,6 +47,7 @@ export declare class CommentsResolver {
             bio: string | null;
             role: import(".prisma/client").$Enums.Role;
             reputation: number;
+            isBlocked: boolean;
             createdAt: Date;
             updatedAt: Date;
         };

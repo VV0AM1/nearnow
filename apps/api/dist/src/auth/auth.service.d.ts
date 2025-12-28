@@ -1,6 +1,6 @@
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
-import { LoginInput, SignupInput, GoogleLoginInput, VerifyOtpInput } from './dto/create-auth.input';
+import { LoginInput, SignupInput, GoogleLoginInput, FacebookLoginInput, VerifyOtpInput } from './dto/create-auth.input';
 import { AuthResponse } from './entities/auth-response.entity';
 import { User } from '../users/entities/user.entity';
 import { EmailService } from '../email/email.service';
@@ -25,6 +25,7 @@ export declare class AuthService {
         bio: string | null;
         role: import(".prisma/client").$Enums.Role;
         reputation: number;
+        isBlocked: boolean;
         createdAt: Date;
         updatedAt: Date;
     }) | null>;
@@ -38,6 +39,7 @@ export declare class AuthService {
         email: string;
     }>;
     googleLogin(input: GoogleLoginInput): Promise<AuthResponse>;
+    facebookLogin(input: FacebookLoginInput): Promise<AuthResponse>;
     requestOtp(email: string): Promise<boolean>;
     verifyOtp(input: VerifyOtpInput): Promise<AuthResponse>;
     private generateToken;

@@ -9,8 +9,9 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.VerifyOtpInput = exports.GoogleLoginInput = exports.SignupInput = exports.LoginInput = void 0;
+exports.VerifyOtpInput = exports.FacebookLoginInput = exports.GoogleLoginInput = exports.SignupInput = exports.LoginInput = void 0;
 const graphql_1 = require("@nestjs/graphql");
+const class_validator_1 = require("class-validator");
 let LoginInput = class LoginInput {
     email;
     password;
@@ -18,10 +19,12 @@ let LoginInput = class LoginInput {
 exports.LoginInput = LoginInput;
 __decorate([
     (0, graphql_1.Field)(),
+    (0, class_validator_1.IsEmail)(),
     __metadata("design:type", String)
 ], LoginInput.prototype, "email", void 0);
 __decorate([
     (0, graphql_1.Field)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], LoginInput.prototype, "password", void 0);
 exports.LoginInput = LoginInput = __decorate([
@@ -35,14 +38,18 @@ let SignupInput = class SignupInput {
 exports.SignupInput = SignupInput;
 __decorate([
     (0, graphql_1.Field)(),
+    (0, class_validator_1.IsEmail)(),
     __metadata("design:type", String)
 ], SignupInput.prototype, "email", void 0);
 __decorate([
     (0, graphql_1.Field)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], SignupInput.prototype, "password", void 0);
 __decorate([
     (0, graphql_1.Field)({ nullable: true }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], SignupInput.prototype, "name", void 0);
 exports.SignupInput = SignupInput = __decorate([
@@ -59,6 +66,17 @@ __decorate([
 exports.GoogleLoginInput = GoogleLoginInput = __decorate([
     (0, graphql_1.InputType)()
 ], GoogleLoginInput);
+let FacebookLoginInput = class FacebookLoginInput {
+    token;
+};
+exports.FacebookLoginInput = FacebookLoginInput;
+__decorate([
+    (0, graphql_1.Field)(),
+    __metadata("design:type", String)
+], FacebookLoginInput.prototype, "token", void 0);
+exports.FacebookLoginInput = FacebookLoginInput = __decorate([
+    (0, graphql_1.InputType)()
+], FacebookLoginInput);
 let VerifyOtpInput = class VerifyOtpInput {
     email;
     otp;

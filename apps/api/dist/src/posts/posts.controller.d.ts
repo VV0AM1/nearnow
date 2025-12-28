@@ -1,19 +1,11 @@
+import { OnModuleInit } from '@nestjs/common';
 import { PostsService } from './posts.service';
-export declare class PostsController {
+export declare class PostsController implements OnModuleInit {
     private readonly postsService;
+    private readonly logger;
     constructor(postsService: PostsService);
-    findAll(): import(".prisma/client").Prisma.PrismaPromise<({
-        neighborhood: {
-            id: string;
-            name: string;
-            cityId: string;
-            latitude: number;
-            longitude: number;
-            radiusKm: number;
-            safetyLevel: import(".prisma/client").$Enums.SafetyLevel;
-            createdAt: Date;
-            updatedAt: Date;
-        } | null;
+    onModuleInit(): void;
+    findAll(authorId?: string): import(".prisma/client").Prisma.PrismaPromise<({
         author: {
             id: string;
             email: string;
@@ -22,9 +14,24 @@ export declare class PostsController {
             bio: string | null;
             role: import(".prisma/client").$Enums.Role;
             reputation: number;
+            isBlocked: boolean;
             createdAt: Date;
             updatedAt: Date;
         };
+        neighborhood: {
+            id: string;
+            name: string;
+            cityId: string;
+            latitude: number;
+            longitude: number;
+            radiusKm: number;
+            safetyLevel: import(".prisma/client").$Enums.SafetyLevel;
+            crimeCount: number;
+            safetyCount: number;
+            totalCount: number;
+            createdAt: Date;
+            updatedAt: Date;
+        } | null;
     } & {
         id: string;
         title: string;
@@ -39,25 +46,7 @@ export declare class PostsController {
         createdAt: Date;
         updatedAt: Date;
     })[]>;
-    getFeed(lat: string, long: string, radius: string, category: string): Promise<(({
-        comments: {
-            id: string;
-            content: string;
-            authorId: string;
-            postId: string;
-            createdAt: Date;
-        }[];
-        neighborhood: {
-            id: string;
-            name: string;
-            cityId: string;
-            latitude: number;
-            longitude: number;
-            radiusKm: number;
-            safetyLevel: import(".prisma/client").$Enums.SafetyLevel;
-            createdAt: Date;
-            updatedAt: Date;
-        } | null;
+    getFeed(lat: string, long: string, radius: string, category: string, search: string, page: string, limit: string): Promise<(({
         author: {
             id: string;
             email: string;
@@ -66,9 +55,31 @@ export declare class PostsController {
             bio: string | null;
             role: import(".prisma/client").$Enums.Role;
             reputation: number;
+            isBlocked: boolean;
             createdAt: Date;
             updatedAt: Date;
         };
+        neighborhood: {
+            id: string;
+            name: string;
+            cityId: string;
+            latitude: number;
+            longitude: number;
+            radiusKm: number;
+            safetyLevel: import(".prisma/client").$Enums.SafetyLevel;
+            crimeCount: number;
+            safetyCount: number;
+            totalCount: number;
+            createdAt: Date;
+            updatedAt: Date;
+        } | null;
+        comments: {
+            id: string;
+            content: string;
+            authorId: string;
+            postId: string;
+            createdAt: Date;
+        }[];
     } & {
         id: string;
         title: string;
@@ -84,6 +95,32 @@ export declare class PostsController {
         updatedAt: Date;
     }) | undefined)[]>;
     findOne(id: string): import(".prisma/client").Prisma.Prisma__PostClient<({
+        author: {
+            id: string;
+            email: string;
+            name: string | null;
+            avatar: string | null;
+            bio: string | null;
+            role: import(".prisma/client").$Enums.Role;
+            reputation: number;
+            isBlocked: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        neighborhood: {
+            id: string;
+            name: string;
+            cityId: string;
+            latitude: number;
+            longitude: number;
+            radiusKm: number;
+            safetyLevel: import(".prisma/client").$Enums.SafetyLevel;
+            crimeCount: number;
+            safetyCount: number;
+            totalCount: number;
+            createdAt: Date;
+            updatedAt: Date;
+        } | null;
         comments: ({
             author: {
                 id: string;
@@ -93,6 +130,7 @@ export declare class PostsController {
                 bio: string | null;
                 role: import(".prisma/client").$Enums.Role;
                 reputation: number;
+                isBlocked: boolean;
                 createdAt: Date;
                 updatedAt: Date;
             };
@@ -103,28 +141,6 @@ export declare class PostsController {
             postId: string;
             createdAt: Date;
         })[];
-        neighborhood: {
-            id: string;
-            name: string;
-            cityId: string;
-            latitude: number;
-            longitude: number;
-            radiusKm: number;
-            safetyLevel: import(".prisma/client").$Enums.SafetyLevel;
-            createdAt: Date;
-            updatedAt: Date;
-        } | null;
-        author: {
-            id: string;
-            email: string;
-            name: string | null;
-            avatar: string | null;
-            bio: string | null;
-            role: import(".prisma/client").$Enums.Role;
-            reputation: number;
-            createdAt: Date;
-            updatedAt: Date;
-        };
     } & {
         id: string;
         title: string;
@@ -139,18 +155,7 @@ export declare class PostsController {
         createdAt: Date;
         updatedAt: Date;
     }) | null, null, import("@prisma/client/runtime/library").DefaultArgs>;
-    create(body: any, file?: Express.Multer.File): Promise<{
-        neighborhood: {
-            id: string;
-            name: string;
-            cityId: string;
-            latitude: number;
-            longitude: number;
-            radiusKm: number;
-            safetyLevel: import(".prisma/client").$Enums.SafetyLevel;
-            createdAt: Date;
-            updatedAt: Date;
-        } | null;
+    create(body: any, file: Express.Multer.File, req: any): Promise<{
         author: {
             id: string;
             email: string;
@@ -159,9 +164,24 @@ export declare class PostsController {
             bio: string | null;
             role: import(".prisma/client").$Enums.Role;
             reputation: number;
+            isBlocked: boolean;
             createdAt: Date;
             updatedAt: Date;
         };
+        neighborhood: {
+            id: string;
+            name: string;
+            cityId: string;
+            latitude: number;
+            longitude: number;
+            radiusKm: number;
+            safetyLevel: import(".prisma/client").$Enums.SafetyLevel;
+            crimeCount: number;
+            safetyCount: number;
+            totalCount: number;
+            createdAt: Date;
+            updatedAt: Date;
+        } | null;
     } & {
         id: string;
         title: string;
@@ -189,6 +209,7 @@ export declare class PostsController {
             bio: string | null;
             role: import(".prisma/client").$Enums.Role;
             reputation: number;
+            isBlocked: boolean;
             createdAt: Date;
             updatedAt: Date;
         };

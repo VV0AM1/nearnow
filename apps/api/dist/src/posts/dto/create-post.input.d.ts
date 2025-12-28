@@ -7,4 +7,7 @@ export declare class CreatePostInput {
     latitude: number;
     longitude: number;
     neighborhoodId?: string;
+    neighborhood?: string;
+    city?: string;
+    country?: string;
 }

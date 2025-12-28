@@ -114,7 +114,15 @@ export class PostsService {
         });
     }
 
-    async getFeed(lat: number, long: number, radiusKm: number, category?: string, page: number = 1, limit: number = 20) {
+    async getFeed(lat: number, long: number, radiusKm: number, category?: string, search?: string, page: number = 1, limit: number = 20) {
+        // Optimization: Bounding Box to use Index
+        const latMin = lat - radiusKm / 111;
+        const latMax = lat + radiusKm / 111;
+        const longMin = long - radiusKm / (111 * Math.cos(lat * (Math.PI / 180)));
+        const longMax = long + radiusKm / (111 * Math.cos(lat * (Math.PI / 180)));
+
+        console.log(`[getFeed] Search: "${search}", Category: "${category}", Radius: ${radiusKm}km`); // DEBUG LOG
+
         // Parse categories (comma separated)
         const categories = category ? category.split(',') : ['ALL'];
         const hasAll = categories.includes('ALL');
@@ -125,11 +133,16 @@ export class PostsService {
       SELECT id,
       ( 6371 * acos( cos( radians(${lat}) ) * cos( radians( latitude ) ) * cos( radians( longitude ) - radians(${long}) ) + sin( radians(${lat}) ) * sin( radians( latitude ) ) ) ) AS distance
       FROM "Post"
-      WHERE ( 6371 * acos( cos( radians(${lat}) ) * cos( radians( latitude ) ) * cos( radians( longitude ) - radians(${long}) ) + sin( radians(${lat}) ) * sin( radians( latitude ) ) ) ) < ${radiusKm}
+      WHERE latitude BETWEEN ${latMin} AND ${latMax}
+      AND longitude BETWEEN ${longMin} AND ${longMax}
+      AND ( 6371 * acos( cos( radians(${lat}) ) * cos( radians( latitude ) ) * cos( radians( longitude ) - radians(${long}) ) + sin( radians(${lat}) ) * sin( radians( latitude ) ) ) ) < ${radiusKm}
       ${!hasAll && categories.length > 0 ? Prisma.sql`AND category::text IN (${Prisma.join(categories)})` : Prisma.sql``}
+      ${search ? Prisma.sql`AND (title ILIKE ${`%${search}%`} OR content ILIKE ${`%${search}%`})` : Prisma.sql``}
       ORDER BY "createdAt" DESC, distance ASC
       LIMIT ${limit} OFFSET ${offset};
     `;
+
+        console.log(`[getFeed] Found ${posts.length} posts`); // DEBUG LOG
 
         const ids = posts.map(p => p.id);
         if (ids.length === 0) return [];

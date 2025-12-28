@@ -20,11 +20,11 @@ let NeighborhoodsController = class NeighborhoodsController {
     constructor(neighborhoodsService) {
         this.neighborhoodsService = neighborhoodsService;
     }
-    async getStats(lat, lng, radius) {
+    async getRankings(lat, lng, radius) {
         const latitude = parseFloat(lat);
         const longitude = parseFloat(lng);
         const radiusKm = parseFloat(radius) || 5;
-        return this.neighborhoodsService.getStats(latitude, longitude, radiusKm);
+        return this.neighborhoodsService.getRankings(latitude, longitude, radiusKm);
     }
     findAll() {
         return this.neighborhoodsService.findAll();
@@ -32,14 +32,14 @@ let NeighborhoodsController = class NeighborhoodsController {
 };
 exports.NeighborhoodsController = NeighborhoodsController;
 __decorate([
-    (0, common_1.Get)('stats'),
+    (0, common_1.Get)('rankings'),
     __param(0, (0, common_1.Query)('lat')),
     __param(1, (0, common_1.Query)('lng')),
     __param(2, (0, common_1.Query)('radius')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, String, String]),
     __metadata("design:returntype", Promise)
-], NeighborhoodsController.prototype, "getStats", null);
+], NeighborhoodsController.prototype, "getRankings", null);
 __decorate([
     (0, common_1.Get)(),
     __metadata("design:type", Function),

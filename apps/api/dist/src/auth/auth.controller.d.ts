@@ -12,6 +12,7 @@ export declare class AuthController {
         email: string;
     }>;
     googleLogin(input: any): Promise<import("./entities/auth-response.entity").AuthResponse>;
+    facebookLogin(input: any): Promise<import("./entities/auth-response.entity").AuthResponse>;
     requestOtp(body: {
         email: string;
     }): Promise<boolean>;
@@ -33,6 +34,7 @@ export declare class AuthController {
         bio: string | null;
         role: import(".prisma/client").$Enums.Role;
         reputation: number;
+        isBlocked: boolean;
         createdAt: Date;
         updatedAt: Date;
     }) | null>;

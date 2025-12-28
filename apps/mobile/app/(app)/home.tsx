@@ -33,14 +33,17 @@ export default function Home() {
             }
 
             if (selectedCategory && selectedCategory !== 'ALL') {
-                queryParams.append('categoryId', selectedCategory);
+                queryParams.append('category', selectedCategory);
             }
 
             if (searchQuery) {
                 queryParams.append('search', searchQuery);
             }
 
-            const response = await api.get(`/posts?${queryParams.toString()}`);
+            // Default params expected by getFeed
+            queryParams.append('radius', '10'); // Default 10km
+
+            const response = await api.get(`/posts/feed?${queryParams.toString()}`);
             setPosts(response.data);
         } catch (error) {
             console.error(error);
@@ -98,13 +101,13 @@ export default function Home() {
                             key={cat.id}
                             onPress={() => setSelectedCategory(cat.id)}
                             className={`mr-2 px-4 py-1.5 rounded-full border ${selectedCategory === cat.id
-                                    ? 'bg-blue-600 border-blue-600'
-                                    : 'bg-white dark:bg-black border-gray-300 dark:border-neutral-700'
+                                ? 'bg-blue-600 border-blue-600'
+                                : 'bg-white dark:bg-black border-gray-300 dark:border-neutral-700'
                                 }`}
                         >
                             <Text className={`text-xs font-bold ${selectedCategory === cat.id
-                                    ? 'text-white'
-                                    : 'text-gray-700 dark:text-gray-300'
+                                ? 'text-white'
+                                : 'text-gray-700 dark:text-gray-300'
                                 }`}>
                                 {cat.label}
                             </Text>

@@ -2,6 +2,7 @@ import { UsersService } from './users.service';
 export declare class UsersController {
     private readonly usersService;
     constructor(usersService: UsersService);
+    getProfile(req: any): Promise<any>;
     uploadAvatar(file: Express.Multer.File, req: any): Promise<{
         id: string;
         email: string;
@@ -10,6 +11,7 @@ export declare class UsersController {
         bio: string | null;
         role: import(".prisma/client").$Enums.Role;
         reputation: number;
+        isBlocked: boolean;
         createdAt: Date;
         updatedAt: Date;
     }>;

@@ -23,10 +23,13 @@ let UsersController = class UsersController {
     constructor(usersService) {
         this.usersService = usersService;
     }
+    async getProfile(req) {
+        return req.user;
+    }
     async uploadAvatar(file, req) {
         if (!file)
             throw new Error('No file uploaded');
-        const userId = req.user.sub;
+        const userId = req.user.id;
         const avatarUrl = `/uploads/${file.filename}`;
         return this.usersService.update(userId, { id: userId, avatar: avatarUrl });
     }
@@ -42,6 +45,14 @@ let UsersController = class UsersController {
     }
 };
 exports.UsersController = UsersController;
+__decorate([
+    (0, common_1.Get)('me'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "getProfile", null);
 __decorate([
     (0, common_1.Post)('avatar'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

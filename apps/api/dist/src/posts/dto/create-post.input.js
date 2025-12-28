@@ -21,6 +21,9 @@ let CreatePostInput = class CreatePostInput {
     latitude;
     longitude;
     neighborhoodId;
+    neighborhood;
+    city;
+    country;
 };
 exports.CreatePostInput = CreatePostInput;
 __decorate([
@@ -62,6 +65,24 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreatePostInput.prototype, "neighborhoodId", void 0);
+__decorate([
+    (0, graphql_1.Field)({ nullable: true }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreatePostInput.prototype, "neighborhood", void 0);
+__decorate([
+    (0, graphql_1.Field)({ nullable: true }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreatePostInput.prototype, "city", void 0);
+__decorate([
+    (0, graphql_1.Field)({ nullable: true }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreatePostInput.prototype, "country", void 0);
 exports.CreatePostInput = CreatePostInput = __decorate([
     (0, graphql_1.InputType)()
 ], CreatePostInput);

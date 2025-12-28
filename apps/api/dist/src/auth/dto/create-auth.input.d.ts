@@ -10,6 +10,9 @@ export declare class SignupInput {
 export declare class GoogleLoginInput {
     token: string;
 }
+export declare class FacebookLoginInput {
+    token: string;
+}
 export declare class VerifyOtpInput {
     email: string;
     otp: string;

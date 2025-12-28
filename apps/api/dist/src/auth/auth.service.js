@@ -50,6 +50,9 @@ let AuthService = class AuthService {
         if (!user) {
             throw new common_1.UnauthorizedException('User not found');
         }
+        if (user.isBlocked) {
+            throw new common_1.UnauthorizedException('Your account has been blocked.');
+        }
         if (!user.auth) {
             console.warn(`[Auto-Heal] Creating missing Auth record for user ${user.id}`);
             await this.prisma.auth.create({
@@ -131,10 +134,58 @@ let AuthService = class AuthService {
                     await this.prisma.auth.update({ where: { id: auth.id }, data: { googleId } });
                 }
             }
+            if (user.isBlocked) {
+                throw new common_1.UnauthorizedException('Your account has been blocked.');
+            }
             return this.generateToken(user);
         }
         catch (error) {
             throw new common_1.UnauthorizedException('Google Auth Failed: ' + error.message);
+        }
+    }
+    async facebookLogin(input) {
+        try {
+            const res = await fetch(`https://graph.facebook.com/me?fields=id,name,email,picture&access_token=${input.token}`);
+            if (!res.ok) {
+                throw new common_1.UnauthorizedException('Invalid Facebook Token');
+            }
+            const data = await res.json();
+            const email = data.email;
+            const facebookId = data.id;
+            const name = data.name;
+            const avatar = data.picture?.data?.url;
+            if (!email) {
+                throw new common_1.BadRequestException('Facebook account must have an email address.');
+            }
+            let user = await this.prisma.user.findUnique({ where: { email } });
+            if (!user) {
+                user = await this.prisma.user.create({
+                    data: {
+                        email,
+                        name: name || 'User',
+                        avatar,
+                        auth: {
+                            create: { facebookId }
+                        }
+                    },
+                });
+            }
+            else {
+                const auth = await this.prisma.auth.findUnique({ where: { userId: user.id } });
+                if (!auth) {
+                    await this.prisma.auth.create({ data: { userId: user.id, facebookId } });
+                }
+                else if (!auth.facebookId) {
+                    await this.prisma.auth.update({ where: { id: auth.id }, data: { facebookId } });
+                }
+            }
+            if (user.isBlocked) {
+                throw new common_1.UnauthorizedException('Your account has been blocked.');
+            }
+            return this.generateToken(user);
+        }
+        catch (error) {
+            throw new common_1.UnauthorizedException('Facebook Auth Failed: ' + (error.message || 'Unknown error'));
         }
     }
     async requestOtp(email) {

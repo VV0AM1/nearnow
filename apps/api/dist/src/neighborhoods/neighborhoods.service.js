@@ -29,34 +29,30 @@ let NeighborhoodsService = class NeighborhoodsService {
             },
         });
     }
-    async getStats(lat, lng, radiusKm) {
+    async getRankings(lat, lng, radiusKm) {
         const allNeighborhoods = await this.prisma.neighborhood.findMany({
             include: { city: true }
         });
-        const nearbyNeighborhoods = allNeighborhoods.filter(hood => {
+        const nearbyById = allNeighborhoods.filter(hood => {
             const dist = this.getDistanceFromLatLonInKm(lat, lng, hood.latitude, hood.longitude);
             return dist <= radiusKm;
-        });
-        const allPosts = await this.prisma.post.findMany();
-        const stats = nearbyNeighborhoods.map(hood => {
-            const alertCount = allPosts.filter(post => {
-                const dist = this.getDistanceFromLatLonInKm(hood.latitude, hood.longitude, post.latitude, post.longitude);
-                return dist <= (hood.radiusKm || 1.0);
-            }).length;
-            const score = Math.max(0, 100 - (alertCount * 5));
-            const trend = Math.random() > 0.5 ? 'up' : 'down';
-            return {
-                id: hood.id,
-                name: hood.name,
-                city: hood.city?.name || 'Unknown',
-                score,
-                alerts: alertCount,
-                trend,
-                latitude: hood.latitude,
-                longitude: hood.longitude
-            };
-        });
-        return stats.sort((a, b) => b.score - a.score);
+        }).map(hood => ({
+            ...hood,
+            score: Math.max(0, hood.safetyCount - hood.crimeCount)
+        }));
+        const topDangerous = [...nearbyById]
+            .sort((a, b) => b.crimeCount - a.crimeCount)
+            .slice(0, 3);
+        const topSafe = [...nearbyById]
+            .sort((a, b) => b.safetyCount - a.safetyCount)
+            .slice(0, 3);
+        const generalRanking = [...nearbyById]
+            .sort((a, b) => b.score - a.score);
+        return {
+            topDangerous,
+            topSafe,
+            ranking: generalRanking
+        };
     }
     getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
         var R = 6371;

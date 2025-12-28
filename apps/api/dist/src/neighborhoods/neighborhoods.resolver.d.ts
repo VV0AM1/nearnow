@@ -11,6 +11,9 @@ export declare class NeighborhoodsResolver {
         longitude: number;
         radiusKm: number;
         safetyLevel: import(".prisma/client").$Enums.SafetyLevel;
+        crimeCount: number;
+        safetyCount: number;
+        totalCount: number;
         createdAt: Date;
         updatedAt: Date;
     }, never, import("@prisma/client/runtime/library").DefaultArgs>;
@@ -32,6 +35,9 @@ export declare class NeighborhoodsResolver {
         longitude: number;
         radiusKm: number;
         safetyLevel: import(".prisma/client").$Enums.SafetyLevel;
+        crimeCount: number;
+        safetyCount: number;
+        totalCount: number;
         createdAt: Date;
         updatedAt: Date;
     })[]>;

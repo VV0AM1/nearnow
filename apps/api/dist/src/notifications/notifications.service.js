@@ -22,12 +22,24 @@ let NotificationsService = class NotificationsService {
         this.gateway = gateway;
     }
     async notifyUsers(post) {
-        const interestedSettings = await this.prisma.notificationSettings.findMany({
-            where: {
-                categories: { has: post.category }
-            },
-            include: { user: true }
-        });
+        let interestedSettings;
+        if (post.category === 'DANGER') {
+            interestedSettings = await this.prisma.notificationSettings.findMany({
+                where: {
+                    pushAlerts: true
+                },
+                include: { user: true }
+            });
+        }
+        else {
+            interestedSettings = await this.prisma.notificationSettings.findMany({
+                where: {
+                    categories: { has: post.category },
+                    pushAlerts: true
+                },
+                include: { user: true }
+            });
+        }
         const notificationsToCreate = [];
         for (const setting of interestedSettings) {
             if (setting.userId === post.authorId)
@@ -121,7 +133,8 @@ let NotificationsService = class NotificationsService {
             Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) *
                 Math.sin(dLon / 2) * Math.sin(dLon / 2);
         var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;
+        var d = R * c;
+        return d;
     }
     deg2rad(deg) {
         return deg * (Math.PI / 180);

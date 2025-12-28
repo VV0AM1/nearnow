@@ -31,6 +31,9 @@ let AuthController = class AuthController {
     googleLogin(input) {
         return this.authService.googleLogin(input);
     }
+    facebookLogin(input) {
+        return this.authService.facebookLogin(input);
+    }
     requestOtp(body) {
         return this.authService.requestOtp(body.email);
     }
@@ -69,6 +72,13 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], AuthController.prototype, "googleLogin", null);
+__decorate([
+    (0, common_1.Post)('facebook'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "facebookLogin", null);
 __decorate([
     (0, common_1.Post)('otp/request'),
     __param(0, (0, common_1.Body)()),

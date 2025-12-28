@@ -20,6 +20,8 @@ const comments_module_1 = require("./comments/comments.module");
 const prisma_module_1 = require("./prisma.module");
 const gateway_module_1 = require("./gateway.module");
 const notifications_module_1 = require("./notifications/notifications.module");
+const reports_module_1 = require("./reports/reports.module");
+const admin_module_1 = require("./admin/admin.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -36,6 +38,8 @@ exports.AppModule = AppModule = __decorate([
             neighborhoods_module_1.NeighborhoodsModule,
             comments_module_1.CommentsModule,
             notifications_module_1.NotificationsModule,
+            reports_module_1.ReportsModule,
+            admin_module_1.AdminModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

@@ -11,6 +11,9 @@ export declare class NeighborhoodsService {
         longitude: number;
         radiusKm: number;
         safetyLevel: import(".prisma/client").$Enums.SafetyLevel;
+        crimeCount: number;
+        safetyCount: number;
+        totalCount: number;
         createdAt: Date;
         updatedAt: Date;
     }, never, import("@prisma/client/runtime/library").DefaultArgs>;
@@ -32,19 +35,86 @@ export declare class NeighborhoodsService {
         longitude: number;
         radiusKm: number;
         safetyLevel: import(".prisma/client").$Enums.SafetyLevel;
+        crimeCount: number;
+        safetyCount: number;
+        totalCount: number;
         createdAt: Date;
         updatedAt: Date;
     })[]>;
-    getStats(lat: number, lng: number, radiusKm: number): Promise<{
-        id: string;
-        name: string;
-        city: string;
-        score: number;
-        alerts: number;
-        trend: string;
-        latitude: number;
-        longitude: number;
-    }[]>;
+    getRankings(lat: number, lng: number, radiusKm: number): Promise<{
+        topDangerous: {
+            score: number;
+            city: {
+                id: string;
+                name: string;
+                country: string;
+                latitude: number;
+                longitude: number;
+                createdAt: Date;
+                updatedAt: Date;
+            };
+            id: string;
+            name: string;
+            cityId: string;
+            latitude: number;
+            longitude: number;
+            radiusKm: number;
+            safetyLevel: import(".prisma/client").$Enums.SafetyLevel;
+            crimeCount: number;
+            safetyCount: number;
+            totalCount: number;
+            createdAt: Date;
+            updatedAt: Date;
+        }[];
+        topSafe: {
+            score: number;
+            city: {
+                id: string;
+                name: string;
+                country: string;
+                latitude: number;
+                longitude: number;
+                createdAt: Date;
+                updatedAt: Date;
+            };
+            id: string;
+            name: string;
+            cityId: string;
+            latitude: number;
+            longitude: number;
+            radiusKm: number;
+            safetyLevel: import(".prisma/client").$Enums.SafetyLevel;
+            crimeCount: number;
+            safetyCount: number;
+            totalCount: number;
+            createdAt: Date;
+            updatedAt: Date;
+        }[];
+        ranking: {
+            score: number;
+            city: {
+                id: string;
+                name: string;
+                country: string;
+                latitude: number;
+                longitude: number;
+                createdAt: Date;
+                updatedAt: Date;
+            };
+            id: string;
+            name: string;
+            cityId: string;
+            latitude: number;
+            longitude: number;
+            radiusKm: number;
+            safetyLevel: import(".prisma/client").$Enums.SafetyLevel;
+            crimeCount: number;
+            safetyCount: number;
+            totalCount: number;
+            createdAt: Date;
+            updatedAt: Date;
+        }[];
+    }>;
     private getDistanceFromLatLonInKm;
     private deg2rad;
 }
