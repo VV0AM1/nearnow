@@ -87,6 +87,13 @@ export declare class PostsResolver {
         updatedAt: Date;
     })[]>;
     feed(latitude: number, longitude: number, radius: number): Promise<(({
+        comments: {
+            id: string;
+            content: string;
+            authorId: string;
+            postId: string;
+            createdAt: Date;
+        }[];
         neighborhood: {
             id: string;
             name: string;
@@ -113,13 +120,6 @@ export declare class PostsResolver {
             createdAt: Date;
             updatedAt: Date;
         };
-        comments: {
-            id: string;
-            content: string;
-            authorId: string;
-            postId: string;
-            createdAt: Date;
-        }[];
     } & {
         id: string;
         title: string;

@@ -10,13 +10,14 @@ exports.NotificationsModule = void 0;
 const common_1 = require("@nestjs/common");
 const notifications_service_1 = require("./notifications.service");
 const notifications_controller_1 = require("./notifications.controller");
-const app_gateway_1 = require("../app.gateway");
+const gateway_module_1 = require("../gateway.module");
 let NotificationsModule = class NotificationsModule {
 };
 exports.NotificationsModule = NotificationsModule;
 exports.NotificationsModule = NotificationsModule = __decorate([
     (0, common_1.Module)({
-        providers: [notifications_service_1.NotificationsService, app_gateway_1.AppGateway],
+        imports: [gateway_module_1.GatewayModule],
+        providers: [notifications_service_1.NotificationsService],
         controllers: [notifications_controller_1.NotificationsController],
         exports: [notifications_service_1.NotificationsService]
     })
