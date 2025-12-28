@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Image, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, FlatList } from "react-native";
+import { View, Text, ScrollView, Image, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, FlatList, Alert, Share } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,6 +16,10 @@ export default function PostDetails() {
     const [newComment, setNewComment] = useState('');
     const [loading, setLoading] = useState(true);
 
+    // Vote Logic
+    const [votes, setVotes] = useState(0);
+    const [liked, setLiked] = useState(false);
+
     const fetchDetails = async () => {
         try {
             // Parallel fetch: Post details and Comemnts
@@ -24,6 +28,7 @@ export default function PostDetails() {
                 api.get(`/comments/${id}`)
             ]);
             setPost(postRes.data);
+            setVotes(postRes.data?._count?.votes || 0); // Init votes
             setComments(commentsRes.data);
         } catch (error) {
             console.error("Failed to load details", error);
@@ -33,8 +38,55 @@ export default function PostDetails() {
     };
 
     useEffect(() => {
-        if (id) fetchDetails();
-    }, [id]);
+        if (id) {
+            fetchDetails();
+            // Check Vote
+            if (user) {
+                api.get(`/posts/${id}/vote/check`)
+                    .then(res => {
+                        if (res.data.hasVoted && res.data.type === 'UP') {
+                            setLiked(true);
+                        }
+                    })
+                    .catch(e => console.log('Vote check err', e));
+            }
+        }
+    }, [id, user]);
+
+    // Handlers
+    const handleVote = async () => {
+        try {
+            const newLikedState = !liked;
+            setLiked(newLikedState);
+            setVotes((prev: number) => newLikedState ? prev + 1 : prev - 1);
+
+            await api.post(`/posts/${id}/vote`, { type: 'UP' });
+        } catch (e) {
+            console.error(e);
+            setLiked(!liked);
+            setVotes((prev: number) => liked ? prev + 1 : prev - 1);
+        }
+    };
+
+    const handleShare = async () => {
+        try {
+            await Share.share({
+                message: `Check out this post on Nearnow: ${post.title}`,
+                url: `https://nearnow.app/post/${id}`,
+            });
+        } catch (error) { console.log(error); }
+    };
+
+    const handleReport = () => {
+        Alert.alert(
+            "Report Post",
+            "Are you sure you want to report this post?",
+            [
+                { text: "Cancel", style: "cancel" },
+                { text: "Report", style: "destructive", onPress: () => Alert.alert("Reported", "Thanks.") }
+            ]
+        );
+    };
 
     const handleSendComment = async () => {
         if (!newComment.trim()) return;
@@ -96,7 +148,7 @@ export default function PostDetails() {
                     <View className="bg-gray-200 dark:bg-neutral-700 h-10 w-10 rounded-full items-center justify-center">
                         <Text className="text-gray-600 dark:text-gray-300 font-bold">{post.author?.name?.[0] || 'U'}</Text>
                     </View>
-                    <View className="ml-3">
+                    <View className="ml-3 flex-1">
                         <Text className="font-bold text-gray-800 dark:text-white">{post.author?.name || 'Anonymous'}</Text>
                         <Text className="text-xs text-gray-500 dark:text-gray-400">
                             {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
@@ -105,19 +157,36 @@ export default function PostDetails() {
                 </View>
 
                 <Text className="text-xl font-bold text-gray-900 dark:text-white mb-2">{post.title}</Text>
+                <View className="bg-blue-50 dark:bg-blue-900/30 self-start px-3 py-1.5 rounded-full mb-3">
+                    <Text className="text-blue-700 dark:text-blue-300 text-xs font-bold uppercase">{post.category}</Text>
+                </View>
                 <Text className="text-base text-gray-700 dark:text-gray-300 leading-relaxed mb-4">{post.content}</Text>
 
                 {imageUrl && (
                     <Image
                         source={{ uri: imageUrl }}
-                        className="w-full h-64 rounded-xl bg-gray-100 dark:bg-neutral-800"
+                        className="w-full h-64 rounded-xl bg-gray-100 dark:bg-neutral-800 mb-4"
                         resizeMode="cover"
                     />
                 )}
 
-                <View className="mt-4 flex-row items-center">
-                    <Ionicons name="chatbubble-outline" size={20} color="gray" />
-                    <Text className="ml-2 text-gray-500 font-medium">{comments.length} Comments</Text>
+                {/* Interaction Bar */}
+                <View className="flex-row items-center space-x-6">
+                    <TouchableOpacity
+                        className="flex-row items-center bg-gray-50 dark:bg-neutral-800 px-4 py-2.5 rounded-full"
+                        onPress={handleVote}
+                    >
+                        <Ionicons name={liked ? "heart" : "heart-outline"} size={24} color={liked ? "#ef4444" : "gray"} />
+                        <Text className={`ml-2 font-medium text-lg ${liked ? 'text-red-500' : 'text-gray-500'}`}>{votes}</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity onPress={handleShare} className="bg-gray-50 dark:bg-neutral-800 p-2.5 rounded-full">
+                        <Ionicons name="share-social-outline" size={24} color="gray" />
+                    </TouchableOpacity>
+                </View>
+
+                <View className="mt-6 flex-row items-center">
+                    <Text className="text-gray-500 font-bold text-lg">Comments ({comments.length})</Text>
                 </View>
             </View>
         );

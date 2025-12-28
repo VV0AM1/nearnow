@@ -85,15 +85,30 @@ export class PostsController implements OnModuleInit {
         }
     }
     @Post(':id/vote')
-    vote(
+    @UseGuards(JwtAuthGuard)
+    async vote(
         @Param('id') id: string,
-        @Body() body: { userId: string, type: 'UP' | 'DOWN' }
+        @Body() body: { type: 'UP' | 'DOWN' },
+        @Req() req: any
     ) {
-        return this.postsService.vote(id, body.userId, body.type);
+        this.logger.log(`[Vote] User ${req.user.id} voting on post ${id} with type ${body.type}`);
+        try {
+            return await this.postsService.vote(id, req.user.id, body.type || 'UP');
+        } catch (error) {
+            this.logger.error(`[Vote] Failed: ${error.message}`, error.stack);
+            throw error;
+        }
     }
 
     @Get(':id/vote/check')
-    checkVote(@Param('id') id: string, @Query('userId') userId: string) {
-        return this.postsService.checkVoteStatus(id, userId);
+    @UseGuards(JwtAuthGuard)
+    async checkVote(@Param('id') id: string, @Req() req: any) {
+        this.logger.log(`[CheckVote] Checking vote for user ${req.user.id} on post ${id}`);
+        try {
+            return await this.postsService.checkVoteStatus(id, req.user.id);
+        } catch (error) {
+            this.logger.error(`[CheckVote] Failed: ${error.message}`, error.stack);
+            throw error;
+        }
     }
 }

@@ -65,11 +65,11 @@ let PostsController = PostsController_1 = class PostsController {
             throw error;
         }
     }
-    vote(id, body) {
-        return this.postsService.vote(id, body.userId, body.type);
+    vote(id, body, req) {
+        return this.postsService.vote(id, req.user.id, body.type || 'UP');
     }
-    checkVote(id, userId) {
-        return this.postsService.checkVoteStatus(id, userId);
+    checkVote(id, req) {
+        return this.postsService.checkVoteStatus(id, req.user.id);
     }
 };
 exports.PostsController = PostsController;
@@ -122,18 +122,21 @@ __decorate([
 ], PostsController.prototype, "create", null);
 __decorate([
     (0, common_1.Post)(':id/vote'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, Object, Object]),
     __metadata("design:returntype", void 0)
 ], PostsController.prototype, "vote", null);
 __decorate([
     (0, common_1.Get)(':id/vote/check'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Query)('userId')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], PostsController.prototype, "checkVote", null);
 exports.PostsController = PostsController = PostsController_1 = __decorate([
