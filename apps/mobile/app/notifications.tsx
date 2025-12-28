@@ -3,7 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useState, useEffect, useCallback } from "react";
-import api from "../../services/api";
+import api from "@/services/api";
 import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/context/AuthContext";
 

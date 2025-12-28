@@ -1,6 +1,7 @@
 import { View, FlatList, ActivityIndicator, Text, Image, TouchableOpacity, RefreshControl, TextInput, ScrollView } from "react-native";
 import { useEffect, useState, useCallback } from "react";
-import api from "@/services/api";
+import { useRouter } from "expo-router";
+import api, { API_URL } from "@/services/api";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/context/AuthContext";
@@ -14,14 +15,23 @@ export default function Home() {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const { signOut } = useAuth();
+    const { signOut, user } = useAuth(); // Get user token
     const { activeTheme } = useTheme();
+    const router = useRouter(); // Import useRouter
     const isDark = activeTheme === 'dark';
+
+    const [profile, setProfile] = useState<any>(null);
 
     // Filter States
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
     const [modalVisible, setModalVisible] = useState(false);
+
+    useEffect(() => {
+        if (user) {
+            api.get('/users/me').then(res => setProfile(res.data)).catch(console.error);
+        }
+    }, [user]);
 
     const fetchPosts = useCallback(async () => {
         try {
@@ -73,9 +83,25 @@ export default function Home() {
             <View className="px-4 py-3 bg-white dark:bg-black border-b border-gray-200 dark:border-white/10">
                 <View className="flex-row justify-between items-center mb-4">
                     <Text className="text-xl font-bold text-blue-600 dark:text-blue-500">NearNow</Text>
-                    <TouchableOpacity onPress={signOut}>
-                        <Ionicons className="text-black dark:text-white" name="log-out-outline" size={24} color={undefined} />
-                    </TouchableOpacity>
+
+                    <View className="flex-row items-center space-x-4 gap-4">
+                        <TouchableOpacity onPress={() => router.push('/notifications' as any)}>
+                            <Ionicons name="notifications-outline" size={24} color={isDark ? 'white' : 'black'} />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity onPress={() => router.push('/(app)/profile' as any)}>
+                            {profile?.avatar ? (
+                                <Image
+                                    source={{ uri: `${API_URL.replace('/api', '')}${profile.avatar}` }}
+                                    className="w-8 h-8 rounded-full"
+                                />
+                            ) : (
+                                <View className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full items-center justify-center">
+                                    <Text className="text-gray-600 dark:text-gray-300 font-bold text-xs">{profile?.name?.[0] || 'U'}</Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Search Bar */}

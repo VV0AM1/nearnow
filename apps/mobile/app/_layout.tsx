@@ -69,6 +69,7 @@ function NavContent() {
         <Stack.Screen name="(app)" options={{ headerShown: false }} />
         <Stack.Screen name="login" options={{ headerShown: false }} />
         <Stack.Screen name="signup" options={{ presentation: 'modal', title: 'Create Account' }} />
+        <Stack.Screen name="notifications" options={{ presentation: 'modal', title: 'Notifications' }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
     </NavigationThemeProvider>

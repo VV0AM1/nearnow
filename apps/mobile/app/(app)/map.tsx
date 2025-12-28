@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { View, ActivityIndicator, Text, TouchableOpacity, ScrollView, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 import * as Location from 'expo-location';
 import api from '@/services/api';
@@ -46,15 +47,68 @@ export default function MapScreen() {
     const [timeRange, setTimeRange] = useState<string>('all');
     const [showFilters, setShowFilters] = useState(false);
 
+    // Params from FeedPost "See Location"
+    const params = useLocalSearchParams<{ latitude?: string, longitude?: string, highlightPostId?: string }>();
+
     useEffect(() => {
         (async () => {
             let { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') return;
-            let loc = await Location.getCurrentPositionAsync({});
-            setLocation(loc);
+            if (status !== 'granted') {
+                // Default to NYC if denied
+                setLocation({ coords: { latitude: 40.7128, longitude: -74.0060 } } as any);
+                return;
+            }
+
+            // If params exist, use them
+            if (params.latitude && params.longitude) {
+                setLocation({
+                    coords: {
+                        latitude: parseFloat(params.latitude),
+                        longitude: parseFloat(params.longitude),
+                        altitude: null,
+                        accuracy: null,
+                        altitudeAccuracy: null,
+                        heading: null,
+                        speed: null
+                    },
+                    timestamp: Date.now()
+                });
+            } else {
+                try {
+                    // Try getting current position
+                    let loc = await Location.getCurrentPositionAsync({});
+                    setLocation(loc);
+                } catch (error) {
+                    console.log("Error getting current position:", error);
+                    // Fallback to last known position
+                    try {
+                        let lastKnown = await Location.getLastKnownPositionAsync({});
+                        if (lastKnown) {
+                            setLocation(lastKnown);
+                        } else {
+                            throw new Error("No last known location");
+                        }
+                    } catch (fallbackError) {
+                        console.log("Fallback location failed:", fallbackError);
+                        // Default to New York City
+                        setLocation({
+                            coords: {
+                                latitude: 40.7128,
+                                longitude: -74.0060,
+                                altitude: 0,
+                                accuracy: 0,
+                                altitudeAccuracy: 0,
+                                heading: 0,
+                                speed: 0
+                            },
+                            timestamp: Date.now()
+                        } as any);
+                    }
+                }
+            }
         })();
         fetchPosts();
-    }, []);
+    }, [params.latitude, params.longitude]);
 
     const fetchPosts = async () => {
         try {
@@ -91,10 +145,8 @@ export default function MapScreen() {
         const lon = location?.coords.longitude || -74.0060;
         const postsJson = JSON.stringify(filteredPosts);
 
-        const tileLayerUrl = isDark
-            ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-            : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-
+        // Standard OSM Tiles (Most reliable)
+        const tileLayerUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
         const bgColor = isDark ? '#1a1a1a' : '#f9fafb';
 
         return `
@@ -102,15 +154,23 @@ export default function MapScreen() {
       <html>
         <head>
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-          <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+          <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
           <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
           <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
-          <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+          
+          <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
           <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+          
           <style>
-            body { margin: 0; padding: 0; background-color: ${bgColor}; }
-            #map { width: 100%; height: 100vh; }
+            html, body { height: 100%; width: 100%; margin: 0; padding: 0; background-color: ${bgColor}; }
+            #map { height: 100%; width: 100%; }
             
+            #debug-log {
+                position: absolute; top: 40px; left: 10px; right: 10px; z-index: 9999;
+                background: rgba(0,0,0,0.6); color: #00ff00; font-family: monospace; font-size: 10px;
+                padding: 5px; pointer-events: none; border-radius: 4px;
+            }
+
             /* Animations */
             @keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }
             .pulse-marker .ping {
@@ -150,81 +210,115 @@ export default function MapScreen() {
           </style>
         </head>
         <body>
+          <div id="debug-log">Log: Initializing...</div>
           <div id="map"></div>
           <script>
-            var posts = ${postsJson};
-            var map = L.map('map', { zoomControl: false }).setView([${lat}, ${lon}], 14);
-            
-            L.tileLayer('${tileLayerUrl}', {
-              attribution: 'CartoDB',
-              maxZoom: 20
-            }).addTo(map);
-
-            function getColor(cat) {
-                const colors = ${JSON.stringify(CATEGORY_COLORS)};
-                return colors[cat] || colors['ALL'];
+            function log(msg) {
+                var el = document.getElementById('debug-log');
+                if(el) el.innerHTML = msg;
+                window.ReactNativeWebView.postMessage(JSON.stringify({type: 'LOG', payload: msg}));
             }
 
-            function createIcon(category) {
-                var color = getColor(category);
-                if (category === 'DANGER') {
-                    return L.divIcon({
-                        className: "pulse-marker",
-                        html: '<div style="position: relative; width: 20px; height: 20px;">' +
-                                '<div class="ping"></div><div class="dot"></div></div>',
-                        iconSize: [20, 20],
-                        iconAnchor: [10, 10],
-                        popupAnchor: [0, -10]
-                    });
-                }
-                return L.divIcon({
-                    className: "custom-marker",
-                    html: '<div style="background-color: ' + color + '; width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 0 3px rgba(255,255,255,0.2), 0 0 10px ' + color + ';"></div>',
-                    iconSize: [12, 12],
-                    iconAnchor: [6, 6],
-                    popupAnchor: [0, -10]
-                });
-            }
+            // Global Error Handler
+            window.onerror = function(msg, url, line) {
+                log('Global Error: ' + msg);
+            };
 
-            var markers = L.markerClusterGroup({
-                showCoverageOnHover: false,
-                maxClusterRadius: 60,
-                iconCreateFunction: function(cluster) {
-                    var count = cluster.getChildCount();
-                    return L.divIcon({
-                        html: '<div>' + count + '</div>',
-                        className: 'custom-cluster-icon',
-                        iconSize: L.point(40, 40)
-                    });
-                }
-            });
-
-            if (Array.isArray(posts)) {
-                posts.forEach(function(p) {
-                    if (p.latitude && p.longitude) {
-                        var marker = L.marker([p.latitude, p.longitude], {
-                            icon: createIcon(p.category)
-                        });
-                        var titleColor = '${isDark ? '#e5e7eb' : '#1f2937'}';
-                        var popupContent = '<div style="padding: 12px; min-width: 160px; font-family: sans-serif;">' +
-                            '<div style="font-weight: 700; font-size: 14px; margin-bottom: 6px; color: ' + titleColor + ';">' + p.title + '</div>' +
-                            '<span style="background-color: ' + getColor(p.category) + '30; color: ' + getColor(p.category) + '; font-size: 10px; padding: 2px 8px; border-radius: 999px; font-weight: 700; text-transform: uppercase;">' +
-                                p.category +
-                            '</span></div>';
-                        
-                        marker.bindPopup(popupContent);
-                        markers.addLayer(marker);
+            function initMap() {
+                try {
+                    if (typeof L === 'undefined') {
+                        log('Waiting for Leaflet...');
+                        setTimeout(initMap, 500); // Retry in 500ms
+                        return;
                     }
-                });
-            }
-            map.addLayer(markers);
+                    
+                    log('Leaflet ready. Starting Map...');
+                    var map = L.map('map', { zoomControl: false }).setView([${lat}, ${lon}], 14);
+                    
+                    L.tileLayer('${tileLayerUrl}', {
+                        attribution: '&copy; OpenStreetMap',
+                        maxZoom: 19
+                    }).addTo(map);
+                    
+                    function getColor(cat) {
+                        const colors = ${JSON.stringify(CATEGORY_COLORS)};
+                        return colors[cat] || colors['ALL'];
+                    }
 
-            L.circle([${lat}, ${lon}], {
-                color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.1, radius: 100, weight: 1
-            }).addTo(map);
-            L.circleMarker([${lat}, ${lon}], {
-                radius: 6, fillColor: '#3b82f6', color: '#fff', weight: 2, fillOpacity: 1
-            }).addTo(map);
+                    function createIcon(category) {
+                        var color = getColor(category);
+                        if (category === 'DANGER') {
+                            return L.divIcon({
+                                className: "pulse-marker",
+                                html: '<div style="position: relative; width: 20px; height: 20px;">' +
+                                        '<div class="ping"></div><div class="dot"></div></div>',
+                                iconSize: [20, 20],
+                                iconAnchor: [10, 10],
+                                popupAnchor: [0, -10]
+                            });
+                        }
+                        return L.divIcon({
+                            className: "custom-marker",
+                            html: '<div style="background-color: ' + color + '; width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 0 3px rgba(255,255,255,0.2), 0 0 10px ' + color + ';"></div>',
+                            iconSize: [12, 12],
+                            iconAnchor: [6, 6],
+                            popupAnchor: [0, -10]
+                        });
+                    }
+
+                    var markers = L.markerClusterGroup({
+                        showCoverageOnHover: false,
+                        maxClusterRadius: 60,
+                        iconCreateFunction: function(cluster) {
+                            var count = cluster.getChildCount();
+                            return L.divIcon({
+                                html: '<div>' + count + '</div>',
+                                className: 'custom-cluster-icon',
+                                iconSize: L.point(40, 40)
+                            });
+                        }
+                    });
+
+                    var posts = ${postsJson};
+                    if (Array.isArray(posts)) {
+                        posts.forEach(function(p) {
+                            if (p.latitude && p.longitude) {
+                                var marker = L.marker([p.latitude, p.longitude], {
+                                    icon: createIcon(p.category)
+                                });
+                                var titleColor = '${isDark ? '#e5e7eb' : '#1f2937'}';
+                                var popupContent = '<div style="padding: 12px; min-width: 180px; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">' +
+                                    '<div style="font-weight: 700; font-size: 15px; margin-bottom: 4px; color: ' + titleColor + ';">' + p.title + '</div>' +
+                                    '<div style="margin-bottom: 8px;"><span style="background-color: ' + getColor(p.category) + '30; color: ' + getColor(p.category) + '; font-size: 10px; padding: 2px 8px; border-radius: 999px; font-weight: 700; text-transform: uppercase;">' +
+                                        p.category +
+                                    '</span></div>' +
+                                    '<button onclick="window.ReactNativeWebView.postMessage(JSON.stringify({type: \'NAVIGATE\', payload: \'' + p.id + '\'}))" style="background-color: #3b82f6; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; width: 100%;">View Details</button>' +
+                                    '</div>';
+                                
+                                marker.bindPopup(popupContent);
+                                markers.addLayer(marker);
+                            }
+                        });
+                    }
+                    map.addLayer(markers);
+
+                    L.circle([${lat}, ${lon}], {
+                        color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.1, radius: 100, weight: 1
+                    }).addTo(map);
+                    
+                    log('Map Loaded Successfully');
+                    setTimeout(function() { 
+                        var el = document.getElementById('debug-log'); 
+                        if(el) el.style.display = 'none'; 
+                    }, 2000);
+
+                } catch (e) {
+                    log('CRASH: ' + e.message);
+                }
+            }
+            
+            // Start immediately
+            initMap();
           </script>
         </body>
       </html>
@@ -232,19 +326,45 @@ export default function MapScreen() {
     };
 
     if (!location && loading) {
-        return (
-            <View className="flex-1 justify-center items-center bg-white dark:bg-black">
-                <ActivityIndicator size="large" color="#3b82f6" />
-            </View>
-        );
+        // ...
     }
+
+    const router = useRouter();
+
+    const handleMessage = (event: any) => {
+        try {
+            const data = JSON.parse(event.nativeEvent.data);
+            if (data.type === 'NAVIGATE') {
+                router.push({
+                    pathname: '/(app)/post/[id]',
+                    params: { id: data.payload }
+                } as any);
+            } else if (data.type === 'LOG') {
+                console.log("WebView Log:", data.payload);
+            } else if (data.type === 'ERROR') {
+                console.error("WebView JS Error:", data.payload);
+            }
+        } catch (error) {
+            console.log("Map Message Error", error);
+        }
+    };
 
     return (
         <View className="flex-1 relative bg-black">
             <WebView
+                key={location ? "located" : "loading"}
                 originWhitelist={['*']}
-                source={{ html: generateMapHtml() }}
+                source={{ html: generateMapHtml(), baseUrl: '' }}
                 style={{ flex: 1, backgroundColor: isDark ? '#000' : '#fff' }}
+                onMessage={handleMessage}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+                startInLoadingState={true}
+                renderError={(e) => (
+                    <View className="flex-1 justify-center items-center">
+                        <Text className="text-red-500">WebView Error: {e}</Text>
+                    </View>
+                )}
             />
 
             {/* Top Bar: Categories */}
@@ -258,13 +378,13 @@ export default function MapScreen() {
                         <TouchableOpacity
                             key={cat.id}
                             onPress={() => setSelectedCategory(cat.id)}
-                            className={`px-4 py-2 rounded-full border shadow-sm backdrop-blur-md ${selectedCategory === cat.id
+                            className={`px - 4 py - 2 rounded - full border shadow - sm backdrop - blur - md ${selectedCategory === cat.id
                                 ? 'bg-blue-600 border-blue-500' // Active
                                 : 'bg-black/60 border-white/20' // Web Inactive Style (Dark Glass)
-                                }`}
+                                } `}
                         >
-                            <Text className={`font-bold text-xs ${selectedCategory === cat.id ? 'text-white' : 'text-gray-300'
-                                }`}>
+                            <Text className={`font - bold text - xs ${selectedCategory === cat.id ? 'text-white' : 'text-gray-300'
+                                } `}>
                                 {cat.label}
                             </Text>
                         </TouchableOpacity>
@@ -279,8 +399,8 @@ export default function MapScreen() {
                 {/* Filter Toggle */}
                 <TouchableOpacity
                     onPress={() => setShowFilters(!showFilters)}
-                    className={`w-10 h-10 rounded-full border border-white/20 items-center justify-center backdrop-blur-md shadow-lg transition-all ${showFilters ? 'bg-blue-600 border-blue-500' : 'bg-black/60'
-                        }`}
+                    className={`w - 10 h - 10 rounded - full border border - white / 20 items - center justify - center backdrop - blur - md shadow - lg transition - all ${showFilters ? 'bg-blue-600 border-blue-500' : 'bg-black/60'
+                        } `}
                 >
                     <Ionicons name="filter" size={20} color="white" />
                 </TouchableOpacity>
@@ -293,11 +413,11 @@ export default function MapScreen() {
                             <TouchableOpacity
                                 key={r.value}
                                 onPress={() => setTimeRange(r.value)}
-                                className={`py-2 px-3 rounded-lg ${timeRange === r.value ? 'bg-blue-600' : 'hover:bg-white/10'
-                                    }`}
+                                className={`py - 2 px - 3 rounded - lg ${timeRange === r.value ? 'bg-blue-600' : 'hover:bg-white/10'
+                                    } `}
                             >
-                                <Text className={`text-xs font-bold text-center ${timeRange === r.value ? 'text-white' : 'text-gray-300'
-                                    }`}>
+                                <Text className={`text - xs font - bold text - center ${timeRange === r.value ? 'text-white' : 'text-gray-300'
+                                    } `}>
                                     {r.label}
                                 </Text>
                             </TouchableOpacity>

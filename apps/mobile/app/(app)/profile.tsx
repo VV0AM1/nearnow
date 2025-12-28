@@ -132,7 +132,7 @@ export default function ProfileScreen() {
 
                 <TouchableOpacity
                     className="flex-row items-center p-4"
-                    onPress={() => router.push('/(app)/notifications' as any)}
+                    onPress={() => router.push('/notifications' as any)}
                 >
                     <View className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded-lg mr-4">
                         <Ionicons name="notifications" size={20} color="#9333ea" />

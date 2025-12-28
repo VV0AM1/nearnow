@@ -4,11 +4,12 @@ import { useState, useEffect } from "react";
 import { View, Text, Image, TouchableOpacity, Alert, Share } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { formatDistanceToNow } from "date-fns";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 
 export function FeedPost({ item }: { item: any }) {
     const { user } = useAuth();
+    const router = useRouter(); // Init router
     const [votes, setVotes] = useState(item.likes || 0); // Use .likes, not _count
     const [liked, setLiked] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
@@ -80,6 +81,22 @@ export function FeedPost({ item }: { item: any }) {
         }
     };
 
+    const handleMapPress = () => {
+        if (item.latitude && item.longitude) {
+            // Navigate to Map tab with params
+            router.push({
+                pathname: '/(app)/map',
+                params: {
+                    latitude: item.latitude,
+                    longitude: item.longitude,
+                    highlightPostId: item.id
+                }
+            } as any);
+        } else {
+            Alert.alert("No Location", "This post doesn't have location data.");
+        }
+    };
+
     const handleReport = () => {
         Alert.alert(
             "Report Post",
@@ -99,7 +116,15 @@ export function FeedPost({ item }: { item: any }) {
                 </View>
                 <View className="ml-3 flex-1">
                     <Text className="font-bold text-gray-800 dark:text-white text-base">{item.author?.name || 'Anonymous'}</Text>
-                    <Text className="text-xs text-gray-500 dark:text-gray-400">{item.neighborhood?.name || 'Nearby'}</Text>
+                    <View className="flex-row items-center">
+                        <Text className="text-xs text-gray-500 dark:text-gray-400">{item.neighborhood?.name || 'Nearby'}</Text>
+                        {item.latitude && (
+                            <TouchableOpacity onPress={handleMapPress} className="ml-2 bg-blue-50 dark:bg-blue-900/40 px-2 py-0.5 rounded-md flex-row items-center">
+                                <Ionicons name="location-sharp" size={10} color="#2563eb" />
+                                <Text className="text-[10px] text-blue-600 dark:text-blue-400 ml-0.5 font-bold">Map</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
                 </View>
                 <TouchableOpacity onPress={handleReport} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} className="p-2">
                     <Ionicons name="ellipsis-horizontal" size={20} color="gray" />
