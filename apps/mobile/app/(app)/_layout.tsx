@@ -39,6 +39,15 @@ export default function AppLayout() {
                 }}
             />
             <Tabs.Screen
+                name="create"
+                options={{
+                    title: 'Post',
+                    tabBarIcon: ({ color }) => <Ionicons name="add-circle" size={28} color={color} />,
+                    tabBarStyle: { display: 'none' }, // Hide tab bar on create screen
+                    headerShown: false, // Custom header in screen
+                }}
+            />
+            <Tabs.Screen
                 name="profile"
                 options={{
                     title: 'Profile',

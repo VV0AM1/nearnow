@@ -18,11 +18,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     async validate(payload: { sub: string; email: string }) {
+        console.log('JWT Validate Payload:', payload);
         const user = await this.usersService.findOne(payload.sub);
         if (!user) {
+            console.log('JWT Validate: User not found for id', payload.sub);
             throw new UnauthorizedException();
         }
         if (user.isBlocked) {
+            console.log('JWT Validate: User is blocked', payload.sub);
             throw new UnauthorizedException('User is blocked');
         }
         return user;
