@@ -1,9 +1,10 @@
-import { View, Text, TouchableOpacity, ScrollView, RefreshControl, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, RefreshControl, Image, Alert, ActivityIndicator } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { useEffect, useState, useCallback } from 'react';
+import * as Location from 'expo-location';
 import api, { API_URL } from '@/services/api';
 import { format } from 'date-fns';
 
@@ -14,13 +15,19 @@ export default function ProfileScreen() {
     const isDark = activeTheme === 'dark';
 
     const [profile, setProfile] = useState<any>(null);
+    const [settings, setSettings] = useState<any>(null); // Notification Settings
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [syncingLocation, setSyncingLocation] = useState(false);
 
     const fetchProfile = async () => {
         try {
-            const res = await api.get('/users/me');
-            setProfile(res.data);
+            const [resProfile, resSettings] = await Promise.all([
+                api.get('/users/me'),
+                api.get('/notifications/me/settings')
+            ]);
+            setProfile(resProfile.data);
+            setSettings(resSettings.data);
         } catch (error) {
             console.error(error);
         } finally {
@@ -40,11 +47,54 @@ export default function ProfileScreen() {
         fetchProfile();
     }, []);
 
+    // Update Radius
+    const updateRadius = async (radius: number) => {
+        try {
+            // Optimistic update
+            setSettings({ ...settings, radiusKm: radius });
+            await api.put('/notifications/me/settings', {
+                ...settings,
+                radiusKm: radius
+            });
+        } catch (e) {
+            Alert.alert("Error", "Failed to update settings");
+        }
+    };
+
+    // Sync Location Logic
+    const syncLocation = async () => {
+        setSyncingLocation(true);
+        try {
+            let { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Permission Denied', 'Allow location access to receive alerts near you.');
+                return;
+            }
+
+            const loc = await Location.getCurrentPositionAsync({});
+            const { latitude, longitude } = loc.coords;
+
+            await api.put('/notifications/me/location', { latitude, longitude });
+            Alert.alert("Location Synced", "You will now receive alerts around your current location.");
+
+            // Refresh settings to confirm
+            const res = await api.get('/notifications/me/settings');
+            setSettings(res.data);
+
+        } catch (e) {
+            Alert.alert("Error", "Could not sync location. Try again.");
+        } finally {
+            setSyncingLocation(false);
+        }
+    };
+
     const THEME_OPTIONS = [
         { label: 'Light', value: 'light', icon: 'sunny' },
         { label: 'Dark', value: 'dark', icon: 'moon' },
         { label: 'System', value: 'system', icon: 'settings' },
     ] as const;
+
+    const RADIUS_OPTIONS = [5, 10, 25, 50];
 
     // Colors
     const containerBg = isDark ? '#000000' : '#f9fafb';
@@ -53,7 +103,6 @@ export default function ProfileScreen() {
     const textSub = isDark ? '#9ca3af' : '#6b7280';
     const themeRowBg = isDark ? '#262626' : '#f3f4f6';
 
-    // Gamification Data
     const level = profile?.gamification?.level || 1;
     const xp = profile?.gamification?.points || 0;
     const nextLevelXp = profile?.gamification?.nextLevelPoints || 5;
@@ -99,8 +148,93 @@ export default function ProfileScreen() {
                 </View>
             </View>
 
+            {/* Notification & Location Settings (NEW) */}
+            <View style={{ backgroundColor: cardBg, borderRadius: 16, padding: 16, margin: 16, marginTop: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 }}>
+                <View className="flex-row items-center justify-between mb-4">
+                    <Text style={{ fontSize: 14, fontWeight: 'bold', color: textSub, textTransform: 'uppercase' }}>
+                        Alert Settings
+                    </Text>
+                    <TouchableOpacity onPress={syncLocation} disabled={syncingLocation}>
+                        {syncingLocation ? (
+                            <ActivityIndicator size="small" color="#3b82f6" />
+                        ) : (
+                            <View className="flex-row items-center bg-blue-100 dark:bg-blue-900/30 px-3 py-1 rounded-full">
+                                <Ionicons name="location" size={12} color="#2563eb" />
+                                <Text className="text-blue-600 font-bold text-xs ml-1">Sync Location</Text>
+                            </View>
+                        )}
+                    </TouchableOpacity>
+                </View>
+
+                {/* Radius Selector */}
+                <Text className="text-gray-500 dark:text-gray-400 text-xs mb-3">
+                    Alert Radius: <Text className="font-bold dark:text-white">{settings?.radiusKm || 5} km</Text>
+                </Text>
+
+                <View className="flex-row justify-between mb-6">
+                    {RADIUS_OPTIONS.map(km => {
+                        const isActive = settings?.radiusKm === km;
+                        return (
+                            <TouchableOpacity
+                                key={km}
+                                onPress={() => updateRadius(km)}
+                                className={`px-4 py-2 rounded-lg border ${isActive ? 'bg-blue-600 border-blue-600' : 'border-gray-200 dark:border-gray-700'}`}
+                            >
+                                <Text className={`${isActive ? 'text-white' : 'text-gray-700 dark:text-gray-300'} font-bold`}>{km}km</Text>
+                            </TouchableOpacity>
+                        )
+                    })}
+                </View>
+
+                {/* Category Filters */}
+                <Text className="text-gray-500 dark:text-gray-400 text-xs mb-3">
+                    Filter Categories:
+                </Text>
+                <View className="flex-row flex-wrap gap-2">
+                    {[
+                        { id: 'DANGER', label: 'SOS', color: '#ef4444' },
+                        { id: 'CRIME', label: 'Crime', color: '#dc2626' },
+                        { id: 'SAFETY', label: 'Safe', color: '#22c55e' },
+                        { id: 'LOST_FOUND', label: 'Lost', color: '#eab308' },
+                        { id: 'EVENT', label: 'Event', color: '#a855f7' },
+                        { id: 'RECOMMENDATION', label: 'Rec', color: '#ec4899' },
+                    ].map((cat) => {
+                        const isSelected = settings?.categories?.includes(cat.id);
+                        return (
+                            <TouchableOpacity
+                                key={cat.id}
+                                onPress={async () => {
+                                    const current = settings?.categories || [];
+                                    const newCats = isSelected
+                                        ? current.filter((c: string) => c !== cat.id)
+                                        : [...current, cat.id];
+
+                                    setSettings({ ...settings, categories: newCats });
+                                    await api.put('/notifications/me/settings', { ...settings, categories: newCats });
+                                }}
+                                style={{
+                                    backgroundColor: isSelected ? cat.color : (isDark ? '#262626' : '#f3f4f6'),
+                                    paddingHorizontal: 12,
+                                    paddingVertical: 8,
+                                    borderRadius: 20
+                                }}
+                            >
+                                <Text style={{
+                                    color: isSelected ? 'white' : (isDark ? '#d1d5db' : '#4b5563'),
+                                    fontWeight: '600',
+                                    fontSize: 12
+                                }}>
+                                    {cat.label}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
+
+            </View>
+
             {/* Stats Grid */}
-            <View className="flex-row justify-between px-6 py-6 bg-white dark:bg-black mt-4 mx-4 rounded-2xl shadow-sm">
+            <View className="flex-row justify-between px-6 py-6 bg-white dark:bg-black mt-0 mx-4 rounded-2xl shadow-sm">
                 <View className="items-center flex-1">
                     <Text className="text-xl font-bold dark:text-white">{profile?._count?.posts || 0}</Text>
                     <Text className="text-xs text-gray-500 uppercase tracking-wide mt-1">Posts</Text>
@@ -118,7 +252,7 @@ export default function ProfileScreen() {
             </View>
 
             {/* Menu Links */}
-            <View style={{ backgroundColor: cardBg, borderRadius: 16, padding: 0, margin: 16, marginTop: 0, overflow: 'hidden', shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 }}>
+            <View style={{ backgroundColor: cardBg, borderRadius: 16, padding: 0, margin: 16, marginTop: 16, overflow: 'hidden', shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 }}>
                 <TouchableOpacity
                     onPress={() => router.push('/(app)/saved' as any)}
                     className="flex-row items-center p-4 border-b border-gray-100 dark:border-gray-800"
@@ -143,7 +277,7 @@ export default function ProfileScreen() {
             </View>
 
             {/* Theme Selector */}
-            <View style={{ backgroundColor: cardBg, borderRadius: 16, padding: 16, margin: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 }}>
+            <View style={{ backgroundColor: cardBg, borderRadius: 16, padding: 16, margin: 16, marginTop: 0, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 }}>
                 <Text style={{ fontSize: 14, fontWeight: 'bold', color: textSub, textTransform: 'uppercase', marginBottom: 16 }}>
                     Appearance
                 </Text>

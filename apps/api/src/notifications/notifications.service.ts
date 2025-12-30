@@ -119,6 +119,23 @@ export class NotificationsService {
         });
     }
 
+    async updateLocation(userId: string, latitude: number, longitude: number) {
+        // Only update if settings exist, otherwise create defaults with this location
+        return this.prisma.notificationSettings.upsert({
+            where: { userId },
+            update: { latitude, longitude },
+            create: {
+                userId,
+                latitude,
+                longitude,
+                radiusKm: 5, // Default
+                categories: [],
+                pushEnabled: true,
+                pushAlerts: true
+            }
+        });
+    }
+
     async getUserNotifications(userId: string) {
         return this.prisma.notification.findMany({
             where: { userId },

@@ -32,6 +32,14 @@ export class NotificationsController {
         );
     }
 
+    @Put('me/location')
+    updateMyLocation(
+        @Req() req: any,
+        @Body() body: { latitude: number, longitude: number }
+    ) {
+        return this.notificationsService.updateLocation(req.user.id, body.latitude, body.longitude);
+    }
+
     @Post('me/read/:id')
     markAsRead(@Param('id') id: string) {
         return this.notificationsService.markAsRead(id);
