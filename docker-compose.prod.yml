@@ -6,7 +6,7 @@ services:
     restart: always
     environment:
       POSTGRES_USER: nearnow_admin
-      POSTGRES_PASSWORD: production_password_change_me
+      POSTGRES_PASSWORD: Ilya2006
       POSTGRES_DB: nearnow_db
     ports:
       - "5432:5432" # In prod, map only to localhost if possible, or use firewall
@@ -31,7 +31,7 @@ services:
     volumes:
       - uploads_data_prod:/app/uploads # Persist uploads (Matches Dockerfile WORKDIR /app)
     environment:
-      DATABASE_URL: postgresql://nearnow_admin:production_password_change_me@postgres:5432/nearnow_db?schema=public
+      DATABASE_URL: postgresql://nearnow_admin:Ilya2006@postgres:5432/nearnow_db?schema=public
       REDIS_URL: redis://redis:6379
       PORT: 3002
       # Add other ENV vars here (JWT_SECRET, etc)
