@@ -38,6 +38,33 @@ export declare class UsersController {
         createdAt: Date;
         updatedAt: Date;
     }>;
+    getMySavedPosts(req: any): Promise<({
+        post: {
+            id: string;
+            title: string;
+            content: string | null;
+            imageUrl: string | null;
+            category: import(".prisma/client").$Enums.Category;
+            latitude: number;
+            longitude: number;
+            authorId: string;
+            neighborhoodId: string | null;
+            likes: number;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+    } & {
+        id: string;
+        userId: string;
+        postId: string;
+        createdAt: Date;
+    })[]>;
+    toggleMySavedPost(req: any, postId: string): Promise<{
+        saved: boolean;
+    }>;
+    checkMySavedStatus(req: any, postId: string): Promise<{
+        isSaved: boolean;
+    }>;
     getSavedPosts(id: string): Promise<({
         post: {
             id: string;

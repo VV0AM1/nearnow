@@ -24,7 +24,7 @@ exports.AuthModule = AuthModule = __decorate([
     (0, common_1.Module)({
         controllers: [auth_controller_1.AuthController],
         imports: [
-            users_module_1.UsersModule,
+            (0, common_1.forwardRef)(() => users_module_1.UsersModule),
             passport_1.PassportModule,
             email_module_1.EmailModule,
             config_1.ConfigModule,

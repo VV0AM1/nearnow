@@ -54,6 +54,21 @@ export default function AppLayout() {
                     tabBarIcon: ({ color }) => <Ionicons name="person" size={24} color={color} />,
                 }}
             />
+
+            {/* Hidden Routes */}
+            <Tabs.Screen
+                name="saved"
+                options={{
+                    href: null, // Hide from tab bar
+                }}
+            />
+            <Tabs.Screen
+                name="safety"
+                options={{
+                    title: 'Safety',
+                    tabBarIcon: ({ color }) => <Ionicons name="shield-checkmark" size={24} color={color} />,
+                }}
+            />
             <Tabs.Screen
                 name="post/[id]"
                 options={{

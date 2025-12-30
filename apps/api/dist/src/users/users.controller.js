@@ -33,6 +33,16 @@ let UsersController = class UsersController {
         const avatarUrl = `/uploads/${file.filename}`;
         return this.usersService.update(userId, { id: userId, avatar: avatarUrl });
     }
+    async getMySavedPosts(req) {
+        return this.usersService.getSavedPosts(req.user.id);
+    }
+    async toggleMySavedPost(req, postId) {
+        return this.usersService.toggleSavedPost(req.user.id, postId);
+    }
+    async checkMySavedStatus(req, postId) {
+        const isSaved = await this.usersService.isPostSaved(req.user.id, postId);
+        return { isSaved };
+    }
     async getSavedPosts(id) {
         return this.usersService.getSavedPosts(id);
     }
@@ -72,6 +82,32 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "uploadAvatar", null);
+__decorate([
+    (0, common_1.Get)('me/saved'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "getMySavedPosts", null);
+__decorate([
+    (0, common_1.Post)('me/saved/:postId'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('postId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "toggleMySavedPost", null);
+__decorate([
+    (0, common_1.Get)('me/saved/:postId/check'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('postId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "checkMySavedStatus", null);
 __decorate([
     (0, common_1.Get)(':id/saved'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

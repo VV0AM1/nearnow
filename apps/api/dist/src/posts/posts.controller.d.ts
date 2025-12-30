@@ -6,18 +6,6 @@ export declare class PostsController implements OnModuleInit {
     constructor(postsService: PostsService);
     onModuleInit(): void;
     findAll(authorId?: string): import(".prisma/client").Prisma.PrismaPromise<({
-        author: {
-            id: string;
-            email: string;
-            name: string | null;
-            avatar: string | null;
-            bio: string | null;
-            role: import(".prisma/client").$Enums.Role;
-            reputation: number;
-            isBlocked: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-        };
         neighborhood: {
             id: string;
             name: string;
@@ -32,6 +20,18 @@ export declare class PostsController implements OnModuleInit {
             createdAt: Date;
             updatedAt: Date;
         } | null;
+        author: {
+            id: string;
+            email: string;
+            name: string | null;
+            avatar: string | null;
+            bio: string | null;
+            role: import(".prisma/client").$Enums.Role;
+            reputation: number;
+            isBlocked: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
     } & {
         id: string;
         title: string;
@@ -47,18 +47,13 @@ export declare class PostsController implements OnModuleInit {
         updatedAt: Date;
     })[]>;
     getFeed(lat: string, long: string, radius: string, category: string, search: string, page: string, limit: string): Promise<(({
-        author: {
+        comments: {
             id: string;
-            email: string;
-            name: string | null;
-            avatar: string | null;
-            bio: string | null;
-            role: import(".prisma/client").$Enums.Role;
-            reputation: number;
-            isBlocked: boolean;
+            content: string;
+            authorId: string;
+            postId: string;
             createdAt: Date;
-            updatedAt: Date;
-        };
+        }[];
         neighborhood: {
             id: string;
             name: string;
@@ -73,13 +68,18 @@ export declare class PostsController implements OnModuleInit {
             createdAt: Date;
             updatedAt: Date;
         } | null;
-        comments: {
+        author: {
             id: string;
-            content: string;
-            authorId: string;
-            postId: string;
+            email: string;
+            name: string | null;
+            avatar: string | null;
+            bio: string | null;
+            role: import(".prisma/client").$Enums.Role;
+            reputation: number;
+            isBlocked: boolean;
             createdAt: Date;
-        }[];
+            updatedAt: Date;
+        };
     } & {
         id: string;
         title: string;
@@ -95,32 +95,6 @@ export declare class PostsController implements OnModuleInit {
         updatedAt: Date;
     }) | undefined)[]>;
     findOne(id: string): import(".prisma/client").Prisma.Prisma__PostClient<({
-        author: {
-            id: string;
-            email: string;
-            name: string | null;
-            avatar: string | null;
-            bio: string | null;
-            role: import(".prisma/client").$Enums.Role;
-            reputation: number;
-            isBlocked: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-        };
-        neighborhood: {
-            id: string;
-            name: string;
-            cityId: string;
-            latitude: number;
-            longitude: number;
-            radiusKm: number;
-            safetyLevel: import(".prisma/client").$Enums.SafetyLevel;
-            crimeCount: number;
-            safetyCount: number;
-            totalCount: number;
-            createdAt: Date;
-            updatedAt: Date;
-        } | null;
         comments: ({
             author: {
                 id: string;
@@ -141,6 +115,32 @@ export declare class PostsController implements OnModuleInit {
             postId: string;
             createdAt: Date;
         })[];
+        neighborhood: {
+            id: string;
+            name: string;
+            cityId: string;
+            latitude: number;
+            longitude: number;
+            radiusKm: number;
+            safetyLevel: import(".prisma/client").$Enums.SafetyLevel;
+            crimeCount: number;
+            safetyCount: number;
+            totalCount: number;
+            createdAt: Date;
+            updatedAt: Date;
+        } | null;
+        author: {
+            id: string;
+            email: string;
+            name: string | null;
+            avatar: string | null;
+            bio: string | null;
+            role: import(".prisma/client").$Enums.Role;
+            reputation: number;
+            isBlocked: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
     } & {
         id: string;
         title: string;
@@ -156,18 +156,6 @@ export declare class PostsController implements OnModuleInit {
         updatedAt: Date;
     }) | null, null, import("@prisma/client/runtime/library").DefaultArgs>;
     create(body: any, file: Express.Multer.File, req: any): Promise<{
-        author: {
-            id: string;
-            email: string;
-            name: string | null;
-            avatar: string | null;
-            bio: string | null;
-            role: import(".prisma/client").$Enums.Role;
-            reputation: number;
-            isBlocked: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-        };
         neighborhood: {
             id: string;
             name: string;
@@ -182,6 +170,18 @@ export declare class PostsController implements OnModuleInit {
             createdAt: Date;
             updatedAt: Date;
         } | null;
+        author: {
+            id: string;
+            email: string;
+            name: string | null;
+            avatar: string | null;
+            bio: string | null;
+            role: import(".prisma/client").$Enums.Role;
+            reputation: number;
+            isBlocked: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
     } & {
         id: string;
         title: string;

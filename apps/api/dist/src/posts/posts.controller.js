@@ -65,11 +65,25 @@ let PostsController = PostsController_1 = class PostsController {
             throw error;
         }
     }
-    vote(id, body, req) {
-        return this.postsService.vote(id, req.user.id, body.type || 'UP');
+    async vote(id, body, req) {
+        this.logger.log(`[Vote] User ${req.user.id} voting on post ${id} with type ${body.type}`);
+        try {
+            return await this.postsService.vote(id, req.user.id, body.type || 'UP');
+        }
+        catch (error) {
+            this.logger.error(`[Vote] Failed: ${error.message}`, error.stack);
+            throw error;
+        }
     }
-    checkVote(id, req) {
-        return this.postsService.checkVoteStatus(id, req.user.id);
+    async checkVote(id, req) {
+        this.logger.log(`[CheckVote] Checking vote for user ${req.user.id} on post ${id}`);
+        try {
+            return await this.postsService.checkVoteStatus(id, req.user.id);
+        }
+        catch (error) {
+            this.logger.error(`[CheckVote] Failed: ${error.message}`, error.stack);
+            throw error;
+        }
     }
 };
 exports.PostsController = PostsController;
@@ -128,7 +142,7 @@ __decorate([
     __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Object, Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], PostsController.prototype, "vote", null);
 __decorate([
     (0, common_1.Get)(':id/vote/check'),
@@ -137,7 +151,7 @@ __decorate([
     __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], PostsController.prototype, "checkVote", null);
 exports.PostsController = PostsController = PostsController_1 = __decorate([
     (0, common_1.Controller)('posts'),

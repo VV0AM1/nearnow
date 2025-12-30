@@ -15,10 +15,23 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.NotificationsController = void 0;
 const common_1 = require("@nestjs/common");
 const notifications_service_1 = require("./notifications.service");
+const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 let NotificationsController = class NotificationsController {
     notificationsService;
     constructor(notificationsService) {
         this.notificationsService = notificationsService;
+    }
+    getMyNotifications(req) {
+        return this.notificationsService.getUserNotifications(req.user.id);
+    }
+    getMySettings(req) {
+        return this.notificationsService.getSettings(req.user.id);
+    }
+    updateMySettings(req, body) {
+        return this.notificationsService.upsertSettings(req.user.id, body.radiusKm, body.latitude, body.longitude, body.categories, body.pushEnabled);
+    }
+    markAsRead(id) {
+        return this.notificationsService.markAsRead(id);
     }
     getUserNotifications(userId) {
         return this.notificationsService.getUserNotifications(userId);
@@ -29,11 +42,37 @@ let NotificationsController = class NotificationsController {
     updateSettings(userId, body) {
         return this.notificationsService.upsertSettings(userId, body.radiusKm, body.latitude, body.longitude, body.categories, body.pushEnabled);
     }
-    markAsRead(id) {
-        return this.notificationsService.markAsRead(id);
-    }
 };
 exports.NotificationsController = NotificationsController;
+__decorate([
+    (0, common_1.Get)('me'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], NotificationsController.prototype, "getMyNotifications", null);
+__decorate([
+    (0, common_1.Get)('me/settings'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], NotificationsController.prototype, "getMySettings", null);
+__decorate([
+    (0, common_1.Put)('me/settings'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", void 0)
+], NotificationsController.prototype, "updateMySettings", null);
+__decorate([
+    (0, common_1.Post)('me/read/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], NotificationsController.prototype, "markAsRead", null);
 __decorate([
     (0, common_1.Get)(':userId'),
     __param(0, (0, common_1.Param)('userId')),
@@ -56,15 +95,9 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], NotificationsController.prototype, "updateSettings", null);
-__decorate([
-    (0, common_1.Post)(':id/read'),
-    __param(0, (0, common_1.Param)('id')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
-], NotificationsController.prototype, "markAsRead", null);
 exports.NotificationsController = NotificationsController = __decorate([
     (0, common_1.Controller)('notifications'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [notifications_service_1.NotificationsService])
 ], NotificationsController);
 //# sourceMappingURL=notifications.controller.js.map

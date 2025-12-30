@@ -13,12 +13,13 @@ const posts_resolver_1 = require("./posts.resolver");
 const prisma_module_1 = require("../prisma.module");
 const posts_controller_1 = require("./posts.controller");
 const notifications_module_1 = require("../notifications/notifications.module");
+const auth_module_1 = require("../auth/auth.module");
 let PostsModule = class PostsModule {
 };
 exports.PostsModule = PostsModule;
 exports.PostsModule = PostsModule = __decorate([
     (0, common_1.Module)({
-        imports: [prisma_module_1.PrismaModule, notifications_module_1.NotificationsModule],
+        imports: [prisma_module_1.PrismaModule, notifications_module_1.NotificationsModule, auth_module_1.AuthModule],
         providers: [posts_resolver_1.PostsResolver, posts_service_1.PostsService],
         controllers: [posts_controller_1.PostsController],
         exports: [posts_service_1.PostsService]

@@ -11,10 +11,25 @@ const common_1 = require("@nestjs/common");
 const client_1 = require("@prisma/client");
 let PrismaService = class PrismaService extends client_1.PrismaClient {
     async onModuleInit() {
-        await this.$connect();
+        await this.connectWithRetry();
     }
     async onModuleDestroy() {
         await this.$disconnect();
+    }
+    async connectWithRetry(retries = 30, delay = 3000) {
+        for (let i = 0; i < retries; i++) {
+            try {
+                await this.$connect();
+                console.log('Successfully connected to database');
+                return;
+            }
+            catch (error) {
+                console.error(`Failed to connect to database (attempt ${i + 1}/${retries}):`, error.message);
+                if (i === retries - 1)
+                    throw error;
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
     }
 };
 exports.PrismaService = PrismaService;

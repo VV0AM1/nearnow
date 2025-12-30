@@ -25,19 +25,27 @@ export class PostsService {
             throw new BadRequestException("Post contains inappropriate language.");
         }
 
-        const { neighborhood: neighborhoodName, city: cityName, country: countryName, ...postData } = createPostInput;
-
+        const { neighborhood: rawHood, city: rawCity, country: rawCountry, ...postData } = createPostInput;
         let neighborhoodId = postData.neighborhoodId;
 
         // Auto-detect/Update Neighborhood Logic
-        if (neighborhoodName && cityName) {
+        if (rawHood && rawCity) {
+            // Normalize names to prevent simple duplicates (whitespace)
+            // Note: Postgres is case-sensitive. "Santa Eulalia" != "Santa Eulàlia".
+            // Ideally we'd use a fuzzy match or slug, but simple trim helps.
+            const cityName = rawCity.trim();
+            const neighborhoodName = rawHood.trim();
+            const countryName = (rawCountry || 'Unknown').trim();
+
+            console.log(`[CreatePost] Processing location: Hood="${neighborhoodName}", City="${cityName}"`);
+
             // 1. Upsert City
             const city = await this.prisma.city.upsert({
                 where: { name: cityName },
                 update: {},
                 create: {
                     name: cityName,
-                    country: countryName || 'Unknown',
+                    country: countryName,
                     latitude: postData.latitude,
                     longitude: postData.longitude
                 }
@@ -48,12 +56,15 @@ export class PostsService {
                 totalCount: { increment: 1 }
             };
 
-            if (['CRIME', 'DANGER'].includes(postData.category)) {
+            const cat = postData.category;
+            console.log(`[CreatePost] Category: ${cat}`);
+
+            if (['CRIME', 'DANGER'].includes(cat)) {
                 scoreUpdate.crimeCount = { increment: 1 };
-                // Decrease Safety Level? Simple Logic for now:
-                // We'll calculate Level on read or periodic cron, simplified here.
-            } else if (postData.category === 'SAFETY') {
+                console.log("[CreatePost] Incrementing CRIME count");
+            } else if (cat === 'SAFETY') {
                 scoreUpdate.safetyCount = { increment: 1 };
+                console.log("[CreatePost] Incrementing SAFETY count");
             }
 
             // 3. Upsert Neighborhood
@@ -71,13 +82,12 @@ export class PostsService {
                     latitude: postData.latitude,
                     longitude: postData.longitude,
                     ...scoreUpdate,
-                    // Initialize with 0s if not set by scoreUpdate (prisma defaults handle this?)
-                    // explicitly setting counts for create if defaults don't cover increment syntax in create (they don't usually)
                     crimeCount: scoreUpdate.crimeCount?.increment || 0,
                     safetyCount: scoreUpdate.safetyCount?.increment || 0,
                     totalCount: 1
                 }
             });
+            console.log(`[CreatePost] Neighborhood Record ID: ${neighborhood.id} (City ID: ${city.id})`);
             neighborhoodId = neighborhood.id;
         }
 

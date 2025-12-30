@@ -3,11 +3,12 @@ import { View, Text, TouchableOpacity, TextInput, Image, ScrollView, KeyboardAvo
 import { WebView } from 'react-native-webview';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/context/ThemeContext';
 import { LEAFLET_ASSETS } from './map-assets'; // Reusing map assets
 import api from '@/services/api';
+import { useCallback } from 'react';
 
 const CATEGORIES = [
     { id: 'DANGER', label: 'SOS / Danger', color: '#ef4444', icon: 'alert-circle' },
@@ -36,6 +37,21 @@ export default function CreateScreen() {
     const [content, setContent] = useState('');
     const [category, setCategory] = useState(CATEGORIES[6].id); // Default General
     const [image, setImage] = useState<ImagePicker.ImagePickerAsset | null>(null);
+
+    // Reset State on Focus
+    useFocusEffect(
+        useCallback(() => {
+            // Reset logic
+            return () => {
+                setStep(1);
+                setTitle('');
+                setContent('');
+                setImage(null);
+                setCategory(CATEGORIES[6].id);
+                // Don't reset location to null to avoid re-fetching GPS delay if possible, but stepping back to 1 is key.
+            };
+        }, [])
+    );
 
     // Initial Location
     useEffect(() => {
@@ -141,6 +157,24 @@ export default function CreateScreen() {
         }
     };
 
+    const takePhoto = async () => {
+        const permission = await ImagePicker.requestCameraPermissionsAsync();
+        if (permission.status !== 'granted') {
+            Alert.alert('Permission needed', 'Camera access is required to take photos.');
+            return;
+        }
+
+        const result = await ImagePicker.launchCameraAsync({
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 0.5,
+        });
+
+        if (!result.canceled) {
+            setImage(result.assets[0]);
+        }
+    };
+
     const handleSubmit = async () => {
         if (!title.trim() || !content.trim()) {
             Alert.alert("Missing Fields", "Please add a title and description.");
@@ -150,9 +184,44 @@ export default function CreateScreen() {
 
         setSubmitting(true);
         try {
-            // 1. Upload Image (Mock) or Real logic
-            // For now, sending just text logic.
-            // TODO: Implement actual image upload if backend requires multipart.
+            // 1. Reverse Geocode (OSM Nominatim for better Neighborhood precision)
+            let addressDetails = {
+                neighborhood: '',
+                city: '',
+                country: ''
+            };
+
+            try {
+                // Using Nominatim for detailed neighborhood data (Santa Eulalia, etc.)
+                const response = await fetch(
+                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.lat}&lon=${location.lng}`,
+                    {
+                        headers: {
+                            'User-Agent': 'NearNowApp/1.0'
+                        }
+                    }
+                );
+                const data = await response.json();
+
+                if (data && data.address) {
+                    const addr = data.address;
+                    console.log("OSM Address:", addr); // Debug log
+
+                    // Priority: Neighbourhood -> Suburb -> Quarter -> City District
+                    const hood = addr.neighbourhood || addr.suburb || addr.quarter || addr.city_district || addr.district;
+                    const city = addr.city || addr.town || addr.municipality || 'Unknown';
+                    const country = addr.country || 'Unknown';
+
+                    addressDetails = {
+                        neighborhood: (hood || city || 'Unknown').trim(),
+                        city: city.trim(),
+                        country: country.trim()
+                    };
+                }
+            } catch (e) {
+                console.log("OSM Geocoding failed", e);
+                // Fallback to Native if OSM fails/timeout (Optional, but keeping it simple for now)
+            }
 
             const payload = {
                 title,
@@ -160,6 +229,9 @@ export default function CreateScreen() {
                 category,
                 latitude: location.lat,
                 longitude: location.lng,
+                neighborhood: addressDetails.neighborhood,
+                city: addressDetails.city,
+                country: addressDetails.country
             };
 
             await api.post('/posts', payload);
@@ -253,8 +325,8 @@ export default function CreateScreen() {
                                 key={cat.id}
                                 onPress={() => setCategory(cat.id)}
                                 className={`mr-3 px-4 py-3 rounded-xl border flex-row items-center gap-2 ${category === cat.id
-                                        ? `bg-[${cat.color}]/20 border-[${cat.color}]`
-                                        : 'bg-white/5 border-white/10'
+                                    ? `bg-[${cat.color}]/20 border-[${cat.color}]`
+                                    : 'bg-white/5 border-white/10'
                                     }`}
                                 style={category === cat.id ? { backgroundColor: cat.color + '30', borderColor: cat.color } : {}}
                             >
@@ -293,19 +365,36 @@ export default function CreateScreen() {
 
                     {/* Image Picker */}
                     <Text className="text-gray-400 font-bold mb-2 uppercase text-xs tracking-wider">Photo (Optional)</Text>
-                    <TouchableOpacity
-                        onPress={pickImage}
-                        className="bg-white/5 border border-white/10 border-dashed rounded-xl h-48 items-center justify-center mb-8 overflow-hidden"
-                    >
-                        {image ? (
-                            <Image source={{ uri: image.uri }} className="w-full h-full" resizeMode="cover" />
-                        ) : (
-                            <View className="items-center">
+
+                    {image ? (
+                        <View className="mb-8">
+                            <Image source={{ uri: image.uri }} className="w-full h-48 rounded-xl" resizeMode="cover" />
+                            <TouchableOpacity
+                                onPress={() => setImage(null)}
+                                className="absolute top-2 right-2 bg-black/60 p-2 rounded-full"
+                            >
+                                <Ionicons name="close" size={20} color="white" />
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        <View className="flex-row gap-4 mb-8">
+                            <TouchableOpacity
+                                onPress={takePhoto}
+                                className="flex-1 bg-white/5 border border-white/10 border-dashed rounded-xl h-32 items-center justify-center active:bg-white/10"
+                            >
                                 <Ionicons name="camera" size={32} color="#4b5563" />
-                                <Text className="text-gray-500 mt-2 font-medium">Tap to add photo</Text>
-                            </View>
-                        )}
-                    </TouchableOpacity>
+                                <Text className="text-gray-500 mt-2 font-bold">Camera</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                onPress={pickImage}
+                                className="flex-1 bg-white/5 border border-white/10 border-dashed rounded-xl h-32 items-center justify-center active:bg-white/10"
+                            >
+                                <Ionicons name="images" size={32} color="#4b5563" />
+                                <Text className="text-gray-500 mt-2 font-bold">Gallery</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
 
                 </ScrollView>
 
