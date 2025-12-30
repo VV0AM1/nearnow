@@ -43,7 +43,11 @@ export class NeighborhoodsService {
 
         // 4. Top 3 Safe (Highest Safety Count)
         const topSafe = [...nearbyById]
-            .sort((a, b) => b.safetyCount - a.safetyCount)
+            .sort((a, b) => {
+                const diff = b.safetyCount - a.safetyCount;
+                if (diff !== 0) return diff;
+                return b.totalCount - a.totalCount; // Tie-breaker: most active
+            })
             .slice(0, 3);
 
         // 5. General Ranking (Highest Score = Safest)

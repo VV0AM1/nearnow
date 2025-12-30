@@ -8,7 +8,7 @@ export function useReverseGeocode() {
     const reverseGeocode = useCallback(async (lat: number, long: number) => {
         setLoading(true);
         try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${long}`);
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${long}&accept-language=en`);
             const data = await res.json();
             if (data.display_name) {
                 // Keep it short: first 3 parts

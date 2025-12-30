@@ -192,9 +192,13 @@ export default function CreateScreen() {
             };
 
             try {
-                // Using Nominatim for detailed neighborhood data (Santa Eulalia, etc.)
+                // Force English to align with Web/Consolidated stats (Santa Eulalia instead of Localized name)
+                const langCode = 'en';
+                console.log(`[Geocoding] Using language: ${langCode}`);
+
+                // Using Nominatim for detailed neighborhood data
                 const response = await fetch(
-                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.lat}&lon=${location.lng}`,
+                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.lat}&lon=${location.lng}&accept-language=${langCode}`,
                     {
                         headers: {
                             'User-Agent': 'NearNowApp/1.0'
