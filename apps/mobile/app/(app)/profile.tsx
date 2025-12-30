@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, RefreshControl, Image, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, RefreshControl, Image, Alert, ActivityIndicator, Switch } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -7,6 +7,7 @@ import { useEffect, useState, useCallback } from 'react';
 import * as Location from 'expo-location';
 import api, { API_URL } from '@/services/api';
 import { format } from 'date-fns';
+import { startBackgroundLocation, stopBackgroundLocation, COMPANION_LOCATION_TASK } from '@/services/location-task';
 
 export default function ProfileScreen() {
     const { themeMode, activeTheme, setThemeMode } = useTheme();
@@ -18,7 +19,10 @@ export default function ProfileScreen() {
     const [settings, setSettings] = useState<any>(null); // Notification Settings
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [syncingLocation, setSyncingLocation] = useState(false);
+
+    // Background tracking state
+    const [isTracking, setIsTracking] = useState(false);
+    const [togglingTrack, setTogglingTrack] = useState(false);
 
     const fetchProfile = async () => {
         try {
@@ -36,15 +40,22 @@ export default function ProfileScreen() {
         }
     };
 
+    const checkTrackingStatus = async () => {
+        const hasStarted = await Location.hasStartedLocationUpdatesAsync(COMPANION_LOCATION_TASK);
+        setIsTracking(hasStarted);
+    };
+
     useFocusEffect(
         useCallback(() => {
             fetchProfile();
+            checkTrackingStatus();
         }, [])
     );
 
     const onRefresh = useCallback(() => {
         setRefreshing(true);
         fetchProfile();
+        checkTrackingStatus();
     }, []);
 
     // Update Radius
@@ -61,30 +72,23 @@ export default function ProfileScreen() {
         }
     };
 
-    // Sync Location Logic
-    const syncLocation = async () => {
-        setSyncingLocation(true);
+    const toggleTracking = async (value: boolean) => {
+        setTogglingTrack(true);
         try {
-            let { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') {
-                Alert.alert('Permission Denied', 'Allow location access to receive alerts near you.');
-                return;
+            if (value) {
+                const success = await startBackgroundLocation();
+                setIsTracking(success);
+                if (!success) Alert.alert("Permission Required", "Please allow 'Always' location access in settings for background alerts.");
+            } else {
+                await stopBackgroundLocation();
+                setIsTracking(false);
             }
-
-            const loc = await Location.getCurrentPositionAsync({});
-            const { latitude, longitude } = loc.coords;
-
-            await api.put('/notifications/me/location', { latitude, longitude });
-            Alert.alert("Location Synced", "You will now receive alerts around your current location.");
-
-            // Refresh settings to confirm
-            const res = await api.get('/notifications/me/settings');
-            setSettings(res.data);
-
         } catch (e) {
-            Alert.alert("Error", "Could not sync location. Try again.");
+            console.error(e);
+            Alert.alert("Error", "Could not toggle tracking.");
+            setIsTracking(false);
         } finally {
-            setSyncingLocation(false);
+            setTogglingTrack(false);
         }
     };
 
@@ -151,19 +155,24 @@ export default function ProfileScreen() {
             {/* Notification & Location Settings (NEW) */}
             <View style={{ backgroundColor: cardBg, borderRadius: 16, padding: 16, margin: 16, marginTop: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 }}>
                 <View className="flex-row items-center justify-between mb-4">
-                    <Text style={{ fontSize: 14, fontWeight: 'bold', color: textSub, textTransform: 'uppercase' }}>
-                        Alert Settings
-                    </Text>
-                    <TouchableOpacity onPress={syncLocation} disabled={syncingLocation}>
-                        {syncingLocation ? (
-                            <ActivityIndicator size="small" color="#3b82f6" />
-                        ) : (
-                            <View className="flex-row items-center bg-blue-100 dark:bg-blue-900/30 px-3 py-1 rounded-full">
-                                <Ionicons name="location" size={12} color="#2563eb" />
-                                <Text className="text-blue-600 font-bold text-xs ml-1">Sync Location</Text>
-                            </View>
-                        )}
-                    </TouchableOpacity>
+                    <View className="flex-1 mr-4">
+                        <Text style={{ fontSize: 14, fontWeight: 'bold', color: textSub, textTransform: 'uppercase' }}>
+                            Live Safety Tracking
+                        </Text>
+                        <Text className="text-xs text-gray-500 mt-1 dark:text-gray-400">
+                            Auto-update location for alerts even when the app is closed.
+                        </Text>
+                    </View>
+                    {togglingTrack ? (
+                        <ActivityIndicator />
+                    ) : (
+                        <Switch
+                            value={isTracking}
+                            onValueChange={toggleTracking}
+                            trackColor={{ false: '#767577', true: '#3b82f6' }}
+                            thumbColor={isTracking ? '#ffffff' : '#f4f3f4'}
+                        />
+                    )}
                 </View>
 
                 {/* Radius Selector */}

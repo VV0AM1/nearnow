@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/context/ThemeContext';
 import { View } from 'react-native';
 import { SOSButton } from '@/components/SOSButton';
+import '@/services/location-task'; // Register background task
 
 export default function AppLayout() {
     const { activeTheme } = useTheme();
