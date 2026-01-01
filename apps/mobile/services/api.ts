@@ -1,7 +1,13 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-export const API_URL = 'https://51.21.193.118.nip.io/api'; // AWS URL
+// Production (Render)
+export const API_URL = "https://nearnow-api.onrender.com/api";
+
+// Local Development (Uncomment to use)
+// export const API_URL = Platform.OS === 'ios' 
+//   ? "http://localhost:3000/api" 
+//   : "http://10.0.2.2:3000/api"; // AWS URL
 
 const api = axios.create({
     baseURL: API_URL,

@@ -50,11 +50,15 @@ export default function RootLayout() {
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 
+import { ToastProvider } from '@/context/ToastContext';
+
 function RootLayoutNav() {
   return (
     <AuthProvider>
       <ThemeProvider>
-        <NavContent />
+        <ToastProvider>
+          <NavContent />
+        </ToastProvider>
       </ThemeProvider>
     </AuthProvider>
   );

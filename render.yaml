@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: nearnow-api
+    env: docker
+    dockerContext: apps/api
+    dockerfilePath: apps/api/Dockerfile
+    plan: free
+    region: frankfurt
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000

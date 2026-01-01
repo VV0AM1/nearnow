@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, RefreshControl, Image, Alert, ActivityIndicator, Switch } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, RefreshControl, Image, ActivityIndicator, Switch } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -8,15 +8,18 @@ import * as Location from 'expo-location';
 import api, { API_URL } from '@/services/api';
 import { format } from 'date-fns';
 import { startBackgroundLocation, stopBackgroundLocation, COMPANION_LOCATION_TASK } from '@/services/location-task';
+import { GlassView } from '@/components/GlassView';
+import { useToast } from '@/context/ToastContext';
 
 export default function ProfileScreen() {
     const { themeMode, activeTheme, setThemeMode } = useTheme();
     const { signOut } = useAuth();
     const router = useRouter();
+    const { showToast } = useToast();
     const isDark = activeTheme === 'dark';
 
     const [profile, setProfile] = useState<any>(null);
-    const [settings, setSettings] = useState<any>(null); // Notification Settings
+    const [settings, setSettings] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
@@ -68,7 +71,7 @@ export default function ProfileScreen() {
                 radiusKm: radius
             });
         } catch (e) {
-            Alert.alert("Error", "Failed to update settings");
+            showToast("Failed to update radius", "error");
         }
     };
 
@@ -78,14 +81,16 @@ export default function ProfileScreen() {
             if (value) {
                 const success = await startBackgroundLocation();
                 setIsTracking(success);
-                if (!success) Alert.alert("Permission Required", "Please allow 'Always' location access in settings for background alerts.");
+                if (!success) showToast("Permission required (Always Allow)", "warning");
+                else showToast("Background tracking active", "success");
             } else {
                 await stopBackgroundLocation();
                 setIsTracking(false);
+                showToast("Tracking paused", "info");
             }
         } catch (e) {
             console.error(e);
-            Alert.alert("Error", "Could not toggle tracking.");
+            showToast("Could not toggle tracking", "error");
             setIsTracking(false);
         } finally {
             setTogglingTrack(false);
@@ -101,11 +106,10 @@ export default function ProfileScreen() {
     const RADIUS_OPTIONS = [5, 10, 25, 50];
 
     // Colors
-    const containerBg = isDark ? '#000000' : '#f9fafb';
-    const cardBg = isDark ? '#171717' : '#ffffff';
+    const containerBg = isDark ? '#020817' : '#f9fafb';
     const textMain = isDark ? '#ffffff' : '#111827';
     const textSub = isDark ? '#9ca3af' : '#6b7280';
-    const themeRowBg = isDark ? '#262626' : '#f3f4f6';
+    const themeRowBg = isDark ? '#1e293b' : '#f3f4f6';
 
     const level = profile?.gamification?.level || 1;
     const xp = profile?.gamification?.points || 0;
@@ -115,183 +119,185 @@ export default function ProfileScreen() {
     return (
         <ScrollView
             style={{ flex: 1, backgroundColor: containerBg }}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={isDark ? 'white' : 'black'} />}
         >
             {/* Header / Avatar */}
-            <View className="items-center pt-8 pb-6 bg-white dark:bg-black border-b border-gray-100 dark:border-neutral-800">
+            <View className="items-center pt-8 pb-6 mb-4">
                 <View className="relative">
                     {profile?.avatar ? (
                         <Image
                             source={{ uri: `${API_URL.replace('/api', '')}${profile.avatar}` }}
-                            className="w-24 h-24 rounded-full"
+                            className="w-24 h-24 rounded-full border-4 border-white dark:border-white/10"
                         />
                     ) : (
-                        <View className="w-24 h-24 bg-blue-600 rounded-full items-center justify-center">
+                        <View className="w-24 h-24 bg-blue-600 rounded-full items-center justify-center border-4 border-white dark:border-white/10 shadow-lg shadow-blue-900/20">
                             <Text className="text-white text-4xl font-bold">{profile?.name?.[0] || 'U'}</Text>
                         </View>
                     )}
-                    <TouchableOpacity className="absolute bottom-0 right-0 bg-white dark:bg-gray-800 p-2 rounded-full shadow-sm border border-gray-100 dark:border-gray-700">
-                        <Ionicons name="camera" size={16} color={isDark ? 'white' : 'black'} />
-                    </TouchableOpacity>
                 </View>
 
                 <Text className="text-2xl font-bold mt-4 dark:text-white">{profile?.name || 'Loading...'}</Text>
-                <Text className="text-gray-500 dark:text-gray-400">
+                <Text className="text-gray-500 dark:text-gray-400 font-medium">
                     Joined {profile?.createdAt ? format(new Date(profile.createdAt), 'MMMM yyyy') : '...'}
                 </Text>
 
                 {/* Level / XP */}
                 <View className="w-4/5 mt-6">
                     <View className="flex-row justify-between mb-2">
-                        <Text className="font-bold text-blue-600">Level {level} <Text className="text-gray-500 font-normal">({profile?.gamification?.rank || 'Novice'})</Text></Text>
-                        <Text className="text-gray-500 text-xs">{xp} / {nextLevelXp} XP</Text>
+                        <Text className="font-bold text-blue-600 dark:text-blue-400">Level {level} <Text className="text-gray-500 dark:text-gray-500 font-normal">({profile?.gamification?.rank || 'Novice'})</Text></Text>
+                        <Text className="text-gray-500 dark:text-gray-400 text-xs font-semibold">{xp} / {nextLevelXp} XP</Text>
                     </View>
-                    <View className="h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+                    <View className="h-2 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
                         <View style={{ width: `${progress}%` }} className="h-full bg-blue-600 rounded-full" />
                     </View>
                 </View>
             </View>
 
-            {/* Notification & Location Settings (NEW) */}
-            <View style={{ backgroundColor: cardBg, borderRadius: 16, padding: 16, margin: 16, marginTop: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 }}>
-                <View className="flex-row items-center justify-between mb-4">
-                    <View className="flex-1 mr-4">
-                        <Text style={{ fontSize: 14, fontWeight: 'bold', color: textSub, textTransform: 'uppercase' }}>
-                            Live Safety Tracking
-                        </Text>
-                        <Text className="text-xs text-gray-500 mt-1 dark:text-gray-400">
-                            Auto-update location for alerts even when the app is closed.
-                        </Text>
+            {/* 1. Stats Grid */}
+            <GlassView style={{ marginHorizontal: 16, marginBottom: 16, padding: 20, borderRadius: 24 }}>
+                <View className="flex-row justify-between items-center">
+                    <View className="items-center flex-1">
+                        <Text className="text-xl font-bold dark:text-white">{profile?._count?.posts || 0}</Text>
+                        <Text className="text-xs text-gray-500 uppercase tracking-wide mt-1 font-bold">Posts</Text>
                     </View>
-                    {togglingTrack ? (
-                        <ActivityIndicator />
-                    ) : (
-                        <Switch
-                            value={isTracking}
-                            onValueChange={toggleTracking}
-                            trackColor={{ false: '#767577', true: '#3b82f6' }}
-                            thumbColor={isTracking ? '#ffffff' : '#f4f3f4'}
-                        />
-                    )}
+                    <View className="w-[1px] h-8 bg-gray-200 dark:bg-white/10" />
+                    <View className="items-center flex-1">
+                        <Text className="text-xl font-bold dark:text-white">{profile?._count?.votes || 0}</Text>
+                        <Text className="text-xs text-gray-500 uppercase tracking-wide mt-1 font-bold">Votes</Text>
+                    </View>
+                    <View className="w-[1px] h-8 bg-gray-200 dark:bg-white/10" />
+                    <View className="items-center flex-1">
+                        <Text className="text-xl font-bold dark:text-white">{profile?._count?.comments || 0}</Text>
+                        <Text className="text-xs text-gray-500 uppercase tracking-wide mt-1 font-bold">Comments</Text>
+                    </View>
                 </View>
+            </GlassView>
 
-                {/* Radius Selector */}
-                <Text className="text-gray-500 dark:text-gray-400 text-xs mb-3">
-                    Alert Radius: <Text className="font-bold dark:text-white">{settings?.radiusKm || 5} km</Text>
-                </Text>
-
-                <View className="flex-row justify-between mb-6">
-                    {RADIUS_OPTIONS.map(km => {
-                        const isActive = settings?.radiusKm === km;
-                        return (
-                            <TouchableOpacity
-                                key={km}
-                                onPress={() => updateRadius(km)}
-                                className={`px-4 py-2 rounded-lg border ${isActive ? 'bg-blue-600 border-blue-600' : 'border-gray-200 dark:border-gray-700'}`}
-                            >
-                                <Text className={`${isActive ? 'text-white' : 'text-gray-700 dark:text-gray-300'} font-bold`}>{km}km</Text>
-                            </TouchableOpacity>
-                        )
-                    })}
-                </View>
-
-                {/* Category Filters */}
-                <Text className="text-gray-500 dark:text-gray-400 text-xs mb-3">
-                    Filter Categories:
-                </Text>
-                <View className="flex-row flex-wrap gap-2">
-                    {[
-                        { id: 'DANGER', label: 'SOS', color: '#ef4444' },
-                        { id: 'CRIME', label: 'Crime', color: '#dc2626' },
-                        { id: 'SAFETY', label: 'Safe', color: '#22c55e' },
-                        { id: 'LOST_FOUND', label: 'Lost', color: '#eab308' },
-                        { id: 'EVENT', label: 'Event', color: '#a855f7' },
-                        { id: 'RECOMMENDATION', label: 'Rec', color: '#ec4899' },
-                    ].map((cat) => {
-                        const isSelected = settings?.categories?.includes(cat.id);
-                        return (
-                            <TouchableOpacity
-                                key={cat.id}
-                                onPress={async () => {
-                                    const current = settings?.categories || [];
-                                    const newCats = isSelected
-                                        ? current.filter((c: string) => c !== cat.id)
-                                        : [...current, cat.id];
-
-                                    setSettings({ ...settings, categories: newCats });
-                                    await api.put('/notifications/me/settings', { ...settings, categories: newCats });
-                                }}
-                                style={{
-                                    backgroundColor: isSelected ? cat.color : (isDark ? '#262626' : '#f3f4f6'),
-                                    paddingHorizontal: 12,
-                                    paddingVertical: 8,
-                                    borderRadius: 20
-                                }}
-                            >
-                                <Text style={{
-                                    color: isSelected ? 'white' : (isDark ? '#d1d5db' : '#4b5563'),
-                                    fontWeight: '600',
-                                    fontSize: 12
-                                }}>
-                                    {cat.label}
-                                </Text>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </View>
-
-            </View>
-
-            {/* Stats Grid */}
-            <View className="flex-row justify-between px-6 py-6 bg-white dark:bg-black mt-0 mx-4 rounded-2xl shadow-sm">
-                <View className="items-center flex-1">
-                    <Text className="text-xl font-bold dark:text-white">{profile?._count?.posts || 0}</Text>
-                    <Text className="text-xs text-gray-500 uppercase tracking-wide mt-1">Posts</Text>
-                </View>
-                <View className="w-[1px] bg-gray-100 dark:bg-gray-800" />
-                <View className="items-center flex-1">
-                    <Text className="text-xl font-bold dark:text-white">{profile?._count?.votes || 0}</Text>
-                    <Text className="text-xs text-gray-500 uppercase tracking-wide mt-1">Votes</Text>
-                </View>
-                <View className="w-[1px] bg-gray-100 dark:bg-gray-800" />
-                <View className="items-center flex-1">
-                    <Text className="text-xl font-bold dark:text-white">{profile?._count?.comments || 0}</Text>
-                    <Text className="text-xs text-gray-500 uppercase tracking-wide mt-1">Comments</Text>
-                </View>
-            </View>
-
-            {/* Menu Links */}
-            <View style={{ backgroundColor: cardBg, borderRadius: 16, padding: 0, margin: 16, marginTop: 16, overflow: 'hidden', shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 }}>
+            {/* 2. Menu Links (Saved & Notifications) */}
+            <GlassView style={{ marginHorizontal: 16, marginBottom: 16, borderRadius: 24 }}>
                 <TouchableOpacity
                     onPress={() => router.push('/(app)/saved' as any)}
-                    className="flex-row items-center p-4 border-b border-gray-100 dark:border-gray-800"
+                    className="flex-row items-center p-4 border-b border-gray-100 dark:border-white/5"
                 >
-                    <View className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg mr-4">
-                        <Ionicons name="bookmark" size={20} color="#2563eb" />
+                    <View className="bg-blue-100 dark:bg-blue-900/40 p-2.5 rounded-xl mr-4">
+                        <Ionicons name="bookmark" size={20} color="#3b82f6" />
                     </View>
                     <Text className="flex-1 font-bold text-base dark:text-white">Saved Posts</Text>
-                    <Ionicons name="chevron-forward" size={20} color={isDark ? '#4b5563' : '#d1d5db'} />
+                    <Ionicons name="chevron-forward" size={20} color={isDark ? '#6b7280' : '#d1d5db'} />
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     className="flex-row items-center p-4"
                     onPress={() => router.push('/notifications' as any)}
                 >
-                    <View className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded-lg mr-4">
-                        <Ionicons name="notifications" size={20} color="#9333ea" />
+                    <View className="bg-purple-100 dark:bg-purple-900/40 p-2.5 rounded-xl mr-4">
+                        <Ionicons name="notifications" size={20} color="#a855f7" />
                     </View>
                     <Text className="flex-1 font-bold text-base dark:text-white">Notifications</Text>
-                    <Ionicons name="chevron-forward" size={20} color={isDark ? '#4b5563' : '#d1d5db'} />
+                    <Ionicons name="chevron-forward" size={20} color={isDark ? '#6b7280' : '#d1d5db'} />
                 </TouchableOpacity>
-            </View>
+            </GlassView>
 
-            {/* Theme Selector */}
-            <View style={{ backgroundColor: cardBg, borderRadius: 16, padding: 16, margin: 16, marginTop: 0, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 }}>
-                <Text style={{ fontSize: 14, fontWeight: 'bold', color: textSub, textTransform: 'uppercase', marginBottom: 16 }}>
+            {/* 3. Notification Logic (Location & Filters) */}
+            <GlassView style={{ marginHorizontal: 16, marginBottom: 16, borderRadius: 24, padding: 0 }}>
+                <View className="p-5">
+                    <View className="flex-row items-center justify-between mb-6">
+                        <View className="flex-1 mr-4">
+                            <Text style={{ fontSize: 13, fontWeight: '800', color: textSub, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                Live Safety Tracking
+                            </Text>
+                            <Text className="text-xs text-gray-500 mt-1 dark:text-gray-400 leading-4">
+                                Auto-update location for alerts.
+                            </Text>
+                        </View>
+                        {togglingTrack ? (
+                            <ActivityIndicator />
+                        ) : (
+                            <Switch
+                                value={isTracking}
+                                onValueChange={toggleTracking}
+                                trackColor={{ false: '#767577', true: '#3b82f6' }}
+                                thumbColor={isTracking ? '#ffffff' : '#f4f3f4'}
+                            />
+                        )}
+                    </View>
+
+                    {/* Radius Selector */}
+                    <Text className="text-gray-500 dark:text-gray-400 text-xs mb-3 font-medium uppercase tracking-wide">
+                        Alert Radius: <Text className="font-bold dark:text-white text-blue-500">{settings?.radiusKm || 5} km</Text>
+                    </Text>
+
+                    <View className="flex-row justify-between mb-6 gap-2">
+                        {RADIUS_OPTIONS.map(km => {
+                            const isActive = settings?.radiusKm === km;
+                            return (
+                                <TouchableOpacity
+                                    key={km}
+                                    onPress={() => updateRadius(km)}
+                                    className={`flex-1 py-2.5 rounded-xl items-center border ${isActive ? 'bg-blue-600 border-blue-600' : 'bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10'}`}
+                                >
+                                    <Text className={`${isActive ? 'text-white' : 'text-gray-700 dark:text-gray-300'} font-bold`}>{km}km</Text>
+                                </TouchableOpacity>
+                            )
+                        })}
+                    </View>
+
+                    {/* Category Filters */}
+                    <Text className="text-gray-500 dark:text-gray-400 text-xs mb-3 font-medium uppercase tracking-wide">
+                        Filter Categories
+                    </Text>
+                    <View className="flex-row flex-wrap gap-2">
+                        {[
+                            { id: 'DANGER', label: 'SOS', color: '#ef4444' },
+                            { id: 'CRIME', label: 'Crime', color: '#dc2626' },
+                            { id: 'SAFETY', label: 'Safety', color: '#22c55e' },
+                            { id: 'LOST_FOUND', label: 'Lost', color: '#eab308' },
+                            { id: 'EVENT', label: 'Event', color: '#a855f7' },
+                            { id: 'RECOMMENDATION', label: 'Rec', color: '#ec4899' },
+                        ].map((cat) => {
+                            const isSelected = settings?.categories?.includes(cat.id);
+                            return (
+                                <TouchableOpacity
+                                    key={cat.id}
+                                    onPress={async () => {
+                                        const current = settings?.categories || [];
+                                        const newCats = isSelected
+                                            ? current.filter((c: string) => c !== cat.id)
+                                            : [...current, cat.id];
+
+                                        setSettings({ ...settings, categories: newCats });
+                                        await api.put('/notifications/me/settings', { ...settings, categories: newCats });
+                                    }}
+                                    style={{
+                                        backgroundColor: isSelected ? cat.color : (isDark ? '#1e293b' : '#f3f4f6'),
+                                        paddingHorizontal: 14,
+                                        paddingVertical: 8,
+                                        borderRadius: 20,
+                                        borderWidth: 1,
+                                        borderColor: isSelected ? cat.color : (isDark ? 'transparent' : '#e5e7eb')
+                                    }}
+                                >
+                                    <Text style={{
+                                        color: isSelected ? 'white' : (isDark ? '#cbd5e1' : '#4b5563'),
+                                        fontWeight: '600',
+                                        fontSize: 12
+                                    }}>
+                                        {cat.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+                </View>
+            </GlassView>
+
+            {/* 4. Theme Selector */}
+            <GlassView style={{ marginHorizontal: 16, marginBottom: 16, padding: 16, borderRadius: 24 }}>
+                <Text style={{ fontSize: 13, fontWeight: '800', color: textSub, textTransform: 'uppercase', marginBottom: 12, letterSpacing: 0.5 }}>
                     Appearance
                 </Text>
 
-                <View style={{ flexDirection: 'row', backgroundColor: themeRowBg, padding: 4, borderRadius: 12 }}>
+                <View style={{ flexDirection: 'row', backgroundColor: themeRowBg, padding: 4, borderRadius: 16 }}>
                     {THEME_OPTIONS.map((opt) => {
                         const isActive = themeMode === opt.value;
                         return (
@@ -303,10 +309,10 @@ export default function ProfileScreen() {
                                     flexDirection: 'row',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    paddingVertical: 12,
-                                    borderRadius: 8,
-                                    gap: 8,
-                                    backgroundColor: isActive ? (isDark ? '#404040' : '#ffffff') : 'transparent',
+                                    paddingVertical: 10,
+                                    borderRadius: 12,
+                                    gap: 6,
+                                    backgroundColor: isActive ? (isDark ? '#334155' : '#ffffff') : 'transparent',
                                     shadowColor: isActive ? "#000" : undefined,
                                     shadowOffset: { width: 0, height: 1 },
                                     shadowOpacity: isActive ? 0.1 : 0,
@@ -316,12 +322,13 @@ export default function ProfileScreen() {
                             >
                                 <Ionicons
                                     name={opt.icon as any}
-                                    size={18}
-                                    color={isActive ? (isDark ? '#fff' : '#000') : '#9ca3af'}
+                                    size={16}
+                                    color={isActive ? (isDark ? '#fff' : '#000') : '#94a3b8'}
                                 />
                                 <Text style={{
-                                    fontWeight: '500',
-                                    color: isActive ? textMain : '#9ca3af'
+                                    fontWeight: '600',
+                                    fontSize: 13,
+                                    color: isActive ? textMain : '#94a3b8'
                                 }}>
                                     {opt.label}
                                 </Text>
@@ -329,19 +336,21 @@ export default function ProfileScreen() {
                         );
                     })}
                 </View>
-            </View>
+            </GlassView>
 
-            {/* Sign Out */}
+            {/* 5. Sign Out */}
             <TouchableOpacity
                 onPress={() => {
                     signOut();
                     router.replace('/login');
                 }}
-                style={{ backgroundColor: isDark ? 'rgba(127, 29, 29, 0.2)' : '#fef2f2', padding: 16, margin: 16, marginTop: 0, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                style={{ backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2', padding: 16, margin: 16, marginTop: 0, borderRadius: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: isDark ? 'rgba(239, 68, 68, 0.2)' : 'transparent' }}
             >
-                <Ionicons name="log-out" size={20} color="#ef4444" />
+                <Ionicons name="log-out-outline" size={20} color="#ef4444" />
                 <Text style={{ color: '#ef4444', fontWeight: 'bold' }}>Sign Out</Text>
             </TouchableOpacity>
+
+            <View className="h-10" />
         </ScrollView>
     );
 }

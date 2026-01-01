@@ -1,5 +1,5 @@
-import { View, FlatList, ActivityIndicator, Text, Image, TouchableOpacity, RefreshControl, TextInput, ScrollView } from "react-native";
-import { useEffect, useState, useCallback } from "react";
+import { View, FlatList, Text, Image, TouchableOpacity, RefreshControl, TextInput, ScrollView, Platform, Keyboard } from "react-native";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "expo-router";
 import api, { API_URL } from "@/services/api";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -9,15 +9,20 @@ import * as Location from 'expo-location';
 import { CATEGORIES } from "@/constants/categories";
 import { FeedPost } from "@/components/FeedPost";
 import { useTheme } from "@/context/ThemeContext";
-
+import { GlassView } from "@/components/GlassView";
+import { Skeleton } from "@/components/Skeleton";
+import { useToast } from "@/context/ToastContext";
+import { LinearGradient } from "expo-linear-gradient";
+import { Colors } from "@/constants/Colors";
 
 export default function Home() {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const { signOut, user } = useAuth(); // Get user token
+    const { user } = useAuth();
     const { activeTheme } = useTheme();
-    const router = useRouter(); // Import useRouter
+    const router = useRouter();
+    const { showToast } = useToast();
     const isDark = activeTheme === 'dark';
 
     const [profile, setProfile] = useState<any>(null);
@@ -25,7 +30,6 @@ export default function Home() {
     // Filter States
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
-    const [modalVisible, setModalVisible] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -33,11 +37,13 @@ export default function Home() {
         }
     }, [user]);
 
-    const fetchPosts = useCallback(async () => {
+    const fetchPosts = useCallback(async (isRefresh = false) => {
+        if (!isRefresh && !searchQuery) setLoading(true);
         try {
             let queryParams = new URLSearchParams();
 
-            const { status } = await Location.requestForegroundPermissionsAsync();
+            // Quietly try to get location, don't block if denied (use last known or default)
+            const { status } = await Location.getForegroundPermissionsAsync();
             if (status === 'granted') {
                 const location = await Location.getCurrentPositionAsync({});
                 queryParams.append('latitude', location.coords.latitude.toString());
@@ -52,13 +58,13 @@ export default function Home() {
                 queryParams.append('search', searchQuery);
             }
 
-            // Default params expected by getFeed
             queryParams.append('radius', '10'); // Default 10km
 
             const response = await api.get(`/posts/feed?${queryParams.toString()}`);
             setPosts(response.data);
         } catch (error) {
             console.error(error);
+            showToast("Failed to load feed", "error");
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -69,101 +75,146 @@ export default function Home() {
     useEffect(() => {
         const timeoutId = setTimeout(() => {
             fetchPosts();
-        }, 500);
+        }, 800);
         return () => clearTimeout(timeoutId);
-    }, [searchQuery, selectedCategory, fetchPosts]);
+    }, [searchQuery, selectedCategory]);
 
     const onRefresh = () => {
         setRefreshing(true);
-        fetchPosts();
+        // Haptic feedback could be added here
+        fetchPosts(true);
     };
 
+    const renderSkeleton = () => (
+        <View className="px-4 pt-4">
+            {[1, 2, 3].map(i => (
+                <GlassView key={i} style={{ marginBottom: 16, height: 300, padding: 16 }}>
+                    <View className="flex-row items-center mb-4">
+                        <Skeleton width={40} height={40} borderRadius={20} />
+                        <View className="ml-3">
+                            <Skeleton width={120} height={16} style={{ marginBottom: 6 }} />
+                            <Skeleton width={80} height={12} />
+                        </View>
+                    </View>
+                    <Skeleton width="80%" height={20} style={{ marginBottom: 12 }} />
+                    <Skeleton width="100%" height={150} borderRadius={12} />
+                </GlassView>
+            ))}
+        </View>
+    );
+
     return (
-        <SafeAreaView className="flex-1 bg-gray-50 dark:bg-black" edges={['top']}>
-            <View className="px-4 py-3 bg-white dark:bg-black border-b border-gray-200 dark:border-white/10">
-                <View className="flex-row justify-between items-center mb-4">
-                    <Text className="text-xl font-bold text-blue-600 dark:text-blue-500">NearNow</Text>
+        <View className="flex-1 bg-[#f9fafb] dark:bg-[#020817]">
+            <SafeAreaView edges={['top']} className="z-10 bg-[#f9fafb] dark:bg-[#020817]">
+                <View className="px-4 pb-2 pt-2">
+                    <View className="flex-row justify-end items-center mb-4">
+                        <View className="flex-row items-center gap-3">
+                            <TouchableOpacity
+                                onPress={() => router.push('/notifications' as any)}
+                                className="bg-white dark:bg-white/10 p-2.5 rounded-full border border-gray-100 dark:border-white/5 shadow-sm"
+                            >
+                                <Ionicons name="notifications-outline" size={22} color={isDark ? 'white' : 'black'} />
+                                {/* Badge could go here */}
+                            </TouchableOpacity>
 
-                    <View className="flex-row items-center space-x-4 gap-4">
-                        <TouchableOpacity onPress={() => router.push('/notifications' as any)}>
-                            <Ionicons name="notifications-outline" size={24} color={isDark ? 'white' : 'black'} />
-                        </TouchableOpacity>
+                            <TouchableOpacity onPress={() => router.push('/(app)/profile' as any)}>
+                                {profile?.avatar ? (
+                                    <Image
+                                        source={{ uri: `${API_URL.replace('/api', '')}${profile.avatar}` }}
+                                        className="w-10 h-10 rounded-full border-2 border-white dark:border-white/10"
+                                    />
+                                ) : (
+                                    <View className="w-10 h-10 bg-blue-600 rounded-full items-center justify-center border-2 border-white dark:border-white/10 shadow-sm">
+                                        <Text className="text-white font-bold text-sm">{profile?.name?.[0] || 'U'}</Text>
+                                    </View>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
 
-                        <TouchableOpacity onPress={() => router.push('/(app)/profile' as any)}>
-                            {profile?.avatar ? (
-                                <Image
-                                    source={{ uri: `${API_URL.replace('/api', '')}${profile.avatar}` }}
-                                    className="w-8 h-8 rounded-full"
-                                />
-                            ) : (
-                                <View className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full items-center justify-center">
-                                    <Text className="text-gray-600 dark:text-gray-300 font-bold text-xs">{profile?.name?.[0] || 'U'}</Text>
-                                </View>
+                    {/* Search & Filter */}
+                    <View className="flex-row items-center gap-3 mb-4">
+                        <View className="flex-1 flex-row items-center bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl px-3 py-2.5 shadow-sm">
+                            <Ionicons name="search" size={18} color={isDark ? '#9ca3af' : '#6b7280'} />
+                            <TextInput
+                                placeholder="Search alerts..."
+                                placeholderTextColor={isDark ? '#6b7280' : '#9ca3af'}
+                                className="flex-1 ml-2 text-gray-900 dark:text-white font-medium"
+                                value={searchQuery}
+                                onChangeText={setSearchQuery}
+                                returnKeyType="search"
+                                cursorColor="#3b82f6"
+                            />
+                            {searchQuery.length > 0 && (
+                                <TouchableOpacity onPress={() => { setSearchQuery(''); Keyboard.dismiss(); }}>
+                                    <Ionicons name="close-circle" size={18} color={isDark ? '#6b7280' : '#9ca3af'} />
+                                </TouchableOpacity>
                             )}
-                        </TouchableOpacity>
+                        </View>
                     </View>
                 </View>
 
-                {/* Search Bar */}
-                <View className="flex-row items-center bg-gray-100 dark:bg-neutral-900 rounded-xl px-3 py-2 mb-3">
-                    <Ionicons name="search" size={20} color={isDark ? '#9ca3af' : '#6b7280'} />
-                    <TextInput
-                        placeholder="Search nearby..."
-                        placeholderTextColor={isDark ? '#6b7280' : '#9ca3af'}
-                        className="flex-1 ml-2 text-gray-900 dark:text-white font-medium"
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                        returnKeyType="search"
-                    />
-                    {searchQuery.length > 0 && (
-                        <TouchableOpacity onPress={() => setSearchQuery('')}>
-                            <Ionicons name="close-circle" size={20} color={isDark ? '#6b7280' : '#9ca3af'} />
-                        </TouchableOpacity>
-                    )}
+                {/* Categories - Horizontal Scroll */}
+                <View>
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingBottom: 12 }}
+                    >
+                        {CATEGORIES.map((cat) => (
+                            <TouchableOpacity
+                                key={cat.id}
+                                onPress={() => {
+                                    setSelectedCategory(cat.id);
+                                    // Haptics.selectionAsync(); // Nice to have
+                                }}
+                                className={`px-4 py-2 rounded-full border ${selectedCategory === cat.id
+                                    ? 'bg-blue-600 border-blue-600'
+                                    : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10'
+                                    }`}
+                            >
+                                <Text className={`text-xs font-bold tracking-wide ${selectedCategory === cat.id
+                                    ? 'text-white'
+                                    : 'text-gray-600 dark:text-gray-300'
+                                    }`}>
+                                    {cat.label}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
                 </View>
+            </SafeAreaView>
 
-                {/* Categories */}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row pb-2">
-                    {CATEGORIES.map((cat) => (
-                        <TouchableOpacity
-                            key={cat.id}
-                            onPress={() => setSelectedCategory(cat.id)}
-                            className={`mr-2 px-4 py-1.5 rounded-full border ${selectedCategory === cat.id
-                                ? 'bg-blue-600 border-blue-600'
-                                : 'bg-white dark:bg-black border-gray-300 dark:border-neutral-700'
-                                }`}
-                        >
-                            <Text className={`text-xs font-bold ${selectedCategory === cat.id
-                                ? 'text-white'
-                                : 'text-gray-700 dark:text-gray-300'
-                                }`}>
-                                {cat.label}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
-            </View>
-
-            {loading ? (
-                <View className="flex-1 justify-center items-center bg-gray-50 dark:bg-black">
-                    <ActivityIndicator size="large" color="#2563eb" />
-                </View>
+            {loading && !refreshing && !posts.length ? (
+                renderSkeleton()
             ) : (
                 <FlatList
                     data={posts}
                     keyExtractor={(item: any) => item.id}
                     renderItem={({ item }) => <FeedPost item={item} />}
-                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-                    contentContainerStyle={{ paddingBottom: 100, paddingTop: 10 }}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            tintColor={isDark ? '#ffffff' : '#000000'}
+                            colors={['#3b82f6']} // Android
+                        />
+                    }
+                    contentContainerStyle={{ paddingBottom: 100, paddingTop: 8 }}
+                    showsVerticalScrollIndicator={false}
                     ListEmptyComponent={
-                        <View className="items-center justify-center py-20">
-                            <Text className="text-gray-500 dark:text-gray-400">No posts found nearby.</Text>
+                        <View className="items-center justify-center py-20 px-10">
+                            <View className="w-20 h-20 bg-gray-100 dark:bg-white/5 rounded-full items-center justify-center mb-4">
+                                <Ionicons name="location-outline" size={40} color={isDark ? '#4b5563' : '#d1d5db'} />
+                            </View>
+                            <Text className="text-gray-900 dark:text-white font-bold text-lg mb-2">No Alerts Nearby</Text>
+                            <Text className="text-gray-500 dark:text-gray-400 text-center leading-5">
+                                Your safe! No alerts found within your 10km radius. Try adjusting your filters or radius in Profile.
+                            </Text>
                         </View>
                     }
                 />
             )}
-
-            {/* FAB Removed - Use Tab Bar "Post" button */}
-        </SafeAreaView>
+        </View>
     );
 }

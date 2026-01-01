@@ -1,14 +1,15 @@
-import { useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, TextInput, Image, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { View, Text, TouchableOpacity, TextInput, Image, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { WebView } from 'react-native-webview';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/context/ThemeContext';
-import { LEAFLET_ASSETS } from './map-assets'; // Reusing map assets
+import { LEAFLET_ASSETS } from './map-assets';
 import api from '@/services/api';
-import { useCallback } from 'react';
+import { useToast } from '@/context/ToastContext';
+import { GlassView } from '@/components/GlassView';
 
 const CATEGORIES = [
     { id: 'DANGER', label: 'SOS / Danger', color: '#ef4444', icon: 'alert-circle' },
@@ -24,6 +25,7 @@ export default function CreateScreen() {
     const { activeTheme } = useTheme();
     const isDark = activeTheme === 'dark';
     const router = useRouter();
+    const { showToast } = useToast();
     const webViewRef = useRef<WebView>(null);
 
     // State
@@ -41,14 +43,12 @@ export default function CreateScreen() {
     // Reset State on Focus
     useFocusEffect(
         useCallback(() => {
-            // Reset logic
             return () => {
                 setStep(1);
                 setTitle('');
                 setContent('');
                 setImage(null);
                 setCategory(CATEGORIES[6].id);
-                // Don't reset location to null to avoid re-fetching GPS delay if possible, but stepping back to 1 is key.
             };
         }, [])
     );
@@ -58,7 +58,6 @@ export default function CreateScreen() {
         (async () => {
             let { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
-                // Default NYC
                 setLocation({ lat: 40.7128, lng: -74.0060 });
                 setLoadingLocation(false);
                 return;
@@ -67,7 +66,6 @@ export default function CreateScreen() {
                 let loc = await Location.getCurrentPositionAsync({});
                 setLocation({ lat: loc.coords.latitude, lng: loc.coords.longitude });
             } catch (e) {
-                // Fallback
                 setLocation({ lat: 40.7128, lng: -74.0060 });
             } finally {
                 setLoadingLocation(false);
@@ -79,9 +77,7 @@ export default function CreateScreen() {
     const generateMapHtml = () => {
         const lat = location?.lat || 40.7128;
         const lng = location?.lng || -74.0060;
-        const bgColor = isDark ? '#1a1a1a' : '#f9fafb';
-
-        // Carto Tiles
+        const bgColor = isDark ? '#020817' : '#f9fafb';
         const tileUrl = isDark
             ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
             : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
@@ -102,21 +98,13 @@ export default function CreateScreen() {
                 <div id="map"></div>
                 <script>
                     var map = L.map('map', { zoomControl: false }).setView([${lat}, ${lng}], 16);
-                    L.tileLayer('${tileUrl}', {
-                        attribution: 'CartoDB',
-                        maxZoom: 19
-                    }).addTo(map);
-
-                    // Report center on request
+                    L.tileLayer('${tileUrl}', { attribution: 'CartoDB', maxZoom: 19 }).addTo(map);
                     window.addEventListener('message', function(event) {
                         try {
                             var data = JSON.parse(event.data);
                             if (data.type === 'GET_CENTER') {
                                 var center = map.getCenter();
-                                window.ReactNativeWebView.postMessage(JSON.stringify({ 
-                                    type: 'CENTER_RESULT', 
-                                    payload: { lat: center.lat, lng: center.lng } 
-                                }));
+                                window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'CENTER_RESULT', payload: { lat: center.lat, lng: center.lng } }));
                             }
                         } catch (e) {}
                     });
@@ -127,10 +115,7 @@ export default function CreateScreen() {
     };
 
     const handleConfirmLocation = () => {
-        // Ask WebView for center
-        webViewRef.current?.injectJavaScript(`
-            window.postMessage(JSON.stringify({ type: 'GET_CENTER' }));
-        `);
+        webViewRef.current?.injectJavaScript(`window.postMessage(JSON.stringify({ type: 'GET_CENTER' }));`);
     };
 
     const handleWebViewMessage = (event: any) => {
@@ -151,112 +136,72 @@ export default function CreateScreen() {
             aspect: [4, 3],
             quality: 0.5,
         });
-
-        if (!result.canceled) {
-            setImage(result.assets[0]);
-        }
+        if (!result.canceled) setImage(result.assets[0]);
     };
 
     const takePhoto = async () => {
         const permission = await ImagePicker.requestCameraPermissionsAsync();
         if (permission.status !== 'granted') {
-            Alert.alert('Permission needed', 'Camera access is required to take photos.');
+            showToast('Camera permission needed', 'error');
             return;
         }
-
         const result = await ImagePicker.launchCameraAsync({
             allowsEditing: true,
             aspect: [4, 3],
             quality: 0.5,
         });
-
-        if (!result.canceled) {
-            setImage(result.assets[0]);
-        }
+        if (!result.canceled) setImage(result.assets[0]);
     };
 
     const handleSubmit = async () => {
         if (!title.trim() || !content.trim()) {
-            Alert.alert("Missing Fields", "Please add a title and description.");
+            showToast("Add a title and description", "warning");
             return;
         }
         if (!location) return;
 
         setSubmitting(true);
         try {
-            // 1. Reverse Geocode (OSM Nominatim for better Neighborhood precision)
-            let addressDetails = {
-                neighborhood: '',
-                city: '',
-                country: ''
-            };
-
+            // Reverse Geocode
+            let addressDetails = { neighborhood: '', city: '', country: '' };
             try {
-                // Force English to align with Web/Consolidated stats (Santa Eulalia instead of Localized name)
-                const langCode = 'en';
-                console.log(`[Geocoding] Using language: ${langCode}`);
-
-                // Using Nominatim for detailed neighborhood data
                 const response = await fetch(
-                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.lat}&lon=${location.lng}&accept-language=${langCode}`,
-                    {
-                        headers: {
-                            'User-Agent': 'NearNowApp/1.0'
-                        }
-                    }
+                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.lat}&lon=${location.lng}&accept-language=en`,
+                    { headers: { 'User-Agent': 'NearNowApp/1.0' } }
                 );
                 const data = await response.json();
-
                 if (data && data.address) {
                     const addr = data.address;
-                    console.log("OSM Address:", addr); // Debug log
-
-                    // Priority: Neighbourhood -> Suburb -> Quarter -> City District
                     const hood = addr.neighbourhood || addr.suburb || addr.quarter || addr.city_district || addr.district;
                     const city = addr.city || addr.town || addr.municipality || 'Unknown';
                     const country = addr.country || 'Unknown';
-
-                    addressDetails = {
-                        neighborhood: (hood || city || 'Unknown').trim(),
-                        city: city.trim(),
-                        country: country.trim()
-                    };
+                    addressDetails = { neighborhood: (hood || city || 'Unknown').trim(), city: city.trim(), country: country.trim() };
                 }
-            } catch (e) {
-                console.log("OSM Geocoding failed", e);
-                // Fallback to Native if OSM fails/timeout (Optional, but keeping it simple for now)
-            }
+            } catch (e) { console.log("Geocoding failed", e); }
 
             const payload = {
-                title,
-                content,
-                category,
-                latitude: location.lat,
-                longitude: location.lng,
+                title, content, category,
+                latitude: location.lat, longitude: location.lng,
                 neighborhood: addressDetails.neighborhood,
                 city: addressDetails.city,
                 country: addressDetails.country
             };
 
             await api.post('/posts', payload);
-
-            Alert.alert("Success", "Alert posted successfully!", [
-                { text: "OK", onPress: () => router.replace('/(app)/home') }
-            ]);
+            showToast("Alert posted successfully!", "success");
+            router.replace('/(app)/home');
 
         } catch (error) {
             console.error(error);
-            Alert.alert("Error", "Failed to create post. Please try again.");
+            showToast("Failed to post alert", "error");
         } finally {
             setSubmitting(false);
         }
     };
 
-    // --- RENDER ---
-
     if (loadingLocation && !location) {
         return (
-            <View className="flex-1 bg-black justify-center items-center">
+            <View className="flex-1 bg-[#020817] justify-center items-center">
                 <ActivityIndicator size="large" color="#3b82f6" />
             </View>
         );
@@ -264,18 +209,14 @@ export default function CreateScreen() {
 
     if (step === 1) {
         return (
-            <View className="flex-1 bg-black relative">
-                {/* Header */}
-                <View className="absolute top-12 left-4 z-50">
-                    <TouchableOpacity
-                        onPress={() => router.back()}
-                        className="w-10 h-10 bg-black/60 rounded-full items-center justify-center border border-white/10"
-                    >
-                        <Ionicons name="close" size={24} color="white" />
-                    </TouchableOpacity>
-                </View>
+            <View className="flex-1 bg-[#020817] relative">
+                <TouchableOpacity
+                    onPress={() => router.back()}
+                    className="absolute top-12 left-4 z-50 w-10 h-10 bg-black/60 rounded-full items-center justify-center border border-white/10"
+                >
+                    <Ionicons name="close" size={24} color="white" />
+                </TouchableOpacity>
 
-                {/* Map */}
                 <WebView
                     ref={webViewRef}
                     source={{ html: generateMapHtml(), baseUrl: '' }}
@@ -283,18 +224,11 @@ export default function CreateScreen() {
                     onMessage={handleWebViewMessage}
                 />
 
-                {/* Center Pin Overlay */}
                 <View className="absolute inset-0 items-center justify-center pointer-events-none" style={{ marginTop: -35 }}>
                     <Ionicons name="location" size={48} color="#ef4444" />
                     <View className="w-4 h-4 bg-black/20 rounded-full blur-sm mt-[-5px]" />
                 </View>
 
-                {/* Instruction */}
-                <View className="absolute top-12 self-center bg-black/70 px-4 py-2 rounded-full border border-white/10">
-                    <Text className="text-white font-bold text-sm">Drag to position pin</Text>
-                </View>
-
-                {/* Confirm Button */}
                 <View className="absolute bottom-12 left-4 right-4">
                     <TouchableOpacity
                         onPress={handleConfirmLocation}
@@ -309,37 +243,37 @@ export default function CreateScreen() {
 
     // Step 2: Form
     return (
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-black">
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-[#f9fafb] dark:bg-[#020817]">
             <View className="flex-1">
                 {/* Header */}
-                <View className="flex-row items-center p-4 pt-14 border-b border-white/10 bg-black">
+                <View className="flex-row items-center p-4 pt-14 border-b border-gray-200 dark:border-white/10">
                     <TouchableOpacity onPress={() => setStep(1)} className="mr-4">
-                        <Ionicons name="arrow-back" size={24} color="white" />
+                        <Ionicons name="arrow-back" size={24} color={isDark ? "white" : "black"} />
                     </TouchableOpacity>
-                    <Text className="text-white text-xl font-bold">Create Alert</Text>
+                    <Text className="text-gray-900 dark:text-white text-xl font-bold">Create Alert</Text>
                 </View>
 
-                <ScrollView className="flex-1 p-4">
+                <ScrollView className="flex-1 p-4" showsVerticalScrollIndicator={false}>
 
                     {/* Category Selector */}
-                    <Text className="text-gray-400 font-bold mb-3 uppercase text-xs tracking-wider">Category</Text>
+                    <Text className="text-gray-500 dark:text-gray-400 font-bold mb-3 uppercase text-xs tracking-wider">Category</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-6 -mx-4 px-4 pb-2">
                         {CATEGORIES.map(cat => (
                             <TouchableOpacity
                                 key={cat.id}
                                 onPress={() => setCategory(cat.id)}
                                 className={`mr-3 px-4 py-3 rounded-xl border flex-row items-center gap-2 ${category === cat.id
-                                    ? `bg-[${cat.color}]/20 border-[${cat.color}]`
-                                    : 'bg-white/5 border-white/10'
+                                    ? `bg-[${cat.color}]/20 border-transparent` // Tailwind might struggle with dynamic values, simplify in style
+                                    : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10'
                                     }`}
-                                style={category === cat.id ? { backgroundColor: cat.color + '30', borderColor: cat.color } : {}}
+                                style={category === cat.id ? { backgroundColor: cat.color + (isDark ? '40' : '20'), borderColor: cat.color, borderWidth: 1 } : {}}
                             >
                                 <Ionicons
                                     name={cat.icon as any}
                                     size={18}
-                                    color={category === cat.id ? cat.color : '#9ca3af'}
+                                    color={category === cat.id ? (isDark ? '#fff' : cat.color) : (isDark ? '#9ca3af' : '#6b7280')}
                                 />
-                                <Text className={`font-bold ${category === cat.id ? 'text-white' : 'text-gray-400'}`}>
+                                <Text className={`font-bold ${category === cat.id ? (isDark ? 'text-white' : 'text-gray-900') : 'text-gray-500 dark:text-gray-400'}`}>
                                     {cat.label}
                                 </Text>
                             </TouchableOpacity>
@@ -347,55 +281,54 @@ export default function CreateScreen() {
                     </ScrollView>
 
                     {/* Inputs */}
-                    <Text className="text-gray-400 font-bold mb-2 uppercase text-xs tracking-wider">Title</Text>
-                    <TextInput
-                        value={title}
-                        onChangeText={setTitle}
-                        placeholder="What's happening?"
-                        placeholderTextColor="#6b7280"
-                        className="bg-white/5 text-white p-4 rounded-xl border border-white/10 mb-6 font-semibold text-lg"
-                    />
-
-                    <Text className="text-gray-400 font-bold mb-2 uppercase text-xs tracking-wider">Description</Text>
-                    <TextInput
-                        value={content}
-                        onChangeText={setContent}
-                        placeholder="Add more details..."
-                        placeholderTextColor="#6b7280"
-                        multiline
-                        textAlignVertical="top"
-                        className="bg-white/5 text-white p-4 rounded-xl border border-white/10 mb-6 h-32"
-                    />
+                    <GlassView style={{ borderRadius: 16, marginBottom: 24, padding: 4 }}>
+                        <TextInput
+                            value={title}
+                            onChangeText={setTitle}
+                            placeholder="What's happening?"
+                            placeholderTextColor="#9ca3af"
+                            className="text-gray-900 dark:text-white p-4 font-bold text-lg border-b border-gray-100 dark:border-white/5"
+                        />
+                        <TextInput
+                            value={content}
+                            onChangeText={setContent}
+                            placeholder="Add more details... (Time, Suspect description, etc.)"
+                            placeholderTextColor="#9ca3af"
+                            multiline
+                            textAlignVertical="top"
+                            className="text-gray-900 dark:text-white p-4 h-32 text-base leading-6"
+                        />
+                    </GlassView>
 
                     {/* Image Picker */}
-                    <Text className="text-gray-400 font-bold mb-2 uppercase text-xs tracking-wider">Photo (Optional)</Text>
+                    <Text className="text-gray-500 dark:text-gray-400 font-bold mb-2 uppercase text-xs tracking-wider">Photo (Optional)</Text>
 
                     {image ? (
-                        <View className="mb-8">
-                            <Image source={{ uri: image.uri }} className="w-full h-48 rounded-xl" resizeMode="cover" />
+                        <View className="mb-8 relative">
+                            <Image source={{ uri: image.uri }} className="w-full h-48 rounded-xl bg-gray-100 dark:bg-white/5" resizeMode="cover" />
                             <TouchableOpacity
                                 onPress={() => setImage(null)}
-                                className="absolute top-2 right-2 bg-black/60 p-2 rounded-full"
+                                className="absolute top-2 right-2 bg-black/60 p-2 rounded-full border border-white/20 shadow-sm"
                             >
                                 <Ionicons name="close" size={20} color="white" />
                             </TouchableOpacity>
                         </View>
                     ) : (
-                        <View className="flex-row gap-4 mb-8">
+                        <View className="flex-row gap-3 mb-8">
                             <TouchableOpacity
                                 onPress={takePhoto}
-                                className="flex-1 bg-white/5 border border-white/10 border-dashed rounded-xl h-32 items-center justify-center active:bg-white/10"
+                                className="flex-1 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 border-dashed rounded-xl h-24 items-center justify-center active:bg-gray-100 dark:active:bg-white/10"
                             >
-                                <Ionicons name="camera" size={32} color="#4b5563" />
-                                <Text className="text-gray-500 mt-2 font-bold">Camera</Text>
+                                <Ionicons name="camera" size={28} color="#6b7280" />
+                                <Text className="text-gray-500 dark:text-gray-400 mt-2 font-medium text-xs">Camera</Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity
                                 onPress={pickImage}
-                                className="flex-1 bg-white/5 border border-white/10 border-dashed rounded-xl h-32 items-center justify-center active:bg-white/10"
+                                className="flex-1 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 border-dashed rounded-xl h-24 items-center justify-center active:bg-gray-100 dark:active:bg-white/10"
                             >
-                                <Ionicons name="images" size={32} color="#4b5563" />
-                                <Text className="text-gray-500 mt-2 font-bold">Gallery</Text>
+                                <Ionicons name="images" size={28} color="#6b7280" />
+                                <Text className="text-gray-500 dark:text-gray-400 mt-2 font-medium text-xs">Gallery</Text>
                             </TouchableOpacity>
                         </View>
                     )}
@@ -403,16 +336,16 @@ export default function CreateScreen() {
                 </ScrollView>
 
                 {/* Footer */}
-                <View className="p-4 border-t border-white/10 bg-black safe-area-bottom">
+                <View className="p-4 border-t border-gray-200 dark:border-white/10 bg-white dark:bg-[#020817] safe-area-bottom">
                     <TouchableOpacity
                         onPress={handleSubmit}
                         disabled={submitting}
-                        className={`py-4 rounded-xl items-center shadow-lg ${submitting ? 'bg-blue-900' : 'bg-blue-600 active:bg-blue-700'}`}
+                        className={`py-4 rounded-xl items-center shadow-lg ${submitting ? 'bg-blue-800' : 'bg-blue-600 active:bg-blue-700'}`}
                     >
                         {submitting ? (
                             <ActivityIndicator color="white" />
                         ) : (
-                            <Text className="text-white font-bold text-lg">Post Alert</Text>
+                            <Text className="text-white font-bold text-lg tracking-wide">Post Alert</Text>
                         )}
                     </TouchableOpacity>
                 </View>

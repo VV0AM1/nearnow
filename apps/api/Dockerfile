@@ -1,32 +1,41 @@
-FROM node:22-alpine AS builder
+# Base Image
+FROM node:18-alpine AS builder
 
+# Set working directory
 WORKDIR /app
 
-COPY package.json ./
+# Copy package files
+COPY package*.json ./
 COPY prisma ./prisma/
 
+# Install dependencies
 RUN npm install
 
-COPY . .
-
-RUN npm run build
+# Generate Prisma Client
 RUN npx prisma generate
 
+# Copy the rest of the code
+COPY . .
 
-FROM node:22-alpine
+# Build the application
+RUN npm run build
+
+# --- Production Image ---
+FROM node:18-alpine
 
 WORKDIR /app
 
-RUN apk add --no-cache openssl libc6-compat
-
-# Create uploads directory and set permissions
-RUN mkdir -p /app/uploads && chmod 777 /app/uploads
-
+# Copy node_modules and built assets from builder
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/prisma ./prisma
 
-EXPOSE 3002
+# Set production environment
+ENV NODE_ENV=production
 
-CMD [ "npm", "run", "start:prod" ]
+# Expose port
+EXPOSE 3000
+
+# Start command
+CMD ["node", "dist/src/main"]
