@@ -1,35 +1,48 @@
-import Cookies from 'js-cookie';
-
 export const AUTH_TOKEN = 'nearnow_token';
+export const AUTH_USER_ID = 'nearnow_user_id';
 
 export const setToken = (token: string) => {
-    Cookies.set(AUTH_TOKEN, token, { expires: 7 }); // 7 days
+    if (typeof window !== 'undefined') {
+        localStorage.setItem(AUTH_TOKEN, token);
+    }
 };
 
 export const getToken = () => {
-    return Cookies.get(AUTH_TOKEN);
+    if (typeof window !== 'undefined') {
+        return localStorage.getItem(AUTH_TOKEN);
+    }
+    return null;
 };
 
-export const AUTH_USER_ID = 'nearnow_user_id';
-
 export const setUserId = (id: string) => {
-    Cookies.set(AUTH_USER_ID, id, { expires: 7 });
+    if (typeof window !== 'undefined') {
+        localStorage.setItem(AUTH_USER_ID, id);
+    }
 };
 
 export const getUserId = () => {
-    return Cookies.get(AUTH_USER_ID);
+    if (typeof window !== 'undefined') {
+        return localStorage.getItem(AUTH_USER_ID);
+    }
+    return null;
 };
 
 export const removeUserId = () => {
-    Cookies.remove(AUTH_USER_ID);
+    if (typeof window !== 'undefined') {
+        localStorage.removeItem(AUTH_USER_ID);
+    }
 };
 
 export const removeToken = () => {
-    Cookies.remove(AUTH_TOKEN);
-    removeUserId();
+    if (typeof window !== 'undefined') {
+        localStorage.removeItem(AUTH_TOKEN);
+        removeUserId();
+    }
 };
 
 export const logout = () => {
     removeToken();
-    window.location.href = '/login';
-}
+    if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+    }
+};
