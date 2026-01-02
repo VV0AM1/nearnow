@@ -1,10 +1,38 @@
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import AdminSidebar from "./components/AdminSidebar";
+import { useAuthContext } from "../../context/AuthContext";
+import { Role } from "../../types/user";
 
 export default function AdminLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
+    const { user, loading } = useAuthContext();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (!loading) {
+            if (!user) {
+                router.push("/login"); // Or access-denied page
+            } else if (user.role !== Role.ADMIN) {
+                router.push("/"); // Redirect non-admins to home
+            }
+        }
+    }, [user, loading, router]);
+
+    if (loading || !user || user.role !== Role.ADMIN) {
+        return (
+            <div className="flex h-screen w-full items-center justify-center bg-black text-white">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+
     return (
         <div className="flex h-screen bg-black text-white overflow-hidden flex-col md:flex-row">
             {/* Responsive Sidebar */}
