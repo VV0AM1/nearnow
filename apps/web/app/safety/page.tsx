@@ -23,32 +23,52 @@ export default function SafetyPage() {
             .then(resData => {
                 if (resData && typeof resData === 'object') {
                     // Map backend fields to frontend component expectations
+                    // Map backend fields to frontend component expectations
+                    // Map backend fields to frontend component expectations
                     const mapItem = (item: any) => {
                         const safety = item.safetyCount || 0;
                         const crime = item.crimeCount || 0;
-                        const netScore = safety - crime; // Simple Net Score
+                        let netScore = safety - crime;
+
+                        // User rule: "if negative its 0"
+                        if (netScore < 0) netScore = 0;
 
                         return {
                             ...item,
                             alerts: item.totalCount,
-                            score: netScore, // Explicitly overwrite backend score
-                            // Mock Trend: High Score (Safe) -> Improving/Stable, Low Score (Danger) -> Rising
-                            trend: netScore >= 0 ? 'stable' : (Math.random() > 0.5 ? 'up' : 'stable')
+                            score: netScore,
+                            safetyCount: safety,
+                            crimeCount: crime,
+                            // Trend logic
+                            trend: netScore >= 5 ? 'up' : 'stable'
                         };
                     };
 
                     const mappedRanking = (resData.ranking || []).map(mapItem);
 
-                    // Client-side fix for ranking logic:
-                    const sortedRanking = [...mappedRanking].sort((a, b) => b.score - a.score);
+                    // 1. Top Safest Zones: Sort by HIGHEST Safety Count
+                    const topSafe = [...mappedRanking]
+                        .sort((a, b) => b.safetyCount - a.safetyCount)
+                        .slice(0, 3);
 
-                    // Re-derive Top Lists from sorted ranking if backend is weird
-                    const safe = sortedRanking.filter(i => i.score >= 0).slice(0, 3);
-                    const dangerous = [...sortedRanking].reverse().slice(0, 3);
+                    // 2. High Attention Zones: Sort by HIGHEST Crime Count
+                    const topDangerous = [...mappedRanking]
+                        .sort((a, b) => b.crimeCount - a.crimeCount)
+                        .slice(0, 3);
+
+                    // 3. Main Ranking Table: 
+                    // Rule 1: Net Score (Safe - Crime, min 0) DESC
+                    // Rule 2: Total Alerts (Activity) DESC (User: "if one hood has total alert... higher its higher")
+                    const sortedRanking = [...mappedRanking].sort((a, b) => {
+                        if (b.score !== a.score) {
+                            return b.score - a.score; // Priority: Score
+                        }
+                        return (b.alerts || 0) - (a.alerts || 0); // Tie-breaker: Total Activity
+                    });
 
                     setData({
-                        topSafe: safe.length ? safe : (resData.topSafe || []).map(mapItem),
-                        topDangerous: dangerous.length ? dangerous : (resData.topDangerous || []).map(mapItem),
+                        topSafe: topSafe,
+                        topDangerous: topDangerous,
                         ranking: sortedRanking
                     });
                 } else {

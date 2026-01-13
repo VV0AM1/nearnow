@@ -40,25 +40,33 @@ export function usePostInteractions(post: Post) {
         e.stopPropagation();
 
         const userId = getUserId();
-        if (!userId) {
-            // Trigger login modal or redirect? For now just return
-            return;
-        }
+        if (!userId) return;
 
         // Optimistic UI
-        setVoted((prev) => !prev);
-        setLikes((prev) => voted ? prev - 1 : prev + 1);
+        const newVoted = !voted;
+        setVoted(newVoted);
+        setLikes((prev) => newVoted ? prev + 1 : prev - 1);
+
+        // Update Local Cache immediately
+        if (newVoted) {
+            localStorage.setItem(`voted_${post.id}`, 'true');
+        } else {
+            localStorage.removeItem(`voted_${post.id}`);
+        }
 
         try {
             await fetch(`${API_URL}/posts/${post.id}/vote`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId, type: 'UP' })
+                body: JSON.stringify({ userId, type: 'UP' }) // Toggle logic is usually handled by backend or separate Delete
             });
         } catch (err) {
-            // Revert
-            setVoted((prev) => !prev);
-            setLikes((prev) => voted ? prev + 1 : prev - 1);
+            // Revert on error
+            setVoted(!newVoted);
+            setLikes((prev) => !newVoted ? prev + 1 : prev - 1);
+            // Revert Cache
+            if (!newVoted) localStorage.setItem(`voted_${post.id}`, 'true');
+            else localStorage.removeItem(`voted_${post.id}`);
         }
     };
 
