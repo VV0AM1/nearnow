@@ -23,26 +23,27 @@ export default function SafetyPage() {
             .then(resData => {
                 if (resData && typeof resData === 'object') {
                     // Map backend fields to frontend component expectations
-                    const mapItem = (item: any) => ({
-                        ...item,
-                        alerts: item.totalCount,
-                        // Mock Trend: High Score (Safe) -> Improving/Stable, Low Score (Danger) -> Rising
-                        trend: item.score > 5 ? 'stable' : (Math.random() > 0.5 ? 'up' : 'stable')
-                    });
+                    const mapItem = (item: any) => {
+                        const safety = item.safetyCount || 0;
+                        const crime = item.crimeCount || 0;
+                        const netScore = safety - crime; // Simple Net Score
+
+                        return {
+                            ...item,
+                            alerts: item.totalCount,
+                            score: netScore, // Explicitly overwrite backend score
+                            // Mock Trend: High Score (Safe) -> Improving/Stable, Low Score (Danger) -> Rising
+                            trend: netScore >= 0 ? 'stable' : (Math.random() > 0.5 ? 'up' : 'stable')
+                        };
+                    };
 
                     const mappedRanking = (resData.ranking || []).map(mapItem);
 
                     // Client-side fix for ranking logic:
-                    // Score = (SafetyCount * 2) - (CrimeCount * 3) (Penalize crime more)
-                    // Or simple Net = Safety - Crime
-                    const sortedRanking = [...mappedRanking].sort((a, b) => {
-                        const scoreA = (a.safetyCount || 0) - (a.crimeCount || 0);
-                        const scoreB = (b.safetyCount || 0) - (b.crimeCount || 0);
-                        return scoreB - scoreA; // Descending
-                    });
+                    const sortedRanking = [...mappedRanking].sort((a, b) => b.score - a.score);
 
                     // Re-derive Top Lists from sorted ranking if backend is weird
-                    const safe = sortedRanking.filter(i => ((i.safetyCount || 0) - (i.crimeCount || 0)) >= 0).slice(0, 3);
+                    const safe = sortedRanking.filter(i => i.score >= 0).slice(0, 3);
                     const dangerous = [...sortedRanking].reverse().slice(0, 3);
 
                     setData({

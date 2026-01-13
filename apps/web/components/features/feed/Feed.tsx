@@ -84,7 +84,7 @@ export default function FeedContainer({ initialLocation, initialPosts = [] }: Fe
             ) : (
                 <div className="flex flex-col-reverse lg:flex-row gap-6 h-auto lg:h-[calc(100vh-200px)]">
                     {/* Feed List Section - Scrollable */}
-                    <div className="lg:w-[350px] shrink-0 h-[500px] lg:h-full flex flex-col">
+                    <div className="lg:w-[450px] shrink-0 h-[500px] lg:h-full flex flex-col">
                         <FeedList
                             posts={posts}
                             onPostClick={setSelectedPost}
