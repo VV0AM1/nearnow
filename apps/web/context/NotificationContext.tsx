@@ -1,6 +1,9 @@
-import { useState, useEffect } from 'react';
-import { API_URL } from '../lib/config';
-import { getToken, getUserId } from '../lib/auth';
+"use client";
+
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { API_URL } from "../lib/config";
+import { getToken, getUserId } from "../lib/auth";
+import { useSocket } from "../lib/socket-provider";
 
 export interface NotificationSettings {
     id: string;
@@ -22,12 +25,26 @@ export interface NotificationItem {
     };
 }
 
-export function useNotifications() {
+interface NotificationContextType {
+    settings: NotificationSettings | null;
+    notifications: NotificationItem[];
+    unreadCount: number;
+    loading: boolean;
+    updateSettings: (settings: Partial<NotificationSettings>) => Promise<void>;
+    markAsRead: (id: string) => Promise<void>;
+    refresh: () => Promise<void>;
+}
+
+const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
+
+export function NotificationProvider({ children }: { children: ReactNode }) {
     const [settings, setSettings] = useState<NotificationSettings | null>(null);
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [loading, setLoading] = useState(false);
 
+    // We can use the socket to listen for real-time notifications
+    const socket = useSocket();
     const userId = getUserId();
     const token = getToken();
 
@@ -46,12 +63,10 @@ export function useNotifications() {
         }
     };
 
-    // Simple "Pop" sound (Base64) to avoid 404s
     const playNotificationSound = () => {
         try {
-            // Using a silent fail approach if file missing, or could use base64
             const audio = new Audio("/sounds/notification.mp3");
-            audio.play().catch(() => { }); // Ignore autoplay blocks
+            audio.play().catch(() => { });
         } catch (e) {
             console.error("Sound error", e);
         }
@@ -65,9 +80,9 @@ export function useNotifications() {
             });
             if (res.ok) {
                 const data = await res.json();
-
-                // Sound check
                 const newUnread = data.filter((n: any) => !n.read).length;
+
+                // Only sound if count INCREASED
                 if (newUnread > unreadCount && newUnread > 0) {
                     playNotificationSound();
                 }
@@ -84,9 +99,7 @@ export function useNotifications() {
         if (!userId || !token) return;
         setLoading(true);
         try {
-            // Merge current settings with updates
             const merged = { ...settings, ...newSettings };
-
             const res = await fetch(`${API_URL}/notifications/settings/${userId}`, {
                 method: 'PUT',
                 headers: {
@@ -109,36 +122,64 @@ export function useNotifications() {
 
     const markAsRead = async (id: string) => {
         if (!token) return;
+
+        // Optimistic update
+        setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+        setUnreadCount(prev => Math.max(0, prev - 1));
+
         try {
             await fetch(`${API_URL}/notifications/${id}/read`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${token}` }
             });
-            // Optimistic update
-            setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-            setUnreadCount(prev => Math.max(0, prev - 1));
         } catch (err) {
             console.error(err);
+            // Revert on failure? For now, ignore.
         }
     };
 
+    // Initial Load
     useEffect(() => {
         if (userId) {
             fetchSettings();
             fetchNotifications();
-            // In real app, listen to socket here
-            const interval = setInterval(fetchNotifications, 30000); // Poll every 30s for MVP
-            return () => clearInterval(interval);
         }
     }, [userId]);
 
-    return {
-        settings,
-        notifications,
-        unreadCount,
-        updateSettings,
-        markAsRead,
-        refresh: fetchNotifications,
-        loading
-    };
+    // Socket Listener
+    useEffect(() => {
+        if (!socket) return;
+
+        socket.on('notification', () => {
+            console.log("New notification received via socket");
+            fetchNotifications();
+            playNotificationSound();
+        });
+
+        return () => {
+            socket.off('notification');
+        };
+    }, [socket]);
+
+    return (
+        <NotificationContext.Provider value={{
+            settings,
+            notifications,
+            unreadCount,
+            loading,
+            updateSettings,
+            markAsRead,
+            refresh: fetchNotifications
+        }}>
+            {children}
+        </NotificationContext.Provider>
+    );
+}
+
+export function useNotifications() {
+    const context = useContext(NotificationContext);
+    if (!context) {
+        throw new Error("useNotifications must be used within a NotificationProvider");
+    }
+    return context;
 }

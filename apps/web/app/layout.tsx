@@ -4,6 +4,7 @@ import "./globals.css";
 import { SocketProvider } from "../lib/socket-provider";
 import { AuthProvider } from "../context/AuthContext";
 import { Toaster } from "@/components/ui/toaster";
+import { NotificationProvider } from "../context/NotificationContext";
 
 import type { Metadata, Viewport } from "next";
 
@@ -38,8 +39,10 @@ export default function RootLayout({
       >
         <SocketProvider>
           <AuthProvider>
-            {children}
-            <Toaster />
+            <NotificationProvider>
+              {children}
+              <Toaster />
+            </NotificationProvider>
           </AuthProvider>
         </SocketProvider>
       </body>

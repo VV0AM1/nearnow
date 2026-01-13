@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MessageCircle, ThumbsUp, MoreVertical, Flag } from "lucide-react";
+import { MessageCircle, ThumbsUp, MoreVertical, Flag, Bookmark } from "lucide-react";
 import ShareButton from "@/components/common/input/ShareButton";
 import { useState } from "react";
 import ReportModal from "@/components/features/reports/ReportModal";
@@ -17,10 +17,12 @@ interface PostActionsProps {
     commentsCount: number;
     likes: number;
     voted: boolean;
+    saved: boolean;
     onVote: (e: React.MouseEvent) => void;
+    onSave: (e: React.MouseEvent) => void;
 }
 
-export default function PostActions({ id, title, content, commentsCount, likes, voted, onVote }: PostActionsProps) {
+export default function PostActions({ id, title, content, commentsCount, likes, voted, saved, onVote, onSave }: PostActionsProps) {
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
     return (
@@ -39,6 +41,13 @@ export default function PostActions({ id, title, content, commentsCount, likes, 
                         <MessageCircle className="h-5 w-5" />
                         <span className="text-sm">{commentsCount || 0}</span>
                     </Link>
+
+                    <button
+                        onClick={onSave}
+                        className={`flex items-center space-x-1 transition-colors ${saved ? 'text-primary' : 'hover:text-primary'}`}
+                    >
+                        <Bookmark className={`h-4 w-4 ${saved ? 'fill-current' : ''}`} />
+                    </button>
                 </div>
 
                 <div className="flex items-center gap-2">

@@ -30,10 +30,25 @@ export default function SafetyPage() {
                         trend: item.score > 5 ? 'stable' : (Math.random() > 0.5 ? 'up' : 'stable')
                     });
 
+                    const mappedRanking = (resData.ranking || []).map(mapItem);
+
+                    // Client-side fix for ranking logic:
+                    // Score = (SafetyCount * 2) - (CrimeCount * 3) (Penalize crime more)
+                    // Or simple Net = Safety - Crime
+                    const sortedRanking = [...mappedRanking].sort((a, b) => {
+                        const scoreA = (a.safetyCount || 0) - (a.crimeCount || 0);
+                        const scoreB = (b.safetyCount || 0) - (b.crimeCount || 0);
+                        return scoreB - scoreA; // Descending
+                    });
+
+                    // Re-derive Top Lists from sorted ranking if backend is weird
+                    const safe = sortedRanking.filter(i => ((i.safetyCount || 0) - (i.crimeCount || 0)) >= 0).slice(0, 3);
+                    const dangerous = [...sortedRanking].reverse().slice(0, 3);
+
                     setData({
-                        topSafe: (resData.topSafe || []).map(mapItem),
-                        topDangerous: (resData.topDangerous || []).map(mapItem),
-                        ranking: (resData.ranking || []).map(mapItem)
+                        topSafe: safe.length ? safe : (resData.topSafe || []).map(mapItem),
+                        topDangerous: dangerous.length ? dangerous : (resData.topDangerous || []).map(mapItem),
+                        ranking: sortedRanking
                     });
                 } else {
                     console.error("API Error or Invalid Format:", resData);

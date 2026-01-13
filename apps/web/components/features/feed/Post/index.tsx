@@ -7,7 +7,7 @@ import PostContent from "./components/PostContent";
 import PostActions from "./components/PostActions";
 
 export default function Post({ post, onClick, onHover }: PostProps & { onHover?: (id: string | null) => void }) {
-    const { likes, voted, handleVote } = usePostInteractions(post);
+    const { likes, voted, saved, handleVote, handleSave } = usePostInteractions(post);
 
     const handleLongPress = () => {
         if (onHover) onHover(post.id);
@@ -67,7 +67,9 @@ export default function Post({ post, onClick, onHover }: PostProps & { onHover?:
                     commentsCount={post.comments?.length || 0}
                     likes={likes}
                     voted={voted}
+                    saved={saved}
                     onVote={handleVote}
+                    onSave={handleSave}
                 />
             </div>
         </div>

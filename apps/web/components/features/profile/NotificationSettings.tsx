@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useNotifications } from "../../../hooks/useNotifications";
-import { Bell, MapPin, Save } from "lucide-react";
+import { useNotifications } from "../../../context/NotificationContext";
+import { useToast } from "../../../components/ui/use-toast";
+import { Bell, MapPin, Save, Loader2 } from "lucide-react";
 
 export default function NotificationSettings() {
     const { settings, updateSettings, loading } = useNotifications();
@@ -18,22 +19,41 @@ export default function NotificationSettings() {
         }
     }, [settings]);
 
+    const { toast } = useToast();
+
     const handleSave = () => {
         // Use browser geolocation for "Home Base"
         if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition((position) => {
-                updateSettings({
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                await updateSettings({
                     radiusKm: radius,
                     categories,
                     pushEnabled: enabled,
                     latitude: position.coords.latitude,
                     longitude: position.coords.longitude
                 });
-                alert("Settings Saved with current location as center!");
+
+                toast({
+                    title: "Preferences Saved! ✅",
+                    description: "We've updated your alert radius to your current location.",
+                    duration: 3000,
+                });
             }, (err) => {
-                // If location denied, save without updating location? 
-                // Or user must allow location.
-                alert("Location access needed to set radius center.");
+                // Determine user friendly error
+                let errorMsg = "Could not get location.";
+                if (err.code === 1) errorMsg = "Please allow location access to set your alert center.";
+
+                toast({
+                    variant: "destructive",
+                    title: "Location Access Required",
+                    description: errorMsg,
+                });
+            });
+        } else {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Geolocation is not supported by your browser.",
             });
         }
     };
@@ -97,8 +117,8 @@ export default function NotificationSettings() {
                                 key={cat}
                                 onClick={() => toggleCategory(cat)}
                                 className={`text-xs px-3 py-1.5 rounded-full border transition-all ${categories.includes(cat)
-                                        ? 'bg-primary/20 border-primary text-primary'
-                                        : 'bg-transparent border-border text-muted-foreground hover:border-primary/50'
+                                    ? 'bg-primary/20 border-primary text-primary'
+                                    : 'bg-transparent border-border text-muted-foreground hover:border-primary/50'
                                     }`}
                             >
                                 {cat}
@@ -112,7 +132,7 @@ export default function NotificationSettings() {
                     disabled={loading}
                     className="w-full bg-primary text-primary-foreground py-2 rounded-lg font-bold hover:bg-primary/90 transition-all flex justify-center items-center gap-2"
                 >
-                    {loading ? "Saving..." : <><Save className="h-4 w-4" /> Save Preferences</>}
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Save className="h-4 w-4" /> Save Preferences</>}
                 </button>
             </div>
         </div>

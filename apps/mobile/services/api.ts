@@ -2,7 +2,7 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 // Production (Render)
-export const API_URL = "https://nearnow-api.onrender.com/api";
+export const API_URL = "https://nearnow.onrender.com";
 
 // Local Development (Uncomment to use)
 // export const API_URL = Platform.OS === 'ios' 
