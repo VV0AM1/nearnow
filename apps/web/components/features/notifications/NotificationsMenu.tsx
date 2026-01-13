@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useNotifications } from "../../../hooks/useNotifications";
+import { useNotifications } from "../../../context/NotificationContext";
 import { Bell } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
