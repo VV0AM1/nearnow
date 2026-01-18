@@ -38,9 +38,9 @@ export default function HomeContent({ initialUser, initialPosts, initialLocation
     }, [userGeo.latitude, userGeo.longitude]);
 
     return (
-        <>
-            {/* Floating Action Button */}
-            <div className="mb-6 flex items-center justify-between">
+        <div className="flex flex-col h-full w-full overflow-hidden">
+            {/* Page Header */}
+            <div className="flex items-center justify-between px-6 py-4 shrink-0 bg-background/50 backdrop-blur-sm z-10">
                 <h1 className="text-2xl font-bold">Your Feed</h1>
                 <button
                     onClick={() => setIsModalOpen(true)}
@@ -57,12 +57,12 @@ export default function HomeContent({ initialUser, initialPosts, initialLocation
                 userLocation={feedLocation}
             />
 
-            <div className="relative glass-card p-6 border-border animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex-1 min-h-0 w-full relative px-6 pb-6">
                 <Feed
                     initialLocation={feedLocation}
                     initialPosts={initialPosts}
                 />
             </div>
-        </>
+        </div>
     );
 }
