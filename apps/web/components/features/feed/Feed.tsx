@@ -82,10 +82,10 @@ export default function FeedContainer({ initialLocation, initialPosts = [] }: Fe
                     <FeedListSkeleton />
                 </div>
             ) : (
-                <div className="flex flex-col lg:flex-row gap-6 h-auto lg:h-[calc(100vh-240px)]">
+                <div className="flex flex-col xl:flex-row gap-6 h-auto xl:h-[calc(100vh-240px)]">
                     {/* Feed List Section - Scrollable check */}
                     {/* Added max-w-[500px] mx-auto for mobile to prevent it from being too wide on tablets/landscape phones */}
-                    <div className="w-full max-w-[500px] mx-auto lg:max-w-none lg:w-[400px] shrink-0 h-[500px] lg:h-full flex flex-col">
+                    <div className="w-full max-w-[500px] mx-auto xl:max-w-none xl:w-[400px] shrink-0 h-[500px] xl:h-full flex flex-col">
                         <FeedList
                             posts={posts}
                             onPostClick={setSelectedPost}
@@ -100,8 +100,8 @@ export default function FeedContainer({ initialLocation, initialPosts = [] }: Fe
                     </div>
 
                     {/* Map Visualization Section - Flexible */}
-                    {/* Changed fixed h-[400px] to min-h-[40vh] for responsiveness */}
-                    <div className="w-full min-h-[40vh] lg:h-full lg:flex-1 rounded-xl overflow-hidden shadow-sm border border-border relative order-first lg:order-last">
+                    {/* Changed fixed min-h to fixed h-[45vh] for mobile visibility, xl:h-full for desktop */}
+                    <div className="w-full h-[45vh] xl:h-full xl:flex-1 rounded-xl overflow-hidden shadow-sm border border-border relative order-first xl:order-last">
                         <div className="absolute top-4 right-4 z-10 flex gap-2 pointer-events-none">
                             <div className="bg-black/80 text-white backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold shadow-lg border border-white/10">
                                 {radius}km Radius

@@ -25,7 +25,7 @@ export default function Sidebar({ initialUser }: SidebarProps) {
     const [isOpen, setIsOpen] = useState(true);
 
     return (
-        <aside className={`${isOpen ? 'w-64' : 'w-20'} hidden md:flex flex-col border-r border-border bg-secondary/5 transition-all duration-300`}>
+        <aside className={`${isOpen ? 'w-64' : 'w-20'} hidden xl:flex flex-col border-r border-border bg-secondary/5 transition-all duration-300`}>
             {/* Header / Toggle */}
             <div className="h-16 flex items-center px-6 border-b border-border">
                 <span className={`text-xl font-bold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent ${!isOpen && 'hidden'}`}>
