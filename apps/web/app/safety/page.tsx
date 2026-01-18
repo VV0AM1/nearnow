@@ -7,6 +7,7 @@ import { useGeoLocation } from "../../hooks/useGeoLocation";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import { RankingCard } from "../../components/features/safety/RankingCard";
 import { SafetyLeaderboard } from "../../components/features/safety/SafetyLeaderboard";
+import { SentinelLog } from "../../components/features/safety/SentinelLog";
 import { cn } from "@/lib/utils";
 import { Shield, AlertTriangle, Activity, Target } from "lucide-react";
 
@@ -132,6 +133,10 @@ export default function SafetyPage() {
                                 </div>
 
                                 <SafetyLeaderboard data={data.ranking} />
+
+                                <div className="mt-8">
+                                    <SentinelLog />
+                                </div>
                             </div>
                         )}
                     </div>
