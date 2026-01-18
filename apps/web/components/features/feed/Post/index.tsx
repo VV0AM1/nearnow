@@ -1,76 +1,100 @@
 "use client";
 
+import { useState, useRef, MouseEvent } from "react";
 import { PostProps } from "./Post.types";
 import { usePostInteractions } from "./usePostInteractions";
 import PostHeader from "./components/PostHeader";
 import PostContent from "./components/PostContent";
 import PostActions from "./components/PostActions";
+import styles from "./Post.module.css";
 
 export default function Post({ post, onClick, onHover }: PostProps & { onHover?: (id: string | null) => void }) {
     const { likes, voted, saved, handleVote, handleSave } = usePostInteractions(post);
+    const cardRef = useRef<HTMLDivElement>(null);
+    const [rotation, setRotation] = useState({ x: 0, y: 0 });
 
-    const handleLongPress = () => {
+    const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
+        if (!cardRef.current) return;
+
+        const rect = cardRef.current.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        const mouseX = e.clientX - centerX;
+        const mouseY = e.clientY - centerY;
+
+        // Max rotation degrees
+        const maxRot = 8;
+
+        const rotateY = (mouseX / (rect.width / 2)) * maxRot;
+        const rotateX = -1 * (mouseY / (rect.height / 2)) * maxRot;
+
+        setRotation({ x: rotateX, y: rotateY });
+
         if (onHover) onHover(post.id);
     };
 
+    const handleMouseLeave = () => {
+        setRotation({ x: 0, y: 0 });
+        if (onHover) onHover(null);
+    };
+
     return (
-        <div
-            onClick={() => onClick && onClick(post)}
-            onMouseEnter={() => onHover && onHover(post.id)}
-            onMouseLeave={() => onHover && onHover(null)}
-            // Basic mobile implementation: Touch and hold could be complex, 
-            // but user asked for "hold finder on the item card for a bit".
-            // For now, let's trigger on touch start (simpler) or we can implement a proper useLongPress hook.
-            // Let's stick to mouse events first for desktop, and for mobile maybe a separate button or just simple touch logic?
-            // Actually, let's add a "Find on Map" button for mobile explicit action if touch-and-hold is tricky without a hook?
-            // Or simpler: TouchStart sets it, TouchEnd clears it or leaves it?
-            // User said: "hold finder on the item card for a bit".
-            // Let's implement a timer for touchstart.
-            onTouchStart={() => {
-                const timer = setTimeout(() => {
-                    if (onHover) onHover(post.id);
-                }, 500); // 500ms hold
-                (window as any)._postTouchTimer = timer;
-            }}
-            onTouchEnd={() => {
-                if ((window as any)._postTouchTimer) clearTimeout((window as any)._postTouchTimer);
-                // Optionally clear hover on end? "pops up in the map... so user can quickly understand"
-                // If they release, maybe it should stay for a bit or clear? 
-                // Let's clear it to act like "peek".
-                if (onHover) onHover(null);
-            }}
-            className="group relative overflow-hidden p-2 rounded-xl border border-white/5 
-                        bg-gradient-to-b from-slate-900/80 to-slate-950/80 backdrop-blur-md
-                        hover:border-blue-500/30 hover:shadow-[0_0_30px_rgba(59,130,246,0.15)] hover:-translate-y-0.5
-                        flex gap-2 cursor-pointer transition-all duration-300 ease-out select-none"
-        >
+        <div className={styles.cardWrapper}>
             <div
-                className={`h-8 w-8 rounded-full flex items-center justify-center text-sm shrink-0
-                    bg-gradient-to-br from-slate-800 to-slate-900 text-white/90 border border-white/10 shadow-inner group-hover:scale-110 transition-transform duration-300`}
+                ref={cardRef}
+                onClick={() => onClick && onClick(post)}
+                onMouseMove={handleMouseMove}
+                onMouseLeave={handleMouseLeave}
+                onTouchStart={() => {
+                    const timer = setTimeout(() => {
+                        if (onHover) onHover(post.id);
+                    }, 500);
+                    (window as any)._postTouchTimer = timer;
+                }}
+                onTouchEnd={() => {
+                    if ((window as any)._postTouchTimer) clearTimeout((window as any)._postTouchTimer);
+                    if (onHover) onHover(null);
+                }}
+                style={{
+                    transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`
+                }}
+                className={`${styles.card} group relative overflow-hidden p-3 rounded-2xl border border-white/5 
+                            bg-gradient-to-b from-slate-900/40 to-slate-950/40 backdrop-blur-xl
+                            hover:border-blue-500/50 hover:shadow-[0_0_40px_rgba(59,130,246,0.2)]
+                            flex gap-3 cursor-pointer select-none transition-colors duration-300`}
             >
-                📝
-            </div>
-            <div className="flex-1 min-w-0">
-                <PostHeader title={post.title} category={post.category} />
+                {/* Icon Layer */}
+                <div
+                    className={`${styles.iconLayer} h-10 w-10 rounded-full flex items-center justify-center text-lg shrink-0
+                        bg-gradient-to-br from-slate-800 to-slate-900 text-white/90 border border-white/10 shadow-inner group-hover:scale-110 transition-transform duration-300`}
+                >
+                    📝
+                </div>
 
-                <PostContent
-                    content={post.content}
-                    imageUrl={post.imageUrl}
-                    createdAt={post.createdAt}
-                    neighborhoodName={post.neighborhood?.name}
-                />
+                {/* Content Layer */}
+                <div className={`${styles.contentLayer} flex-1 min-w-0`}>
+                    <PostHeader title={post.title} category={post.category} />
 
-                <PostActions
-                    id={post.id}
-                    title={post.title}
-                    content={post.content}
-                    commentsCount={post.comments?.length || 0}
-                    likes={likes}
-                    voted={voted}
-                    saved={saved}
-                    onVote={handleVote}
-                    onSave={handleSave}
-                />
+                    <PostContent
+                        content={post.content}
+                        imageUrl={post.imageUrl}
+                        createdAt={post.createdAt}
+                        neighborhoodName={post.neighborhood?.name}
+                    />
+
+                    <PostActions
+                        id={post.id}
+                        title={post.title}
+                        content={post.content}
+                        commentsCount={post.comments?.length || 0}
+                        likes={likes}
+                        voted={voted}
+                        saved={saved}
+                        onVote={handleVote}
+                        onSave={handleSave}
+                    />
+                </div>
             </div>
         </div>
     );
