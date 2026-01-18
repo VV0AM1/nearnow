@@ -10,70 +10,28 @@ import styles from "./Post.module.css";
 
 export default function Post({ post, onClick, onHover }: PostProps & { onHover?: (id: string | null) => void }) {
     const { likes, voted, saved, handleVote, handleSave } = usePostInteractions(post);
-    const cardRef = useRef<HTMLDivElement>(null);
-    const [rotation, setRotation] = useState({ x: 0, y: 0 });
-
-    const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
-        if (!cardRef.current) return;
-
-        const rect = cardRef.current.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-
-        const mouseX = e.clientX - centerX;
-        const mouseY = e.clientY - centerY;
-
-        // Max rotation degrees
-        const maxRot = 8;
-
-        const rotateY = (mouseX / (rect.width / 2)) * maxRot;
-        const rotateX = -1 * (mouseY / (rect.height / 2)) * maxRot;
-
-        setRotation({ x: rotateX, y: rotateY });
-
-        if (onHover) onHover(post.id);
-    };
-
-    const handleMouseLeave = () => {
-        setRotation({ x: 0, y: 0 });
-        if (onHover) onHover(null);
-    };
 
     return (
         <div className={styles.cardWrapper}>
             <div
-                ref={cardRef}
                 onClick={() => onClick && onClick(post)}
-                onMouseMove={handleMouseMove}
-                onMouseLeave={handleMouseLeave}
-                onTouchStart={() => {
-                    const timer = setTimeout(() => {
-                        if (onHover) onHover(post.id);
-                    }, 500);
-                    (window as any)._postTouchTimer = timer;
-                }}
-                onTouchEnd={() => {
-                    if ((window as any)._postTouchTimer) clearTimeout((window as any)._postTouchTimer);
-                    if (onHover) onHover(null);
-                }}
-                style={{
-                    transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`
-                }}
-                className={`${styles.card} group relative overflow-hidden p-3 rounded-2xl border border-white/5 
+                onMouseEnter={() => onHover && onHover(post.id)}
+                onMouseLeave={() => onHover && onHover(null)}
+                className={`${styles.card} group relative overflow-hidden p-4 rounded-2xl border border-white/5 
                             bg-gradient-to-b from-slate-900/40 to-slate-950/40 backdrop-blur-xl
-                            hover:border-blue-500/50 hover:shadow-[0_0_40px_rgba(59,130,246,0.2)]
-                            flex gap-3 cursor-pointer select-none transition-colors duration-300`}
+                            hover:border-blue-500/30 hover:shadow-[0_10px_40px_rgba(59,130,246,0.15)]
+                            flex gap-4 cursor-pointer select-none transition-all duration-300 ease-out`}
             >
                 {/* Icon Layer */}
                 <div
-                    className={`${styles.iconLayer} h-10 w-10 rounded-full flex items-center justify-center text-lg shrink-0
-                        bg-gradient-to-br from-slate-800 to-slate-900 text-white/90 border border-white/10 shadow-inner group-hover:scale-110 transition-transform duration-300`}
+                    className={`${styles.iconLayer} h-12 w-12 rounded-full flex items-center justify-center text-xl shrink-0
+                        bg-gradient-to-br from-slate-800 to-slate-900 text-white/90 border border-white/10 shadow-inner group-hover:scale-110 group-hover:bg-blue-500/20 group-hover:text-blue-400 group-hover:border-blue-500/30 transition-all duration-300`}
                 >
                     📝
                 </div>
 
                 {/* Content Layer */}
-                <div className={`${styles.contentLayer} flex-1 min-w-0`}>
+                <div className={`${styles.contentLayer} flex-1 min-w-0 space-y-3`}>
                     <PostHeader title={post.title} category={post.category} />
 
                     <PostContent

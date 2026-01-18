@@ -1,17 +1,13 @@
 /* Post.module.css */
 
 .cardWrapper {
-    perspective: 1000px;
-    transform-style: preserve-3d;
+    /* Container for the card */
 }
 
 .card {
-    /* Renaming existing gradient classes to here or keeping as utility? 
-     Let's keep utility for colors, use this for structural 3D */
-    transform-style: preserve-3d;
-    transition: transform 0.1s ease-out;
-    /* Super fast for mouse follow */
-    will-change: transform;
+    will-change: transform, box-shadow;
+    transform: translateZ(0);
+    /* Hardware accelerate */
 }
 
 /* The Shine Effect */
@@ -42,14 +38,14 @@
     transition: transform 0.8s ease-in-out;
 }
 
-/* Inner content depth */
-.contentLayer {
-    transform: translateZ(20px);
-    /* Lifts content off the card */
-    /* transform-style: preserve-3d; - only if nested 3d needed */
+.card:hover {
+    transform: translateY(-4px) scale(1.01);
 }
 
-/* Icon Depth */
+.contentLayer {
+    /* No Z-transform to prevent blurring */
+}
+
 .iconLayer {
-    transform: translateZ(30px);
+    /* No Z-transform */
 }
