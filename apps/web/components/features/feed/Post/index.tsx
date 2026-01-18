@@ -39,10 +39,10 @@ export default function Post({ post, onClick, onHover }: PostProps & { onHover?:
                 // Let's clear it to act like "peek".
                 if (onHover) onHover(null);
             }}
-            className="group relative overflow-hidden p-3 rounded-xl border border-white/5 
+            className="group relative overflow-hidden p-2 rounded-xl border border-white/5 
                         bg-gradient-to-b from-slate-900/80 to-slate-950/80 backdrop-blur-md
                         hover:border-blue-500/30 hover:shadow-[0_0_30px_rgba(59,130,246,0.15)] hover:-translate-y-0.5
-                        flex gap-3 cursor-pointer transition-all duration-300 ease-out select-none"
+                        flex gap-2 cursor-pointer transition-all duration-300 ease-out select-none"
         >
             <div
                 className={`h-8 w-8 rounded-full flex items-center justify-center text-sm shrink-0

@@ -35,10 +35,10 @@ export default function MobileMapFilter({ selectedCategory, onSelect, timeRange,
     const selectedCount = selectedCategory.includes('ALL') ? 0 : selectedCategory.length;
 
     return (
-        <div className="md:hidden absolute top-24 left-4 z-[400]">
+        <div className="absolute top-24 left-4 z-[400]">
             <button
                 onClick={handleOpen}
-                className="h-10 w-10 flex items-center justify-center bg-black/60 backdrop-blur-md rounded-full border border-white/10 shadow-lg"
+                className="h-12 w-12 flex items-center justify-center bg-card rounded-full border border-border shadow-sm active:scale-95 transition-transform"
             >
                 <Filter className="h-4 w-4 text-white" />
                 {selectedCount > 0 && (
