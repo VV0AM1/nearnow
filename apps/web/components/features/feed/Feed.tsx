@@ -84,8 +84,9 @@ export default function FeedContainer({ initialLocation, initialPosts = [] }: Fe
             ) : (
                 <div className="flex flex-col xl:flex-row gap-6 h-auto xl:h-[calc(100vh-240px)]">
                     {/* Feed List Section - Scrollable check */}
-                    {/* Added max-w-[500px] mx-auto for mobile to prevent it from being too wide on tablets/landscape phones */}
-                    <div className="w-full max-w-[500px] mx-auto xl:max-w-none xl:w-[400px] shrink-0 h-[500px] xl:h-full flex flex-col">
+                    {/* Feed List Section - Scrollable check */}
+                    {/* Removed max-w-[500px] mx-auto so it matches map width on mobile/tablet */}
+                    <div className="w-full shrink-0 h-[500px] xl:h-full xl:w-[400px] flex flex-col">
                         <FeedList
                             posts={posts}
                             onPostClick={setSelectedPost}
