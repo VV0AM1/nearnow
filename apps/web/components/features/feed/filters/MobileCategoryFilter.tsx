@@ -39,10 +39,12 @@ export default function MobileCategoryFilter({ selected, onSelect }: MobileCateg
         <>
             <button
                 onClick={handleOpen}
-                className="md:hidden flex items-center justify-center gap-2 px-4 py-2 bg-secondary/50 rounded-full border border-border text-sm font-medium"
+                className="md:hidden h-12 w-12 flex items-center justify-center bg-card rounded-full border border-border shadow-sm active:scale-95 transition-transform"
             >
-                <Filter className="h-4 w-4" />
-                Filters {selectedCount > 0 && <span className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded-full">{selectedCount}</span>}
+                <Filter className="h-5 w-5 text-foreground" />
+                {selectedCount > 0 && (
+                    <span className="absolute top-0 right-0 h-3 w-3 bg-primary rounded-full border-2 border-background box-content" />
+                )}
             </button>
 
             <AnimatePresence>

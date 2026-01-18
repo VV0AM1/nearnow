@@ -19,7 +19,7 @@ export default function CategoryBadge({ category, onClick, isSelected, className
             <button
                 onClick={onClick}
                 className={`
-                    px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all
+                    px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all
                     ${isSelected
                         ? `${color} text-white shadow-lg ring-2 ring-offset-2 ring-offset-background`
                         : 'bg-secondary/50 text-white hover:bg-secondary hover:text-foreground'
