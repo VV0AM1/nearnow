@@ -10,7 +10,6 @@ import SearchModal from "../features/search/SearchModal";
 import SOSButton from "../features/safety/SOSButton";
 import { API_URL } from "@/lib/config";
 import { useDashboard } from "../../context/DashboardContext";
-import LocationSearch from "../features/feed/LocationSearch";
 
 export default function DashboardHeader() {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -24,11 +23,16 @@ export default function DashboardHeader() {
                 <MobileMenu />
             </div>
 
-            {/* Search Bar (Desktop) - Now Active */}
+            {/* Search Bar (Desktop) - Generic Search */}
             <div className="hidden md:block w-full max-w-md mx-6">
-                <LocationSearch
-                    onLocationSelect={(lat, long) => setLocation({ lat, long })}
-                />
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <input
+                        type="text"
+                        placeholder="Search posts..."
+                        className="w-full bg-secondary/20 border border-border rounded-lg pl-10 pr-4 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/50"
+                    />
+                </div>
             </div>
 
             {/* Hidden Triggers for Mobile interactions */}

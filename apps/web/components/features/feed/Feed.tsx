@@ -3,11 +3,12 @@ import MapLoader from "../map/MapLoader";
 import PostDetailModal from "./PostDetailModal";
 import { useFeed } from "../../../hooks/useFeed";
 import { useMapPosts } from "../../../hooks/useMapPosts";
+import LocationSearch from "./LocationSearch"; // Restored
 import RadiusSlider from "./RadiusSlider";
 import CategoryFilter from "./CategoryFilter";
 import FeedList from "./FeedList";
 import FeedListSkeleton from "../../ui/loading/FeedListSkeleton";
-import { useDashboard } from "../../../context/DashboardContext"; // New Import
+import { useDashboard } from "../../../context/DashboardContext";
 
 import { Post } from "../../../types/post";
 
@@ -17,7 +18,7 @@ interface FeedContainerProps {
 }
 
 export default function FeedContainer({ initialLocation, initialPosts = [] }: FeedContainerProps) {
-    const { location, setLocation } = useDashboard(); // Use Context
+    const { location, setLocation } = useDashboard();
 
     // Sync if initialLocation changes (server side props) - update Global Context
     useEffect(() => {
@@ -58,17 +59,25 @@ export default function FeedContainer({ initialLocation, initialPosts = [] }: Fe
                 />
             )}
 
-            {/* Toolbar: Categories & Radius (Search is now in Header) */}
+            {/* Toolbar: Location Search, Categories & Radius */}
             <div className="flex flex-col gap-4 mb-4 shrink-0 px-4 pt-4 md:px-0 md:pt-0">
-                <div className="flex items-center justify-between">
-                    <div className="flex-1 overflow-x-auto no-scrollbar p-1">
-                        <CategoryFilter selected={categories} onSelect={setCategories} />
+                <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex-1">
+                        <LocationSearch
+                            onLocationSelect={(lat, long) => setLocation({ lat, long })}
+                        />
                     </div>
-                    <div className="w-48 ml-4 hidden md:block">
+                    <div className="md:w-64 hidden md:block">
                         <RadiusSlider value={radius} onChange={setRadius} />
                     </div>
                 </div>
-                {/* Mobile Radius Slider (optional, or keeping hidden/compact) */}
+
+                <div className="flex items-center justify-between">
+                    <div className="flex-1 overflow-x-auto no-scrollbar p-2">
+                        <CategoryFilter selected={categories} onSelect={setCategories} />
+                    </div>
+                    {/* Mobile Only Radius if needed, otherwise hidden */}
+                </div>
             </div>
 
             {error && <div className="text-center p-4 text-red-500 bg-red-50 rounded-lg mb-4">Error: {error}</div>}
