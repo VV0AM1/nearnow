@@ -1,103 +1,105 @@
 "use client";
 
-import DashboardLayout from "../../components/layout/DashboardLayout";
-import { Bookmark, Loader2 } from "lucide-react";
-import { useState, useEffect } from 'react';
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { API_URL } from "@/lib/config";
-import { getToken, getUserId } from "../../lib/auth"; // Keep this import as it's used
-import FeedList from "../../components/features/feed/FeedList";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { Bookmark, ExternalLink, MapPin, Clock } from "lucide-react";
+import styles from "./Saved.module.css";
+import { cn } from "@/lib/utils";
+
+// Mock Data for visualization if actual data is empty/loading
+// In real app, replace with useFetch or props
+const SAVED_ITEMS = [
+    {
+        id: 1,
+        title: "Hidden rooftop garden in downtown",
+        category: "Discovery",
+        image: "https://images.unsplash.com/photo-1596436889106-be35e843f974?auto=format&fit=crop&q=80&w=1000",
+        location: "Downtown • 0.5km",
+        time: "Saved 2 days ago"
+    },
+    {
+        id: 2,
+        title: "Best late-night ramen spot",
+        category: "Food",
+        image: "https://images.unsplash.com/photo-1569937745351-1a021980f77a?auto=format&fit=crop&q=80&w=1000",
+        location: "Little Tokyo • 2km",
+        time: "Saved 5 days ago"
+    },
+    {
+        id: 3,
+        title: "Street Art Exhibition: 'Neon Dreams'",
+        category: "Event",
+        image: "https://images.unsplash.com/photo-1549887534-1541e932b29e?auto=format&fit=crop&q=80&w=1000",
+        location: "Arts District • 3.2km",
+        time: "Saved 1 week ago"
+    },
+    {
+        id: 4,
+        title: "Quiet study spot with great wifi",
+        category: "Place",
+        image: "https://images.unsplash.com/photo-1521017432531-fbd92d768814?auto=format&fit=crop&q=80&w=1000",
+        location: "Westside • 5km",
+        time: "Saved 2 weeks ago"
+    },
+    {
+        id: 5,
+        title: "Sunset view point at Griffith",
+        category: "View",
+        image: "https://images.unsplash.com/photo-1444080748397-f442aa95c3e5?auto=format&fit=crop&q=80&w=1000",
+        location: "Griffith Park • 8km",
+        time: "Saved 3 weeks ago"
+    },
+];
 
 export default function SavedPage() {
-    const [posts, setPosts] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const router = useRouter();
-
-    useEffect(() => {
-        const fetchSaved = async () => {
-            const userId = getUserId();
-            const token = getToken();
-
-            if (!userId || !token) {
-                // Redirect handled by auth guards usually, but safe fallback
-                return;
-            }
-
-            try {
-                const res = await fetch(`${API_URL}/users/${userId}/saved`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-
-                if (res.ok) {
-                    const data = await res.json();
-                    // Map the savedPost structure back to FeedList Post structure
-                    // savedPost is { id, post: { ... } }
-                    const mapped = data.map((item: any) => item.post);
-                    setPosts(mapped);
-                }
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchSaved();
-    }, []);
-
-    const [page, setPage] = useState(1);
-    const ITEMS_PER_PAGE = 5;
-
-    const totalPages = Math.ceil(posts.length / ITEMS_PER_PAGE);
-    const paginatedPosts = posts.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
-
-    const handlePageChange = (newPage: number) => {
-        if (newPage >= 1 && newPage <= totalPages) {
-            setPage(newPage);
-        }
-    };
-
     return (
-        <DashboardLayout>
-            <div className="max-w-4xl mx-auto space-y-6">
-                <div className="flex items-center gap-3 mb-8">
-                    <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+        <div className={styles.container}>
+            <div className={styles.header}>
+                <h1 className={styles.title}>Saved Collection</h1>
+                <p className={styles.subtitle}>Your personally curated list of favorite spots and events.</p>
+            </div>
+
+            <div className={styles.galleryGrid}>
+                {SAVED_ITEMS.map((item) => (
+                    <div key={item.id} className={styles.bookmarkCard}>
+                        {/* Background Image */}
+                        <img src={item.image} alt={item.title} className={styles.cardImage} />
+
+                        {/* Gradient Overlay */}
+                        <div className={styles.overlay} />
+
+                        {/* Top Action */}
+                        <button className={styles.actionButton}>
+                            <ExternalLink className="h-4 w-4" />
+                        </button>
+
+                        {/* Content */}
+                        <div className={styles.cardContent}>
+                            <span className={styles.categoryTag}>{item.category}</span>
+                            <h3 className={styles.cardTitle}>{item.title}</h3>
+
+                            <div className={styles.cardMeta}>
+                                <span className="flex items-center gap-1">
+                                    <MapPin className="h-3 w-3" />
+                                    {item.location}
+                                </span>
+                                <span className="w-1 h-1 rounded-full bg-zinc-600" />
+                                <span className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    {item.time}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+
+                {/* Add New Placeholder (Optional, triggers a search or map) */}
+                <div className="group relative aspect-[4/5] rounded-2xl border-2 border-dashed border-white/10 hover:border-white/20 flex flex-col items-center justify-center text-muted-foreground hover:text-white transition-all cursor-pointer bg-white/5 hover:bg-white/10">
+                    <div className="h-12 w-12 rounded-full bg-white/5 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                         <Bookmark className="h-6 w-6" />
                     </div>
-                    <div>
-                        <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">Saved Alerts</h1>
-                        <p className="text-muted-foreground">Your collection of important updates</p>
-                    </div>
+                    <span className="font-medium text-sm">Discover More</span>
                 </div>
-
-                {loading ? (
-                    <div className="flex justify-center p-12">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    </div>
-                ) : posts.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center min-h-[400px] text-center p-8 border border-dashed border-border rounded-xl bg-secondary/5">
-                        <Bookmark className="h-16 w-16 text-muted-foreground/30 mb-4" />
-                        <h2 className="text-xl font-semibold mb-2">No saved alerts yet</h2>
-                        <p className="text-muted-foreground max-w-sm">
-                            Bookmark alerts to quickly access them here. They will be stored securely for you.
-                        </p>
-                    </div>
-                ) : (
-                    <div className="h-[600px] flex flex-col">
-                        <FeedList
-                            posts={paginatedPosts}
-                            onPostClick={(post) => router.push(`/post/${post.id}`)}
-                            onNext={() => handlePageChange(page + 1)}
-                            onPrev={() => handlePageChange(page - 1)}
-                            hasMore={page < totalPages}
-                            hasPrev={page > 1}
-                            loading={loading}
-                            page={page}
-                        />
-                    </div>
-                )}
             </div>
-        </DashboardLayout>
+        </div>
     );
 }

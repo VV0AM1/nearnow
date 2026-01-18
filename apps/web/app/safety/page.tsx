@@ -1,167 +1,107 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { API_URL } from "@/lib/config";
-import { useGeoLocation } from "../../hooks/useGeoLocation";
-import DashboardLayout from "../../components/layout/DashboardLayout";
-import { RankingCard } from "../../components/features/safety/RankingCard";
-import { SafetyLeaderboard } from "../../components/features/safety/SafetyLeaderboard";
+import { Shield, AlertTriangle, Phone, Activity, MapPin } from "lucide-react";
+import styles from "./Safety.module.css";
+import { cn } from "@/lib/utils";
 
 export default function SafetyPage() {
-    const { location } = useGeoLocation();
-    const [data, setData] = useState<{ topSafe: any[], topDangerous: any[], ranking: any[] }>({ topSafe: [], topDangerous: [], ranking: [] });
-    const [radius, setRadius] = useState(5);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        if (!location.latitude || !location.longitude) return;
-
-        setLoading(true);
-        fetch(`${API_URL}/neighborhoods/rankings?lat=${location.latitude}&lng=${location.longitude}&radius=${radius}`)
-            .then(res => res.json())
-            .then(resData => {
-                if (resData && typeof resData === 'object') {
-                    // Map backend fields to frontend component expectations
-                    // Map backend fields to frontend component expectations
-                    // Map backend fields to frontend component expectations
-                    const mapItem = (item: any) => {
-                        const safety = item.safetyCount || 0;
-                        const crime = item.crimeCount || 0;
-                        let netScore = safety - crime;
-
-                        // User rule: "if negative its 0"
-                        if (netScore < 0) netScore = 0;
-
-                        return {
-                            ...item,
-                            alerts: item.totalCount,
-                            score: netScore,
-                            safetyCount: safety,
-                            crimeCount: crime,
-                            // Trend logic
-                            trend: netScore >= 5 ? 'up' : 'stable'
-                        };
-                    };
-
-                    const mappedRanking = (resData.ranking || []).map(mapItem);
-
-                    // 1. Top Safest Zones: Sort by HIGHEST Safety Count
-                    const topSafe = [...mappedRanking]
-                        .sort((a, b) => b.safetyCount - a.safetyCount)
-                        .slice(0, 3);
-
-                    // 2. High Attention Zones: Sort by HIGHEST Crime Count
-                    const topDangerous = [...mappedRanking]
-                        .sort((a, b) => b.crimeCount - a.crimeCount)
-                        .slice(0, 3);
-
-                    // 3. Main Ranking Table: 
-                    // Rule 1: Net Score (Safe - Crime, min 0) DESC
-                    // Rule 2: Total Alerts (Activity) DESC (User: "if one hood has total alert... higher its higher")
-                    const sortedRanking = [...mappedRanking].sort((a, b) => {
-                        if (b.score !== a.score) {
-                            return b.score - a.score; // Priority: Score
-                        }
-                        return (b.alerts || 0) - (a.alerts || 0); // Tie-breaker: Total Activity
-                    });
-
-                    setData({
-                        topSafe: topSafe,
-                        topDangerous: topDangerous,
-                        ranking: sortedRanking
-                    });
-                } else {
-                    console.error("API Error or Invalid Format:", resData);
-                }
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error(err);
-                setLoading(false);
-            });
-    }, [location.latitude, location.longitude, radius]);
-
     return (
-        <DashboardLayout>
-            <div className="p-8 max-w-7xl mx-auto space-y-12">
+        <div className={styles.container}>
+            <div className={styles.header}>
+                <div>
+                    <h1 className={styles.title}>Safety Center</h1>
+                    <p className={styles.subtitle}>Real-time monitoring and emergency response</p>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20">
+                    <span className={styles.pulseDot}>
+                        <span className={styles.pulseDotAnimate}></span>
+                        <span className={styles.pulseDotSolid}></span>
+                    </span>
+                    <span className="text-xs font-semibold text-green-500">SYSTEM OPERATIONAL</span>
+                </div>
+            </div>
 
-                {/* Header & Controls */}
-                <div className="text-center space-y-6">
-                    <div>
-                        <h1 className="text-5xl font-black bg-gradient-to-r from-emerald-400 via-blue-500 to-purple-500 bg-clip-text text-transparent">
-                            Safety Command Center
-                        </h1>
-                        <p className="text-zinc-400 text-lg max-w-2xl mx-auto mt-2">
-                            Real-time safety analytics within <span className="text-white font-bold">{radius}km</span> of your position.
+            <div className={styles.grid}>
+                {/* Emergency Action */}
+                <div className="md:col-span-2 lg:col-span-1">
+                    <div className={styles.card}>
+                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                            <AlertTriangle className="h-5 w-5 text-red-500" />
+                            Emergency Action
+                        </h3>
+                        <button className={styles.sosLarge}>
+                            <span className="text-3xl mb-2">SOS</span>
+                            <span>TRIGGER ALERT</span>
+                        </button>
+                        <p className="text-xs text-muted-foreground mt-4 text-center">
+                            Pressing this will instantly notify nearby users and emergency contacts.
                         </p>
                     </div>
+                </div>
 
-                    {/* Radius Slider */}
-                    <div className="max-w-md mx-auto bg-white/5 p-6 rounded-2xl border border-white/10 backdrop-blur-sm">
-                        <label className="flex justify-between text-sm font-medium mb-4 text-zinc-300">
-                            <span>Analysis Radius</span>
-                            <span className="text-blue-400">{radius} km</span>
-                        </label>
-                        <input
-                            type="range"
-                            min="1"
-                            max="50"
-                            step="1"
-                            value={radius}
-                            onChange={(e) => setRadius(parseInt(e.target.value))}
-                            className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                        />
-                        <div className="flex justify-between text-xs text-zinc-500 mt-2">
-                            <span>1km</span>
-                            <span>50km</span>
+                {/* Live Stats */}
+                <div className={styles.card}>
+                    <div className="flex items-start justify-between">
+                        <div>
+                            <p className={styles.statLabel}>Active Incidents</p>
+                            <h2 className={styles.statValue}>12</h2>
+                        </div>
+                        <div className="p-3 rounded-xl bg-blue-500/10 text-blue-500">
+                            <Activity className="h-6 w-6" />
+                        </div>
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-white/5">
+                        <div className="flex items-center text-xs text-muted-foreground gap-2">
+                            <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                            <span>Radius: 5km</span>
                         </div>
                     </div>
                 </div>
 
-                {loading ? (
-                    <div className="text-center py-20 text-zinc-500 animate-pulse">Calculating safety scores...</div>
-                ) : data.ranking.length === 0 ? (
-                    <div className="text-center py-20 text-zinc-500">
-                        No neighborhoods found nearby. Try increasing the radius.
-                    </div>
-                ) : (
-                    <>
-                        {/* Top Statistics */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <section className="space-y-6">
-                                <div className="flex items-center gap-2 text-emerald-400 mb-6">
-                                    <span className="text-2xl">🛡️</span>
-                                    <h2 className="text-2xl font-bold">Top 3 Safest Zones</h2>
-                                </div>
-                                <div className="space-y-4">
-                                    {data.topSafe.map((hood, i) => (
-                                        <RankingCard key={hood.id} neighborhood={hood} rank={i + 1} type="safe" />
-                                    ))}
-                                </div>
-                            </section>
-
-                            <section className="space-y-6">
-                                <div className="flex items-center gap-2 text-red-400 mb-6">
-                                    <span className="text-2xl">🚨</span>
-                                    <h2 className="text-2xl font-bold">High Attention Zones</h2>
-                                </div>
-                                <div className="space-y-4">
-                                    {data.topDangerous.map((hood, i) => (
-                                        <RankingCard key={hood.id} neighborhood={hood} rank={i + 1} type="danger" />
-                                    ))}
-                                </div>
-                            </section>
+                <div className={styles.card}>
+                    <div className="flex items-start justify-between">
+                        <div>
+                            <p className={styles.statLabel}>Trusted Contacts</p>
+                            <h2 className={styles.statValue}>3</h2>
                         </div>
+                        <div className="p-3 rounded-xl bg-purple-500/10 text-purple-500">
+                            <Phone className="h-6 w-6" />
+                        </div>
+                    </div>
+                    <button className="mt-4 w-full py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-medium transition-colors border border-white/5">
+                        Manage Contacts
+                    </button>
+                </div>
 
-                        {/* Full Leaderboard */}
-                        <section>
-                            <h2 className="text-2xl font-bold text-white mb-6">Local Safety Index</h2>
-                            <SafetyLeaderboard data={data.ranking} />
-                        </section>
-                    </>
-                )}
+                {/* Recent Alerts List */}
+                <div className="md:col-span-2 lg:col-span-3">
+                    <div className={styles.card}>
+                        <h3 className="text-lg font-semibold text-white mb-6">Recent Safety Alerts</h3>
+
+                        <div className="space-y-4">
+                            {[1, 2, 3].map((i) => (
+                                <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-black/20 border border-white/5 hover:border-white/10 transition-colors group">
+                                    <div className="flex items-center gap-4">
+                                        <div className="h-10 w-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 group-hover:bg-red-500/20 transition-colors">
+                                            <AlertTriangle className="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-medium text-white">Suspicious Activity Reported</h4>
+                                            <p className="text-sm text-muted-foreground flex items-center gap-1">
+                                                <MapPin className="h-3 w-3" />
+                                                San Francisco, CA • 2 mins ago
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button className="px-3 py-1.5 text-xs font-medium bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 transition-colors">
+                                        View Details
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
             </div>
-        </DashboardLayout>
+        </div>
     );
 }
