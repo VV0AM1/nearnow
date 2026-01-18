@@ -8,6 +8,8 @@ import { MapProps } from "./Map.types";
 import { MapController, ChangeView, MapClickHandler } from "./components/MapControllers";
 import MapMarkers from "./components/MapMarkers";
 import MobileMapFilter from "../MobileMapFilter";
+import MapControls from "../MapControls";
+import MapFilterControl from "../MapFilterControl";
 
 export default function Map({ posts, center = [37.7749, -122.4194], zoom = 16, radius, onMapClick, interactiveOnly = false, highlightedPostId }: MapProps) {
     const {
@@ -28,15 +30,6 @@ export default function Map({ posts, center = [37.7749, -122.4194], zoom = 16, r
                         timeRange={timeRange}
                         onTimeRangeChange={setTimeRange}
                         onSelect={(id) => {
-                            // Adapter for MobileMapFilter's internal toggle logic if it returns single id to handleSelect?
-                            // Wait, MobileMapFilter.tsx in previous step had onSelect: (id: string) => void signature 
-                            // But useMapFilters setSelectedCategory expects (ids: string[]) => void.
-                            // We need to bridge this or update MobileMapFilter to handle the "toggle" internally and return the new array?
-                            // Actually, MobileMapFilter usually implements its own toggle but it receives `onSelect`.
-                            // Let's check MobileMapFilter implementation carefully.
-                            // Step 7772: MobileMapFilter calls `onSelect(cat.id)`. It does NOT calculate new array.
-                            // So we need to handle the toggle logic HERE or in a wrapper.
-                            // Better: Let's create a helper `handleSelectCategory` in this component or useMapFilters.
                             const handleToggle = (id: string) => {
                                 if (id === 'ALL') {
                                     setSelectedCategory(['ALL']);
@@ -54,6 +47,20 @@ export default function Map({ posts, center = [37.7749, -122.4194], zoom = 16, r
                             handleToggle(id);
                         }}
                     />
+
+                    <div className="hidden lg:block">
+                        <MapControls
+                            selectedCategory={selectedCategory}
+                            onSelectCategory={setSelectedCategory}
+                        />
+                    </div>
+
+                    <div className="hidden lg:block">
+                        <MapFilterControl
+                            timeRange={timeRange}
+                            onTimeRangeChange={setTimeRange}
+                        />
+                    </div>
                 </>
             )}
 
