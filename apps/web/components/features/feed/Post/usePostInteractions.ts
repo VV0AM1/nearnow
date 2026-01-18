@@ -15,11 +15,16 @@ export function usePostInteractions(post: Post) {
             if (!userId) return;
 
             try {
-                // Check Vote
+                // 1. Check Local Storage first
+                const localVote = localStorage.getItem(`voted_${post.id}`);
+                if (localVote === 'true') setVoted(true);
+
+                // 2. Sync (but prefer local if true)
                 const voteRes = await fetch(`${API_URL}/posts/${post.id}/vote/check?userId=${userId}`);
                 if (voteRes.ok) {
                     const data = await voteRes.json();
-                    setVoted(data.hasVoted);
+                    if (localVote === 'true') setVoted(true);
+                    else setVoted(data.hasVoted);
                 }
 
                 // Check Saved (Mocked for now as backend might not have it, but let's assume endpoint exists or localStorage)
