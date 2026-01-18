@@ -34,7 +34,7 @@ export default function PostActions({ id, title, content, commentsCount, likes, 
                         className={`flex items-center space-x-1 transition-colors ${voted ? 'text-primary' : 'hover:text-primary'}`}
                     >
                         <ThumbsUp className={`h-4 w-4 ${voted ? 'fill-current' : ''}`} />
-                        <span className="text-xs font-medium">{likes > 0 ? likes : 'Helpful'}</span>
+                        <span className="text-xs font-medium">{(likes > 0 || voted) ? (likes || 1) : 'Helpful'}</span>
                     </button>
 
                     <Link href={`/post/${id}`} className="flex items-center space-x-2 hover:text-primary transition-colors">

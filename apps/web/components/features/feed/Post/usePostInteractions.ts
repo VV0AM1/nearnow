@@ -17,7 +17,11 @@ export function usePostInteractions(post: Post) {
             try {
                 // 1. Check Local Storage first
                 const localVote = localStorage.getItem(`voted_${post.id}`);
-                if (localVote === 'true') setVoted(true);
+                if (localVote === 'true') {
+                    setVoted(true);
+                    // If visual count is 0, assume it should be at least 1 since we voted
+                    if (likes === 0) setLikes(1);
+                }
 
                 // 2. Sync (but prefer local if true)
                 const voteRes = await fetch(`${API_URL}/posts/${post.id}/vote/check?userId=${userId}`);
