@@ -7,7 +7,7 @@ import { useGeoLocation } from "../../hooks/useGeoLocation";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import { RankingCard } from "../../components/features/safety/RankingCard";
 import { SafetyLeaderboard } from "../../components/features/safety/SafetyLeaderboard";
-import { SentinelLog } from "../../components/features/safety/SentinelLog";
+import { SafetyAnalytics } from "../../components/features/safety/SafetyAnalytics";
 import { cn } from "@/lib/utils";
 import { Shield, AlertTriangle, Activity, Target } from "lucide-react";
 
