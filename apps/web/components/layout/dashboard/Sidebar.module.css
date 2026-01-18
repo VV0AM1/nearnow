@@ -1,14 +1,14 @@
 /* Sidebar.module.css */
 
 .sidebarContainer {
-    @apply transition-all duration-300 relative z-40;
+    /* Layout handled in TSX */
     /* Create spacing for floating effect */
     margin: 1rem 0 1rem 1rem;
     height: calc(100vh - 2rem);
 }
 
 .glassDock {
-    @apply flex flex-col h-full rounded-2xl overflow-hidden;
+    /* Layout handled in TSX */
     /* Deep Glass Effect */
     background: linear-gradient(180deg,
             rgba(15, 23, 42, 0.6) 0%,

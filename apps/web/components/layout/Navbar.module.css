@@ -1,7 +1,7 @@
 /* Navbar.module.css */
 
 .navbarGlass {
-    @apply sticky top-0 z-50 transition-all duration-300;
+    /* Sticky/z-index moved to TSX */
     /* Deep Glass - lighter at top */
     background: rgba(15, 23, 42, 0.4);
     backdrop-filter: blur(12px);
@@ -12,7 +12,7 @@
 /* On scroll, it could become darker - logic in component or just keep it consistent */
 
 .searchContainer {
-    @apply relative transition-all duration-300;
+    /* relative transition moved to TSX */
     width: 20rem;
     /* w-80 base */
 }
@@ -23,26 +23,24 @@
 }
 
 .searchInput {
-    @apply w-full bg-secondary/10 border border-white/5 rounded-full pl-10 pr-4 py-2 text-sm transition-all duration-300;
+    /* Utilities moved to TSX */
     backdrop-filter: blur(10px);
 }
 
-.searchInput:focus {
-    @apply bg-secondary/20 border-blue-500/50 ring-2 ring-blue-500/20 shadow-[0_0_20px_rgba(59, 130, 246, 0.1)];
-}
+/* Focus styles moved to TSX utilities */
 
 /* Notification Bell Pulse */
 .notificationBtn {
-    @apply relative p-2 rounded-full text-muted-foreground transition-all duration-300;
+    /* Utilities moved to TSX */
 }
 
 .notificationBtn:hover {
-    @apply bg-white/5 text-white shadow-[0_0_15px_rgba(255, 255, 255, 0.1)];
+    /* Hover utilities moved to TSX */
     transform: translateY(-1px);
 }
 
 .pulseDot {
-    @apply absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500;
+    /* Absolute pos moved to TSX */
     box-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
     animation: pulse 2s infinite;
 }

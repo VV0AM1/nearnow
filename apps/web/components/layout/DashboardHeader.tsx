@@ -17,20 +17,25 @@ export default function DashboardHeader() {
     const { setLocation } = useDashboard();
 
     return (
-        <header className="h-16 border-b border-border flex items-center justify-between px-6 bg-background/80 backdrop-blur-md sticky top-0 z-50">
+    return (
+        <header className={cn("sticky top-0 z-50 transition-all duration-300 h-16 flex items-center justify-between px-6", styles.navbarGlass)}>
             {/* Mobile Menu Trigger */}
             <div className="md:hidden -ml-2">
                 <MobileMenu />
             </div>
 
-            {/* Search Bar (Desktop) - Generic Search */}
-            <div className="hidden md:block w-full max-w-md mx-6">
+            {/* Search Bar (Desktop) - Animated & Glass */}
+            <div className={cn("hidden md:block mx-6 relative transition-all duration-300", styles.searchContainer)}>
                 <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
                     <input
                         type="text"
                         placeholder="Search posts..."
-                        className="w-full bg-secondary/20 border border-border rounded-lg pl-10 pr-4 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/50"
+                        className={cn(
+                            "w-full bg-secondary/10 border border-white/5 rounded-full pl-10 pr-4 py-2 text-sm transition-all duration-300",
+                            "focus:bg-secondary/20 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 focus:shadow-[0_0_20px_rgba(59,130,246,0.1)] focus:outline-none placeholder:text-muted-foreground/50",
+                            styles.searchInput
+                        )}
                     />
                 </div>
             </div>
