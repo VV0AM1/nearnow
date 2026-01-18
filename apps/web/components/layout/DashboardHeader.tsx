@@ -10,13 +10,14 @@ import SearchModal from "../features/search/SearchModal";
 import SOSButton from "../features/safety/SOSButton";
 import { API_URL } from "@/lib/config";
 import { useDashboard } from "../../context/DashboardContext";
+import styles from "./Navbar.module.css";
+import { cn } from "@/lib/utils";
 
 export default function DashboardHeader() {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const { user } = useAuthContext();
     const { setLocation } = useDashboard();
 
-    return (
     return (
         <header className={cn("sticky top-0 z-50 transition-all duration-300 h-16 flex items-center justify-between px-6", styles.navbarGlass)}>
             {/* Mobile Menu Trigger */}
@@ -56,7 +57,7 @@ export default function DashboardHeader() {
                 </div>
                 <NotificationsMenu />
 
-                {/* Mobile Profile Avatar (Desktop Sidebar handles it generally, but good to have fallback or specific mobile placement) */}
+                {/* Mobile Profile Avatar */}
                 <Link href="/profile" className="relative h-8 w-8 rounded-full bg-secondary/50 overflow-hidden border border-white/10 md:hidden">
                     {user?.avatar ? (
                         <img
