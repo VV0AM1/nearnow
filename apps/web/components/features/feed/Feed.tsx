@@ -16,9 +16,10 @@ import { Post } from "../../../types/post";
 interface FeedContainerProps {
     initialLocation?: { lat: number; long: number };
     initialPosts?: Post[];
+    onReportClick?: () => void;
 }
 
-export default function FeedContainer({ initialLocation, initialPosts = [] }: FeedContainerProps) {
+export default function FeedContainer({ initialLocation, initialPosts = [], onReportClick }: FeedContainerProps) {
     const { location, setLocation } = useDashboard();
 
     // Sync if initialLocation changes (server side props) - update Global Context
@@ -68,6 +69,33 @@ export default function FeedContainer({ initialLocation, initialPosts = [] }: Fe
                         Live Activity Feed
                     </h1>
                     <p className="text-zinc-400 text-xs mt-1 ml-1">Real-time community updates • <span className="text-emerald-400 font-mono animate-pulse">LIVE</span></p>
+                </div>
+
+                <div className="flex items-center gap-3 pb-1">
+                    {/* Stats (Desktop Only) */}
+                    <div className="hidden xl:flex items-center gap-3">
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/10 border border-white/5 backdrop-blur-md shadow-sm">
+                            <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            </span>
+                            <span className="text-xs font-bold text-emerald-500">System Online</span>
+                        </div>
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/10 border border-white/5 backdrop-blur-md shadow-sm">
+                            <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Active</span>
+                            <span className="text-xs font-black text-white">{mapPosts.length}</span>
+                        </div>
+                    </div>
+
+                    {/* Report Button */}
+                    <button
+                        onClick={onReportClick}
+                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded-full font-bold shadow-[0_0_15px_rgba(239,68,68,0.4)] hover:shadow-[0_0_25px_rgba(239,68,68,0.6)] transition-all flex items-center gap-2 text-sm"
+                    >
+                        <span>+</span>
+                        <span className="hidden sm:inline">Report Incident</span>
+                        <span className="sm:hidden">Report</span>
+                    </button>
                 </div>
             </div>
 
