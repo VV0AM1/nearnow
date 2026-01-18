@@ -82,7 +82,7 @@ export default function FeedContainer({ initialLocation, initialPosts = [] }: Fe
                     <FeedListSkeleton />
                 </div>
             ) : (
-                <div className="flex flex-col-reverse lg:flex-row gap-6 h-auto lg:h-[calc(100vh-240px)]">
+                <div className="flex flex-col lg:flex-row gap-6 h-auto lg:h-[calc(100vh-240px)]">
                     {/* Feed List Section - Scrollable check */}
                     {/* Added max-w-[500px] mx-auto for mobile to prevent it from being too wide on tablets/landscape phones */}
                     <div className="w-full max-w-[500px] mx-auto lg:max-w-none lg:w-[400px] shrink-0 h-[500px] lg:h-full flex flex-col">

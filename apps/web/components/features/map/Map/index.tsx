@@ -48,14 +48,14 @@ export default function Map({ posts, center = [37.7749, -122.4194], zoom = 16, r
                         }}
                     />
 
-                    <div className="hidden lg:block">
+                    <div className="hidden xl:block">
                         <MapControls
                             selectedCategory={selectedCategory}
                             onSelectCategory={setSelectedCategory}
                         />
                     </div>
 
-                    <div className="hidden lg:block">
+                    <div className="hidden xl:block">
                         <MapFilterControl
                             timeRange={timeRange}
                             onTimeRangeChange={setTimeRange}

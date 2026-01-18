@@ -40,7 +40,7 @@ export default function MobileMapFilter({ selectedCategory, onSelect, timeRange,
 
     // Filter Trigger Button (Always visible on mobile/tablet, hidden on large desktop by parent logic)
     const triggerButton = (
-        <div className="absolute top-24 left-4 z-[400] lg:hidden">
+        <div className="absolute top-24 left-4 z-[400] xl:hidden">
             <button
                 onClick={handleOpen}
                 className="h-12 w-12 flex items-center justify-center bg-card rounded-full border border-border shadow-sm active:scale-95 transition-transform"
