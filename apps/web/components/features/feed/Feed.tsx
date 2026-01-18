@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Activity } from "lucide-react";
 import MapLoader from "../map/MapLoader";
 import PostDetailModal from "./PostDetailModal";
 import { useFeed } from "../../../hooks/useFeed";
@@ -59,9 +60,20 @@ export default function FeedContainer({ initialLocation, initialPosts = [] }: Fe
                 />
             )}
 
+            {/* Header Section */}
+            <div className="flex-none px-6 pt-6 pb-2 mb-2 flex justify-between items-end">
+                <div>
+                    <h1 className="text-2xl font-black bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 bg-clip-text text-transparent flex items-center gap-3">
+                        <Activity className="h-6 w-6 text-blue-500" />
+                        Live Activity Feed
+                    </h1>
+                    <p className="text-zinc-400 text-xs mt-1 ml-1">Real-time community updates • <span className="text-emerald-400 font-mono animate-pulse">LIVE</span></p>
+                </div>
+            </div>
+
             {/* Toolbar: Location Search, Categories & Radius */}
-            <div className="flex flex-col gap-4 mb-4 shrink-0 px-4 pt-4 md:px-0 md:pt-0">
-                <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex flex-col gap-4 mb-4 shrink-0 px-4 md:px-0">
+                <div className="flex flex-col md:flex-row gap-4 px-2">
                     <div className="flex-1">
                         <LocationSearch
                             onLocationSelect={(lat, long) => setLocation({ lat, long })}
@@ -72,8 +84,8 @@ export default function FeedContainer({ initialLocation, initialPosts = [] }: Fe
                     </div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                    <div className="flex-1 overflow-x-auto no-scrollbar p-2">
+                <div className="flex items-center justify-between pl-2">
+                    <div className="flex-1 overflow-x-auto no-scrollbar p-2 pl-1">
                         <CategoryFilter selected={categories} onSelect={setCategories} />
                     </div>
                     {/* Mobile Only Radius if needed, otherwise hidden */}
