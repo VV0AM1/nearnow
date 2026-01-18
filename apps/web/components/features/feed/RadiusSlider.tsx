@@ -7,7 +7,7 @@ interface RadiusSliderProps {
 
 export default function RadiusSlider({ value, onChange }: RadiusSliderProps) {
     return (
-        <div className="flex items-center gap-4 bg-card p-3 rounded-xl border border-border shadow-sm">
+        <div className="flex items-center gap-4 bg-card px-4 h-12 rounded-xl border border-border shadow-sm">
             <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap">
                 Radius: <span className="text-foreground">{value} km</span>
             </span>

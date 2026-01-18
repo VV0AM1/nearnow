@@ -27,7 +27,7 @@ export default function LocationSearch({ onLocationSelect, biasLocation }: Locat
         <div className="relative w-full">
             <div className="flex gap-2">
                 <div className="relative flex-1">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <input
                         value={query}
                         onChange={(e) => {
@@ -35,7 +35,7 @@ export default function LocationSearch({ onLocationSelect, biasLocation }: Locat
                             setOpen(true);
                         }}
                         placeholder="Search city or address..."
-                        className="w-full bg-card border border-border rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all shadow-sm"
+                        className="w-full bg-card border border-border rounded-xl pl-10 pr-4 h-12 text-base focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all shadow-sm"
                     />
                 </div>
                 {/* Search icon is decorative mainly since it auto-searches, but can force trigger if needed */}
