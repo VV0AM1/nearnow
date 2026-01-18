@@ -8,7 +8,7 @@ interface DesktopCategoryListProps {
 
 export default function DesktopCategoryList({ selected, onSelect }: DesktopCategoryListProps) {
     return (
-        <div className="hidden md:flex gap-3 overflow-x-auto py-2 no-scrollbar">
+        <div className="hidden md:flex gap-3 overflow-x-auto py-2 px-2 no-scrollbar mask-gradient-x">
             {CATEGORIES.map(cat => (
                 <CategoryBadge
                     key={cat.id}

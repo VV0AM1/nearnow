@@ -99,7 +99,7 @@ export default function FeedContainer({ initialLocation, initialPosts = [] }: Fe
                     <FeedListSkeleton />
                 </div>
             ) : (
-                <div className="flex flex-col xl:flex-row gap-6 flex-1 min-h-0">
+                <div className="flex flex-col xl:flex-row gap-6 flex-1 min-h-0 px-4 md:px-6 pb-6">
                     {/* Feed List Section - Scrollable Internally */}
                     <div className="w-full shrink-0 xl:w-[400px] flex flex-col h-full overflow-hidden">
                         <div className="flex-1 overflow-y-auto px-1">

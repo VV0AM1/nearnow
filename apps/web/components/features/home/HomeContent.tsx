@@ -39,17 +39,6 @@ export default function HomeContent({ initialUser, initialPosts, initialLocation
 
     return (
         <div className="flex flex-col h-full w-full overflow-hidden">
-            {/* Page Header */}
-            <div className="flex items-center justify-between px-8 py-6 shrink-0 bg-background/50 backdrop-blur-sm z-10">
-                <h1 className="text-2xl font-bold">Your Feed</h1>
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-bold shadow-lg shadow-red-500/20 transition-all flex items-center gap-2"
-                >
-                    + Report Incident
-                </button>
-            </div>
-
             <CreateAlertModal
                 key={isModalOpen ? "open" : "closed"}
                 isOpen={isModalOpen}
@@ -57,10 +46,11 @@ export default function HomeContent({ initialUser, initialPosts, initialLocation
                 userLocation={feedLocation}
             />
 
-            <div className="flex-1 min-h-0 w-full relative px-8 pb-8">
+            <div className="flex-1 min-h-0 w-full relative">
                 <Feed
                     initialLocation={feedLocation}
                     initialPosts={initialPosts}
+                    onReportClick={() => setIsModalOpen(true)}
                 />
             </div>
         </div>
