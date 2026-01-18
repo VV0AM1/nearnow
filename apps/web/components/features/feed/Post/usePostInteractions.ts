@@ -23,8 +23,17 @@ export function usePostInteractions(post: Post) {
                 const voteRes = await fetch(`${API_URL}/posts/${post.id}/vote/check?userId=${userId}`);
                 if (voteRes.ok) {
                     const data = await voteRes.json();
-                    if (localVote === 'true') setVoted(true);
-                    else setVoted(data.hasVoted);
+
+                    if (data.hasVoted) {
+                        setVoted(true);
+                    } else if (localVote === 'true') {
+                        // Server says NO vote, but Local says YES.
+                        // Trust Local. Since API says no, the count likely EXCLUDES us.
+                        setVoted(true);
+                        setLikes((post.likes || 0) + 1);
+                    } else {
+                        setVoted(false);
+                    }
                 }
 
                 // Check Saved (Mocked for now as backend might not have it, but let's assume endpoint exists or localStorage)
