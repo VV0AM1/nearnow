@@ -1,65 +1,6 @@
 /* Safety.module.css */
 
 .container {
-    @apply flex-1 p-8 overflow-y-auto;
+    /* Layout utilities moved to TSX */
     background: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.05), transparent 70%);
-}
-
-.grid {
-    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6;
-}
-
-.card {
-    @apply relative overflow-hidden rounded-2xl border border-white/5 bg-secondary/5 backdrop-blur-md p-6 transition-all duration-300;
-}
-
-.card:hover {
-    @apply border-white/10 bg-secondary/10 -translate-y-1 shadow-[0_10px_30px_rgba(0, 0, 0, 0.2)];
-}
-
-.header {
-    @apply flex items-center justify-between mb-8;
-}
-
-.title {
-    @apply text-3xl font-bold tracking-tight text-white;
-}
-
-.subtitle {
-    @apply text-muted-foreground mt-1;
-}
-
-/* Pulsing Status Dot */
-.pulseDot {
-    @apply relative flex h-3 w-3;
-}
-
-.pulseDotAnimate {
-    @apply absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75;
-}
-
-.pulseDotSolid {
-    @apply relative inline-flex rounded-full h-3 w-3 bg-green-500;
-}
-
-/* Stat Card specific */
-.statValue {
-    @apply text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-white to-white/50 mt-2;
-}
-
-.statLabel {
-    @apply text-sm text-muted-foreground font-medium uppercase tracking-wider;
-}
-
-/* Emergency Button */
-.sosLarge {
-    @apply w-full h-32 rounded-2xl bg-gradient-to-br from-red-600 to-red-800 flex flex-col items-center justify-center text-white font-bold text-xl shadow-[0_0_30px_rgba(239, 68, 68, 0.3)] border border-red-400/30 transition-all duration-300;
-}
-
-.sosLarge:hover {
-    @apply scale-[1.02] shadow-[0_0_50px_rgba(239, 68, 68, 0.5)] from-red-500 to-red-700;
-}
-
-.sosLarge:active {
-    @apply scale-[0.98];
 }

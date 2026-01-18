@@ -52,32 +52,32 @@ const SAVED_ITEMS = [
 
 export default function SavedPage() {
     return (
-        <div className={styles.container}>
-            <div className={styles.header}>
-                <h1 className={styles.title}>Saved Collection</h1>
-                <p className={styles.subtitle}>Your personally curated list of favorite spots and events.</p>
+        <div className={cn("flex-1 p-8 overflow-y-auto", styles.container)}>
+            <div className="mb-10">
+                <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Saved Collection</h1>
+                <p className="text-muted-foreground">Your personally curated list of favorite spots and events.</p>
             </div>
 
-            <div className={styles.galleryGrid}>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {SAVED_ITEMS.map((item) => (
-                    <div key={item.id} className={styles.bookmarkCard}>
+                    <div key={item.id} className="group relative aspect-[4/5] overflow-hidden rounded-2xl bg-secondary/10 border border-white/5 cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)] hover:border-white/20">
                         {/* Background Image */}
-                        <img src={item.image} alt={item.title} className={styles.cardImage} />
+                        <img src={item.image} alt={item.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
 
                         {/* Gradient Overlay */}
-                        <div className={styles.overlay} />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
 
                         {/* Top Action */}
-                        <button className={styles.actionButton}>
+                        <button className="absolute top-4 right-4 h-8 w-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white opacity-0 transform scale-90 transition-all duration-300 group-hover:opacity-100 group-hover:scale-100 hover:bg-white hover:text-black">
                             <ExternalLink className="h-4 w-4" />
                         </button>
 
                         {/* Content */}
-                        <div className={styles.cardContent}>
-                            <span className={styles.categoryTag}>{item.category}</span>
-                            <h3 className={styles.cardTitle}>{item.title}</h3>
+                        <div className="absolute bottom-0 left-0 right-0 p-6 transform translate-y-2 transition-transform duration-300 group-hover:translate-y-0">
+                            <span className="inline-block px-2 py-0.5 rounded-full bg-white/10 text-white text-[10px] font-bold uppercase tracking-wider mb-2 backdrop-blur-sm border border-white/10">{item.category}</span>
+                            <h3 className="text-lg font-bold text-white leading-tight line-clamp-2">{item.title}</h3>
 
-                            <div className={styles.cardMeta}>
+                            <div className="flex items-center gap-2 mt-3 text-xs text-zinc-400 opacity-0 transform translate-y-2 transition-all duration-300 delay-75 group-hover:opacity-100 group-hover:translate-y-0">
                                 <span className="flex items-center gap-1">
                                     <MapPin className="h-3 w-3" />
                                     {item.location}
