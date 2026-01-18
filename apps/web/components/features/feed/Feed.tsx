@@ -61,7 +61,7 @@ export default function FeedContainer({ initialLocation, initialPosts = [] }: Fe
             {/* Toolbar: Categories & Radius (Search is now in Header) */}
             <div className="flex flex-col gap-4 mb-4 shrink-0 px-4 pt-4 md:px-0 md:pt-0">
                 <div className="flex items-center justify-between">
-                    <div className="flex-1 overflow-x-auto no-scrollbar">
+                    <div className="flex-1 overflow-x-auto no-scrollbar p-1">
                         <CategoryFilter selected={categories} onSelect={setCategories} />
                     </div>
                     <div className="w-48 ml-4 hidden md:block">

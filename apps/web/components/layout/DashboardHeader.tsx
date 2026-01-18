@@ -25,7 +25,7 @@ export default function DashboardHeader() {
             </div>
 
             {/* Search Bar (Desktop) - Now Active */}
-            <div className="hidden md:block w-full max-w-xl mx-8">
+            <div className="hidden md:block w-full max-w-md mx-6">
                 <LocationSearch
                     onLocationSelect={(lat, long) => setLocation({ lat, long })}
                 />
