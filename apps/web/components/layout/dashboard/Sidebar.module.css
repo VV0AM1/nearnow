@@ -1,7 +1,7 @@
 /* Sidebar.module.css */
 
 .sidebarContainer {
-    @apply hidden xl:flex flex-col transition-all duration-300 relative z-40;
+    @apply transition-all duration-300 relative z-40;
     /* Create spacing for floating effect */
     margin: 1rem 0 1rem 1rem;
     height: calc(100vh - 2rem);

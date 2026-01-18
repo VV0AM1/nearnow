@@ -24,7 +24,7 @@ export default function Sidebar({ initialUser }: SidebarProps) {
     const [isOpen, setIsOpen] = useState(true);
 
     return (
-        <aside className={styles.sidebarContainer}>
+        <aside className={`hidden xl:flex flex-col ${styles.sidebarContainer}`}>
             <div className={`${styles.glassDock} ${isOpen ? styles.widthExpanded : styles.widthCollapsed}`}>
                 {/* Header / Toggle */}
                 <div className="h-16 flex items-center px-6 border-b border-white/5 relative">
