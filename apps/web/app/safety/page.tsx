@@ -135,7 +135,12 @@ export default function SafetyPage() {
                                 <SafetyLeaderboard data={data.ranking} />
 
                                 <div className="mt-8">
-                                    <SentinelLog />
+                                    <SafetyAnalytics
+                                        score={data.ranking.reduce((acc, item) => acc + (item.score || 0), 0)}
+                                        totalAlerts={data.ranking.reduce((acc, item) => acc + (item.alerts || 0), 0)}
+                                        crimeCount={data.ranking.reduce((acc, item) => acc + (item.crimeCount || 0), 0)}
+                                        trend={data.ranking.length > 0 && data.ranking[0].score < 0 ? 'down' : 'up'}
+                                    />
                                 </div>
                             </div>
                         )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, ShieldAlert, BarChart3, AlertTriangle, Info } from "lucide-react";
+import { TrendingUp, TrendingDown, ShieldAlert, BarChart3, AlertTriangle, Info, Activity } from "lucide-react";
 
 interface SafetyAnalyticsProps {
     neighborhoodName?: string;
