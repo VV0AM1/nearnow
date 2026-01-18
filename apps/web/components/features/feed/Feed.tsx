@@ -1,15 +1,13 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import MapLoader from "../map/MapLoader";
 import PostDetailModal from "./PostDetailModal";
 import { useFeed } from "../../../hooks/useFeed";
 import { useMapPosts } from "../../../hooks/useMapPosts";
-import LocationSearch from "./LocationSearch";
 import RadiusSlider from "./RadiusSlider";
 import CategoryFilter from "./CategoryFilter";
 import FeedList from "./FeedList";
 import FeedListSkeleton from "../../ui/loading/FeedListSkeleton";
+import { useDashboard } from "../../../context/DashboardContext"; // New Import
 
 import { Post } from "../../../types/post";
 
@@ -19,14 +17,14 @@ interface FeedContainerProps {
 }
 
 export default function FeedContainer({ initialLocation, initialPosts = [] }: FeedContainerProps) {
-    const [location, setLocation] = useState(initialLocation || { lat: 37.7749, long: -122.4194 });
+    const { location, setLocation } = useDashboard(); // Use Context
 
-    // Sync if initialLocation changes (e.g. from parent)
+    // Sync if initialLocation changes (server side props) - update Global Context
     useEffect(() => {
         if (initialLocation) {
             setLocation(initialLocation);
         }
-    }, [initialLocation]);
+    }, [initialLocation, setLocation]);
 
     const [radius, setRadius] = useState(10);
     const [categories, setCategories] = useState<string[]>(["ALL"]);
@@ -51,7 +49,7 @@ export default function FeedContainer({ initialLocation, initialPosts = [] }: Fe
     const { posts: mapPosts, loading: mapLoading } = useMapPosts(location, radius);
 
     return (
-        <>
+        <div className="flex flex-col h-full w-full">
             {selectedPost && (
                 <PostDetailModal
                     post={selectedPost}
@@ -60,49 +58,46 @@ export default function FeedContainer({ initialLocation, initialPosts = [] }: Fe
                 />
             )}
 
-            <div className="space-y-4 mb-6">
-                <div className="flex flex-col md:flex-row gap-4">
-                    <div className="flex-1">
-                        <LocationSearch
-                            onLocationSelect={(lat, long) => setLocation({ lat, long })}
-                        />
+            {/* Toolbar: Categories & Radius (Search is now in Header) */}
+            <div className="flex flex-col gap-4 mb-4 shrink-0 px-4 pt-4 md:px-0 md:pt-0">
+                <div className="flex items-center justify-between">
+                    <div className="flex-1 overflow-x-auto no-scrollbar">
+                        <CategoryFilter selected={categories} onSelect={setCategories} />
                     </div>
-                    <div className="md:w-64">
+                    <div className="w-48 ml-4 hidden md:block">
                         <RadiusSlider value={radius} onChange={setRadius} />
                     </div>
                 </div>
-
-                <CategoryFilter selected={categories} onSelect={setCategories} />
+                {/* Mobile Radius Slider (optional, or keeping hidden/compact) */}
             </div>
 
             {error && <div className="text-center p-4 text-red-500 bg-red-50 rounded-lg mb-4">Error: {error}</div>}
 
             {isLoading ? (
-                <div className="h-[600px] flex flex-col gap-6">
+                <div className="h-full flex flex-col gap-6">
                     <FeedListSkeleton />
                 </div>
             ) : (
-                <div className="flex flex-col xl:flex-row gap-6 h-auto xl:h-[calc(100vh-240px)]">
-                    {/* Feed List Section - Scrollable check */}
-                    {/* Feed List Section - Scrollable check */}
-                    {/* Removed max-w-[500px] mx-auto so it matches map width on mobile/tablet */}
-                    <div className="w-full shrink-0 h-[500px] xl:h-full xl:w-[400px] flex flex-col">
-                        <FeedList
-                            posts={posts}
-                            onPostClick={setSelectedPost}
-                            onPostHover={setHighlightedPostId}
-                            onNext={nextPage}
-                            onPrev={prevPage}
-                            hasMore={hasMore}
-                            hasPrev={page > 1}
-                            loading={loading}
-                            page={page}
-                        />
+                <div className="flex flex-col xl:flex-row gap-6 flex-1 min-h-0">
+                    {/* Feed List Section - Scrollable Internally */}
+                    <div className="w-full shrink-0 xl:w-[400px] flex flex-col h-full overflow-hidden">
+                        <div className="flex-1 overflow-y-auto px-1">
+                            <FeedList
+                                posts={posts}
+                                onPostClick={setSelectedPost}
+                                onPostHover={setHighlightedPostId}
+                                onNext={nextPage}
+                                onPrev={prevPage}
+                                hasMore={hasMore}
+                                hasPrev={page > 1}
+                                loading={loading}
+                                page={page}
+                            />
+                        </div>
                     </div>
 
-                    {/* Map Visualization Section - Flexible */}
-                    {/* Changed fixed min-h to fixed h-[45vh] for mobile visibility, xl:h-full for desktop */}
-                    <div className="w-full h-[45vh] xl:h-full xl:flex-1 rounded-xl overflow-hidden shadow-sm border border-border relative order-first xl:order-last">
+                    {/* Map Visualization Section - Fixed */}
+                    <div className="w-full h-[45vh] xl:h-full xl:flex-1 rounded-xl overflow-hidden shadow-sm border border-border relative order-first xl:order-last shrink-0">
                         <div className="absolute top-4 right-4 z-10 flex gap-2 pointer-events-none">
                             <div className="bg-black/80 text-white backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold shadow-lg border border-white/10">
                                 {radius}km Radius
@@ -111,11 +106,10 @@ export default function FeedContainer({ initialLocation, initialPosts = [] }: Fe
                                 {mapPosts.length} Active Alerts
                             </div>
                         </div>
-                        {/* MapLoader is likely just a wrapper, we need to pass props down through it or check its definition */}
                         <MapLoader posts={mapPosts} center={location} radius={radius} highlightedPostId={highlightedPostId} />
                     </div>
                 </div>
             )}
-        </>
+        </div>
     );
 }

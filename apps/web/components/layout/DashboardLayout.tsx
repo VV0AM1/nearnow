@@ -1,6 +1,7 @@
 import Sidebar from "./dashboard/Sidebar";
 import DashboardHeader from "./DashboardHeader";
 import { User } from "../../types/user";
+import { DashboardProvider } from "../../context/DashboardContext";
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -9,17 +10,19 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children, initialUser }: DashboardLayoutProps) {
     return (
-        <div className="flex h-screen bg-background overflow-hidden">
-            <Sidebar initialUser={initialUser} />
+        <DashboardProvider>
+            <div className="flex h-screen bg-background overflow-hidden relative">
+                <Sidebar initialUser={initialUser} />
 
-            <main className="flex-1 flex flex-col min-w-0">
-                <DashboardHeader />
+                <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+                    <DashboardHeader />
 
-                {/* Page Content */}
-                <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 relative">
-                    {children}
-                </div>
-            </main>
-        </div>
+                    {/* Page Content - No Scroll on Wrapper, Children handle scroll */}
+                    <div className="flex-1 overflow-hidden relative">
+                        {children}
+                    </div>
+                </main>
+            </div>
+        </DashboardProvider>
     );
 }

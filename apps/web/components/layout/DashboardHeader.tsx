@@ -9,10 +9,13 @@ import MobileMenu from "./MobileMenu";
 import SearchModal from "../features/search/SearchModal";
 import SOSButton from "../features/safety/SOSButton";
 import { API_URL } from "@/lib/config";
+import { useDashboard } from "../../context/DashboardContext";
+import LocationSearch from "../features/feed/LocationSearch";
 
 export default function DashboardHeader() {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const { user } = useAuthContext();
+    const { setLocation } = useDashboard();
 
     return (
         <header className="h-16 border-b border-border flex items-center justify-between px-6 bg-background/80 backdrop-blur-md sticky top-0 z-50">
@@ -21,14 +24,12 @@ export default function DashboardHeader() {
                 <MobileMenu />
             </div>
 
-            {/* Search Bar (Desktop) */}
-            <button
-                onClick={() => setIsSearchOpen(true)}
-                className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-secondary/20 rounded-lg border border-border w-96 hover:bg-secondary/30 transition-colors text-left"
-            >
-                <Search className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground/50">Search alerts, areas...</span>
-            </button>
+            {/* Search Bar (Desktop) - Now Active */}
+            <div className="hidden md:block w-full max-w-xl mx-8">
+                <LocationSearch
+                    onLocationSelect={(lat, long) => setLocation({ lat, long })}
+                />
+            </div>
 
             {/* Hidden Triggers for Mobile interactions */}
             <button id="mobile-search-trigger" className="hidden" onClick={() => setIsSearchOpen(true)} />
