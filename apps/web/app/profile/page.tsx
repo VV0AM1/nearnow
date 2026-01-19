@@ -1,3 +1,5 @@
+"use client";
+
 import { User as UserIcon, LogOut, Mail, ChevronLeft, Trophy, Medal, Star, Shield, Edit2, Check, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { API_URL } from "@/lib/config";
