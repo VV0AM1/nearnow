@@ -67,6 +67,7 @@ export default function Map({ posts, center = [37.7749, -122.4194], zoom = 16, r
             <MapContainer
                 center={center}
                 zoom={zoom}
+                zoomControl={false}
                 style={{ height: "100%", width: "100%" }}
                 className="z-0 bg-[#0a0a0a]"
             >

@@ -29,22 +29,24 @@ export default function MapPage() {
 
     return (
         <DashboardLayout>
-            <div className="h-[calc(100vh-8rem)] rounded-xl overflow-hidden border border-border shadow-lg relative bg-[#0a0a0a]">
+            <div className="h-full w-full pt-28 px-4 pb-4">
+                <div className="h-full w-full rounded-xl overflow-hidden border border-border shadow-lg relative bg-[#0a0a0a]">
 
-                {showLoading ? (
-                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-zinc-950/80 backdrop-blur-sm">
-                        <div className="flex flex-col items-center gap-4">
-                            <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                            <p className="text-zinc-400 font-medium">Locating...</p>
+                    {showLoading ? (
+                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-zinc-950/80 backdrop-blur-sm">
+                            <div className="flex flex-col items-center gap-4">
+                                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                                <p className="text-zinc-400 font-medium">Locating...</p>
+                            </div>
                         </div>
-                    </div>
-                ) : (
-                    <MapLoader posts={posts} center={center} radius={50} />
-                )}
+                    ) : (
+                        <MapLoader posts={posts} center={center} radius={50} />
+                    )}
 
-                <div className="absolute top-4 left-4 z-[400] bg-black/40 backdrop-blur-md p-4 rounded-xl border border-white/10 shadow-lg pointer-events-none md:block hidden">
-                    <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-blue-500 bg-clip-text text-transparent">Explore</h1>
-                    <p className="text-zinc-400 text-sm">Discover alerts around you</p>
+                    <div className="absolute top-4 left-4 z-[400] bg-black/40 backdrop-blur-md p-4 rounded-xl border border-white/10 shadow-lg pointer-events-none md:block hidden">
+                        <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-blue-500 bg-clip-text text-transparent">Explore</h1>
+                        <p className="text-zinc-400 text-sm">Discover alerts around you</p>
+                    </div>
                 </div>
             </div>
         </DashboardLayout>

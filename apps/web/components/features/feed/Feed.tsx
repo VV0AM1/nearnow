@@ -130,7 +130,7 @@ export default function FeedContainer({ initialLocation, initialPosts = [], onRe
 
                     {/* Map Visualization Section - Fixed */}
                     <div className="w-full h-[45vh] xl:h-full xl:flex-1 rounded-xl overflow-hidden shadow-sm border border-border relative order-first xl:order-last shrink-0">
-                        <div className="absolute top-24 left-4 z-10 hidden sm:block pointer-events-none">
+                        <div className="absolute top-4 left-4 z-10 hidden sm:block pointer-events-none">
                             <MapStatsOverlay posts={mapPosts} radius={radius} onReportClick={onReportClick} />
                         </div>
                         <MapLoader posts={mapPosts} center={location} radius={radius} highlightedPostId={highlightedPostId} />
