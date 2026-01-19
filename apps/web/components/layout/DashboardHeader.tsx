@@ -19,7 +19,7 @@ export default function DashboardHeader() {
     const { setLocation, searchQuery, setSearchQuery } = useDashboard();
 
     return (
-        <header className="fixed top-4 right-4 left-4 lg:left-[18rem] z-50 flex items-center justify-between h-16 px-6 rounded-2xl bg-slate-900/60 backdrop-blur-xl border border-white/10 shadow-2xl transition-all duration-300 pointer-events-auto">
+        <header className="fixed top-4 right-4 left-4 lg:left-[18rem] z-50 flex items-center justify-between h-14 px-4 rounded-2xl bg-slate-900/60 backdrop-blur-xl border border-white/10 shadow-xl transition-all duration-300 pointer-events-auto">
             {/* Mobile Menu Trigger */}
             <div className="lg:hidden">
                 <MobileMenu />
