@@ -19,7 +19,7 @@ export default function DashboardHeader() {
     const { setLocation } = useDashboard();
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-50 flex items-start justify-between p-6 pointer-events-none pl-6 lg:pl-80">
+        <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between py-3 px-6 pointer-events-none pl-6 lg:pl-80">
             {/* Mobile Menu Trigger - Pointer Auto */}
             <div className="lg:hidden pointer-events-auto">
                 <MobileMenu />
@@ -27,11 +27,11 @@ export default function DashboardHeader() {
 
             {/* Floating Search Pill - Pointer Auto */}
             <div className={cn("relative hidden md:flex items-center rounded-full pointer-events-auto", styles.searchPill)}>
-                <Search className="absolute left-4 h-4 w-4 text-white/50" />
+                <Search className="absolute left-3 h-4 w-4 text-white/70" />
                 <input
                     type="text"
                     placeholder="Search posts..."
-                    className="w-full h-full bg-transparent border-none focus:outline-none focus:ring-0 pl-10 pr-6 text-sm text-white placeholder:text-muted-foreground/50 rounded-full"
+                    className="w-full h-10 bg-transparent border-none focus:outline-none focus:ring-0 pl-10 pr-6 text-sm text-white placeholder:text-muted-foreground/70 rounded-full"
                     onFocus={() => setIsSearchOpen(true)}
                 />
             </div>
