@@ -126,7 +126,7 @@ export default function ProfilePage() {
                                             <Loader2 className="h-8 w-8 text-primary animate-spin" />
                                         ) : user.avatar ? (
                                             <img
-                                                src={user.avatar.includes('http') ? user.avatar : user.avatar}
+                                                src={user.avatar.startsWith('http') ? user.avatar : `${API_URL}/${user.avatar.replace(/^\//, '')}`}
                                                 alt={user.name || 'User'}
                                                 className="h-full w-full object-cover"
                                             />

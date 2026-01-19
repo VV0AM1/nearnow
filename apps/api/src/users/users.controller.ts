@@ -1,4 +1,4 @@
-import { Controller, Post, UseInterceptors, UploadedFile, UseGuards, Req, Get, Param } from '@nestjs/common';
+import { Controller, Post, UseInterceptors, UploadedFile, UseGuards, Req, Get, Param, Patch, Body } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -16,6 +16,12 @@ export class UsersController {
         return this.usersService.findProfile(req.user.id);
     }
 
+    @Patch('profile')
+    @UseGuards(JwtAuthGuard)
+    async updateProfile(@Req() req: any, @Body() updateData: { name?: string }) {
+        const userId = req.user.id;
+        return this.usersService.update(userId, { id: userId, ...updateData });
+    }
 
     @Post('avatar')
     @UseGuards(JwtAuthGuard)
