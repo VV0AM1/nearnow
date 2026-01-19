@@ -22,6 +22,10 @@ export function useProfile() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const [trigger, setTrigger] = useState(0);
+
+    const refetch = () => setTrigger(prev => prev + 1);
+
     useEffect(() => {
         const fetchProfile = async () => {
             const token = getToken();
@@ -55,7 +59,7 @@ export function useProfile() {
         };
 
         fetchProfile();
-    }, [router]);
+    }, [router, trigger]);
 
-    return { user, loading, error };
+    return { user, loading, error, refetch };
 }
