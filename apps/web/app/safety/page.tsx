@@ -80,7 +80,7 @@ export default function SafetyPage() {
 
     return (
         <DashboardLayout>
-            <div className="h-full flex flex-col overflow-hidden bg-background pt-24">
+            <div className="h-full flex flex-col overflow-hidden bg-background pt-20">
                 {/* Fixed Header */}
                 <div className="flex-none p-6 border-b border-white/5 bg-background/50 backdrop-blur-md flex justify-between items-center z-10">
                     <div>

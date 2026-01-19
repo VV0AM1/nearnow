@@ -52,7 +52,7 @@ export default function FeedContainer({ initialLocation, initialPosts = [], onRe
     const { posts: mapPosts, loading: mapLoading } = useMapPosts(location, radius);
 
     return (
-        <div className="flex flex-col h-full w-full pt-28">
+        <div className="flex flex-col h-full w-full pt-20">
             {selectedPost && (
                 <PostDetailModal
                     post={selectedPost}

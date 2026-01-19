@@ -60,7 +60,7 @@ export default function SavedPage() {
 
     return (
         <DashboardLayout>
-            <div className="h-full overflow-y-auto custom-scrollbar p-6 pt-24">
+            <div className="h-full overflow-y-auto custom-scrollbar p-6 pt-20">
                 <div className="max-w-4xl mx-auto space-y-6">
                     <div className="flex items-center gap-3 mb-8">
                         <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">

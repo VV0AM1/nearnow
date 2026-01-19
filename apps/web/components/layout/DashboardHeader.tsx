@@ -19,14 +19,14 @@ export default function DashboardHeader() {
     const { setLocation } = useDashboard();
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between py-3 px-6 pointer-events-none pl-6 lg:pl-80">
-            {/* Mobile Menu Trigger - Pointer Auto */}
-            <div className="lg:hidden pointer-events-auto">
+        <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between py-3 px-6 bg-[#020617] border-b border-white/10 pl-6 lg:pl-80 transition-all duration-300">
+            {/* Mobile Menu Trigger */}
+            <div className="lg:hidden">
                 <MobileMenu />
             </div>
 
-            {/* Floating Search Pill - Pointer Auto */}
-            <div className={cn("relative hidden md:flex items-center rounded-full pointer-events-auto", styles.searchPill)}>
+            {/* Floating Search Pill */}
+            <div className={cn("relative hidden md:flex items-center rounded-full", styles.searchPill)}>
                 <Search className="absolute left-3 h-4 w-4 text-white/70" />
                 <input
                     type="text"
