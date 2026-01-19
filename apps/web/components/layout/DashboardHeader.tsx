@@ -19,57 +19,66 @@ export default function DashboardHeader() {
     const { setLocation } = useDashboard();
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between py-3 px-6 bg-[#020617] border-b border-white/10 pl-6 lg:pl-80 transition-all duration-300">
+        <header className="fixed top-4 right-4 left-4 lg:left-[18rem] z-50 flex items-center justify-between h-16 px-6 rounded-2xl bg-slate-900/60 backdrop-blur-xl border border-white/10 shadow-2xl transition-all duration-300">
             {/* Mobile Menu Trigger */}
             <div className="lg:hidden">
                 <MobileMenu />
             </div>
 
-            {/* Floating Search Pill */}
-            <div className={cn("relative hidden md:flex items-center rounded-full", styles.searchPill)}>
-                <Search className="absolute left-3 h-4 w-4 text-white/70" />
+            {/* Search Bar - Desktop */}
+            <div className="relative hidden md:flex items-center flex-1 max-w-md ml-4 mr-4">
+                <Search className="absolute left-3 h-4 w-4 text-white/50" />
                 <input
                     type="text"
                     placeholder="Search posts..."
-                    className="w-full h-10 bg-transparent border-none focus:outline-none focus:ring-0 pl-10 pr-6 text-sm text-white placeholder:text-muted-foreground/70 rounded-full"
+                    className="w-full h-10 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:bg-white/10 focus:border-white/20 pl-10 pr-4 text-sm text-white placeholder:text-white/40 transition-all duration-200"
                     onFocus={() => setIsSearchOpen(true)}
                 />
             </div>
 
-            {/* Hidden Triggers for Mobile interactions */}
-            <button id="mobile-search-trigger" className="hidden pointer-events-auto" onClick={() => setIsSearchOpen(true)} />
-
-            {/* Mobile Search Icon */}
-            <button className="md:hidden p-3 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white pointer-events-auto" onClick={() => setIsSearchOpen(true)}>
+            {/* Mobile Search Trigger */}
+            <button
+                className="md:hidden p-2 text-white/70 hover:text-white transition-colors"
+                onClick={() => setIsSearchOpen(true)}
+            >
                 <Search className="h-5 w-5" />
             </button>
 
-            <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
-
-            {/* Actions - Pointer Auto */}
-            <div className="flex items-center gap-4 pointer-events-auto">
+            {/* Right Actions */}
+            <div className="flex items-center gap-3 ml-auto md:ml-0">
                 <div className="md:hidden">
                     <SOSButton />
                 </div>
 
-                {/* Wrap Notification in Glass Pill */}
-                <div className={cn("rounded-full h-10 w-10 flex items-center justify-center", styles.actionPill)}>
+                {/* Notifications */}
+                <div className="flex items-center justify-center h-10 w-10 rounded-full hover:bg-white/5 transition-colors">
                     <NotificationsMenu />
                 </div>
 
-                {/* Mobile Profile Avatar */}
-                <Link href="/profile" className={cn("relative h-10 w-10 rounded-full overflow-hidden", styles.actionPill)}>
-                    {user?.avatar ? (
-                        <img
-                            src={user.avatar.startsWith('http') ? user.avatar : `${API_URL}/${user.avatar.replace(/^\//, '')}`}
-                            alt={user.name || 'Profile'}
-                            className="h-full w-full object-cover"
-                        />
-                    ) : (
-                        <div className="h-full w-full bg-gradient-to-br from-primary to-purple-500" />
-                    )}
+                {/* Profile Link */}
+                <Link href="/profile" className="block relative group">
+                    <div className="h-10 w-10 rounded-full overflow-hidden border border-white/10 group-hover:border-white/30 transition-all duration-200 shadow-lg">
+                        {user?.avatar ? (
+                            <img
+                                src={user.avatar.startsWith('http') ? user.avatar : `${API_URL}/${user.avatar.replace(/^\//, '')}`}
+                                alt={user.name || 'Profile'}
+                                className="h-full w-full object-cover"
+                                onError={(e) => {
+                                    e.currentTarget.src = "https://github.com/shadcn.png"
+                                }}
+                            />
+                        ) : (
+                            <img
+                                src="https://github.com/shadcn.png"
+                                alt="Profile"
+                                className="h-full w-full object-cover"
+                            />
+                        )}
+                    </div>
                 </Link>
             </div>
+
+            <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
         </header>
     );
 }
