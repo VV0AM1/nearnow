@@ -19,9 +19,9 @@ export default function DashboardHeader() {
     const { setLocation } = useDashboard();
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-50 flex items-start justify-between p-6 pointer-events-none md:pl-[calc(theme(spacing.80)+1.5rem)] lg:pl-6">
+        <header className="fixed top-0 left-0 right-0 z-50 flex items-start justify-between p-6 pointer-events-none pl-6 lg:pl-80">
             {/* Mobile Menu Trigger - Pointer Auto */}
-            <div className="md:hidden pointer-events-auto">
+            <div className="lg:hidden pointer-events-auto">
                 <MobileMenu />
             </div>
 

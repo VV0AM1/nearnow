@@ -24,7 +24,7 @@ export default function MobileMenu() {
     }, []);
 
     return (
-        <div className="md:hidden">
+        <div className="lg:hidden">
             {/* Toggle Button */}
             <button
                 onClick={toggleMenu}
