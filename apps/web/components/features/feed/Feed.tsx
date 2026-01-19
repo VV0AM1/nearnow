@@ -89,36 +89,15 @@ export default function FeedContainer({ initialLocation, initialPosts = [], onRe
                             <RadiusSlider value={radius} onChange={setRadius} />
                         </div>
 
-                        <div className="hidden lg:flex items-center gap-2">
-                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/10 border border-white/5 backdrop-blur-md shadow-sm">
-                                <span className="relative flex h-2 w-2">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                                </span>
-                                <span className="text-xs font-bold text-emerald-500">System Online</span>
-                            </div>
-                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/10 border border-white/5 backdrop-blur-md shadow-sm">
-                                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Active</span>
-                                <span className="text-xs font-black text-white">{mapPosts.length}</span>
-                            </div>
+
+                    </div>
+
+                    <div className="flex items-center justify-between pl-2">
+                        <div className="flex-1 overflow-x-auto no-scrollbar p-2 pl-1">
+                            <CategoryFilter selected={categories} onSelect={setCategories} />
                         </div>
-
-                        <button
-                            onClick={onReportClick}
-                            className="bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded-full font-bold shadow-[0_0_15px_rgba(239,68,68,0.4)] hover:shadow-[0_0_25px_rgba(239,68,68,0.6)] transition-all flex items-center gap-2 text-sm whitespace-nowrap ml-auto md:ml-0"
-                        >
-                            <span>+</span>
-                            <span className="hidden sm:inline">Report Incident</span>
-                            <span className="sm:hidden">Report</span>
-                        </button>
+                        {/* Mobile Only Radius if needed, otherwise hidden */}
                     </div>
-                </div>
-
-                <div className="flex items-center justify-between pl-2">
-                    <div className="flex-1 overflow-x-auto no-scrollbar p-2 pl-1">
-                        <CategoryFilter selected={categories} onSelect={setCategories} />
-                    </div>
-                    {/* Mobile Only Radius if needed, otherwise hidden */}
                 </div>
             </div>
 
@@ -152,7 +131,7 @@ export default function FeedContainer({ initialLocation, initialPosts = [], onRe
                     {/* Map Visualization Section - Fixed */}
                     <div className="w-full h-[45vh] xl:h-full xl:flex-1 rounded-xl overflow-hidden shadow-sm border border-border relative order-first xl:order-last shrink-0">
                         <div className="absolute top-24 left-4 z-10 hidden sm:block pointer-events-none">
-                            <MapStatsOverlay posts={mapPosts} radius={radius} />
+                            <MapStatsOverlay posts={mapPosts} radius={radius} onReportClick={onReportClick} />
                         </div>
                         <MapLoader posts={mapPosts} center={location} radius={radius} highlightedPostId={highlightedPostId} />
                     </div>
