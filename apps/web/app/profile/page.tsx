@@ -1,9 +1,7 @@
-"use client";
-
-import { User as UserIcon, LogOut, Mail, ChevronLeft, Trophy, Medal, Star, Shield } from "lucide-react";
+import { User as UserIcon, LogOut, Mail, ChevronLeft, Trophy, Medal, Star, Shield, Edit2, Check, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { API_URL } from "@/lib/config";
-import { logout } from "../../lib/auth";
+import { logout, getToken } from "../../lib/auth";
 import { useProfile } from "@/hooks/useProfile";
 import NotificationSettings from "@/components/features/profile/NotificationSettings";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -14,10 +12,15 @@ import { calculateGamification, calculateBadges, RANK_ICONS, RANK_COLORS } from 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function ProfilePage() {
-    const { user, loading, error } = useProfile();
+    const { user, loading, error, refetch } = useProfile();
     const [activeTab, setActiveTab] = useState<'overview' | 'posts'>('overview');
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [newName, setNewName] = useState("");
+    const [isUploading, setIsUploading] = useState(false);
+    const { toast } = useToast();
 
     if (loading) return <div className="min-h-screen pt-24 text-center animate-pulse">Loading Profile...</div>;
     if (error) return <div className="min-h-screen pt-24 text-center text-red-500">{error}</div>;
@@ -25,6 +28,59 @@ export default function ProfilePage() {
 
     const stats = calculateGamification(user.reputation || 0);
     const badges = calculateBadges(user);
+
+    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const token = getToken();
+            const res = await fetch(`${API_URL}/users/avatar`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+
+            if (!res.ok) throw new Error("Upload failed");
+
+            toast({ title: "Success", description: "Avatar updated successfully" });
+            refetch(); // Reload user data
+        } catch (err) {
+            console.error(err);
+            toast({ title: "Error", description: "Failed to upload avatar", variant: "destructive" });
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const saveName = async () => {
+        if (!newName.trim()) return;
+
+        try {
+            const token = getToken();
+            // Assuming appropriate endpoint for profile update
+            const res = await fetch(`${API_URL}/users/profile`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name: newName })
+            });
+
+            if (!res.ok) throw new Error("Update failed");
+
+            setIsEditingName(false);
+            toast({ title: "Success", description: "Username updated" });
+            refetch();
+        } catch (err) {
+            toast({ title: "Error", description: "Failed to update name", variant: "destructive" });
+        }
+    };
 
     return (
         <DashboardLayout>
@@ -64,7 +120,9 @@ export default function ProfilePage() {
                                 {/* Avatar */}
                                 <div className="relative group mb-4">
                                     <div className="h-24 w-24 rounded-full border-4 border-background bg-zinc-900 flex items-center justify-center overflow-hidden shadow-2xl group-hover:scale-105 transition-transform duration-300">
-                                        {user.avatar ? (
+                                        {isUploading ? (
+                                            <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                                        ) : user.avatar ? (
                                             <img
                                                 src={user.avatar.includes('http') ? user.avatar : user.avatar}
                                                 alt={user.name || 'User'}
@@ -76,28 +134,15 @@ export default function ProfilePage() {
 
                                         {/* Upload Overlay */}
                                         <label className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer z-10">
-                                            <span className="text-[10px] text-white font-bold uppercase tracking-wider">Edit</span>
+                                            <span className="text-[10px] text-white font-bold uppercase tracking-wider">
+                                                {isUploading ? '...' : 'Edit'}
+                                            </span>
                                             <input
                                                 type="file"
                                                 className="hidden"
                                                 accept="image/*"
-                                                onChange={async (e) => {
-                                                    const file = e.target.files?.[0];
-                                                    if (!file) return;
-                                                    const formData = new FormData();
-                                                    formData.append('file', file);
-                                                    try {
-                                                        const token = document.cookie.split('; ').find(row => row.startsWith('nearnow_token='))?.split('=')[1];
-                                                        await fetch(`${API_URL}/users/avatar`, {
-                                                            method: 'POST',
-                                                            headers: { 'Authorization': `Bearer ${token}` },
-                                                            body: formData
-                                                        });
-                                                        window.location.reload();
-                                                    } catch (err) {
-                                                        console.error(err);
-                                                    }
-                                                }}
+                                                onChange={handleAvatarUpload}
+                                                disabled={isUploading}
                                             />
                                         </label>
                                     </div>
@@ -106,7 +151,30 @@ export default function ProfilePage() {
                                     </div>
                                 </div>
 
-                                <h1 className="text-xl font-black text-white">{user.name || 'Anonymous'}</h1>
+                                {/* Editable Name */}
+                                <div className="flex items-center justify-center gap-2 mb-1 min-h-[32px]">
+                                    {isEditingName ? (
+                                        <div className="flex items-center gap-2 animate-in fade-in zoom-in duration-200">
+                                            <input
+                                                className="bg-transparent border-b border-white/20 text-xl font-black text-white text-center focus:outline-none focus:border-primary w-40 placeholder:text-muted-foreground/50"
+                                                value={newName}
+                                                onChange={(e) => setNewName(e.target.value)}
+                                                autoFocus
+                                                placeholder="Name"
+                                                onKeyDown={(e) => e.key === 'Enter' && saveName()}
+                                            />
+                                            <Button size="icon" variant="ghost" className="h-6 w-6 text-green-400 hover:bg-green-500/10 hover:text-green-300" onClick={saveName}><Check className="h-4 w-4" /></Button>
+                                            <Button size="icon" variant="ghost" className="h-6 w-6 text-red-400 hover:bg-red-500/10 hover:text-red-300" onClick={() => setIsEditingName(false)}><X className="h-4 w-4" /></Button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2 group/name cursor-pointer p-1 rounded-lg hover:bg-white/5 transition-colors" onClick={() => { setNewName(user.name || ''); setIsEditingName(true); }}>
+                                            <h1 className="text-xl font-black text-white">{user.name || 'Anonymous'}</h1>
+                                            <div className="opacity-0 group-hover/name:opacity-100 transition-all text-muted-foreground hover:text-white">
+                                                <Edit2 className="h-3 w-3" />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
 
                                 <div className="flex items-center gap-2 mt-2 mb-6">
                                     <span className={`px-2 py-0.5 rounded-full border ${RANK_COLORS[stats.rank]} bg-opacity-10 text-[10px] font-bold uppercase`}>
