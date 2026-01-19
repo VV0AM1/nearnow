@@ -87,7 +87,7 @@ export default function ProfileView() {
     };
 
     return (
-        <div className="h-full flex flex-col overflow-hidden pt-24">
+        <div className="h-full flex flex-col overflow-hidden pt-0">
             {/* Header Actions - Compact */}
             <div className="flex-none px-6 py-4 flex items-center justify-between z-10 shrink-0">
                 <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-white" onClick={() => window.location.href = '/'}>

@@ -101,8 +101,8 @@ export default function FeedContainer({ initialLocation, initialPosts = [], onRe
 
             {/* Toolbar: Location Search, Categories & Radius */}
             <div className="flex flex-col gap-4 mb-4 shrink-0 px-4 md:px-0">
-                <div className="flex flex-col md:flex-row gap-4 px-2">
-                    <div className="flex-1">
+                <div className="flex flex-col md:flex-row gap-4 px-2 items-center">
+                    <div className="flex-1 md:max-w-2xl ml-1">
                         <LocationSearch
                             onLocationSelect={(lat, long) => setLocation({ lat, long })}
                         />
