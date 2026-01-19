@@ -29,7 +29,7 @@ export function SafetyAnalytics({ neighborhoodName = "Current Sector", score, to
     };
 
     return (
-        <div className="rounded-xl border border-white/10 bg-black/40 backdrop-blur-md overflow-hidden flex flex-col h-[280px]">
+        <div className="rounded-xl border border-white/10 bg-black/40 backdrop-blur-md overflow-hidden flex flex-col h-auto">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/5">
                 <div className="flex items-center gap-2">
@@ -49,7 +49,7 @@ export function SafetyAnalytics({ neighborhoodName = "Current Sector", score, to
                 </div>
             </div>
 
-            <div className="flex-1 p-5 overflow-y-auto custom-scrollbar">
+            <div className="p-5">
                 <div className="flex flex-col gap-6">
 
                     {/* Top Row: Score & Trend */}
