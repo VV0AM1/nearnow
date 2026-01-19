@@ -2,6 +2,7 @@ import Sidebar from "./dashboard/Sidebar";
 import DashboardHeader from "./DashboardHeader";
 import { User } from "../../types/user";
 import { DashboardProvider } from "../../context/DashboardContext";
+import { usePathname } from "next/navigation";
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -9,16 +10,21 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ children, initialUser }: DashboardLayoutProps) {
+    const pathname = usePathname();
+    const showHeader = pathname === '/';
+
     return (
         <DashboardProvider>
             <div className="flex h-screen bg-background overflow-hidden relative">
                 <Sidebar initialUser={initialUser} />
 
                 <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
-                    {/* Floating Header Overlay */}
-                    <div className="absolute top-0 left-0 right-0 z-50 pointer-events-none">
-                        <DashboardHeader />
-                    </div>
+                    {/* Floating Header Overlay - Only on Dashboard */}
+                    {showHeader && (
+                        <div className="absolute top-0 left-0 right-0 z-50 pointer-events-none">
+                            <DashboardHeader />
+                        </div>
+                    )}
 
                     {/* Page Content - Full Height, Underlays Header */}
                     <div className="flex-1 h-full overflow-hidden relative">

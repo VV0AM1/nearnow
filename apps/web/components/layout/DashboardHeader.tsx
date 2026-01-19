@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 export default function DashboardHeader() {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const { user } = useAuthContext();
-    const { setLocation } = useDashboard();
+    const { setLocation, searchQuery, setSearchQuery } = useDashboard();
 
     return (
         <header className="fixed top-4 right-4 left-4 lg:left-[18rem] z-50 flex items-center justify-between h-16 px-6 rounded-2xl bg-slate-900/60 backdrop-blur-xl border border-white/10 shadow-2xl transition-all duration-300">
@@ -32,7 +32,8 @@ export default function DashboardHeader() {
                     type="text"
                     placeholder="Search posts..."
                     className="w-full h-10 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:bg-white/10 focus:border-white/20 pl-10 pr-4 text-sm text-white placeholder:text-white/40 transition-all duration-200"
-                    onFocus={() => setIsSearchOpen(true)}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                 />
             </div>
 

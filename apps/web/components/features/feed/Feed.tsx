@@ -20,7 +20,7 @@ interface FeedContainerProps {
 }
 
 export default function FeedContainer({ initialLocation, initialPosts = [], onReportClick }: FeedContainerProps) {
-    const { location, setLocation } = useDashboard();
+    const { location, setLocation, searchQuery } = useDashboard();
 
     // Sync if initialLocation changes (server side props) - update Global Context
     useEffect(() => {
@@ -41,7 +41,7 @@ export default function FeedContainer({ initialLocation, initialPosts = [], onRe
         return () => window.removeEventListener('resize', updateLimit);
     }, []);
 
-    const { posts, loading, error, incrementCommentCount, nextPage, prevPage, hasMore, page } = useFeed(location, radius, categories, initialPosts, limit);
+    const { posts, loading, error, incrementCommentCount, nextPage, prevPage, hasMore, page } = useFeed(location, radius, categories, initialPosts, limit, searchQuery);
     const [selectedPost, setSelectedPost] = useState<any>(null);
 
     const [highlightedPostId, setHighlightedPostId] = useState<string | null>(null);

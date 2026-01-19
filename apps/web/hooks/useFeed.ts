@@ -13,7 +13,7 @@ export interface Post {
     [key: string]: any;
 }
 
-export function useFeed(location: { lat: number; long: number }, radius: number = 10, categories: string[] = ['ALL'], initialPosts: Post[] = [], limit: number = 20) {
+export function useFeed(location: { lat: number; long: number }, radius: number = 10, categories: string[] = ['ALL'], initialPosts: Post[] = [], limit: number = 20, searchQuery: string = '') {
     const [posts, setPosts] = useState<Post[]>(initialPosts);
     const [loading, setLoading] = useState(initialPosts.length === 0);
     const [error, setError] = useState<string | null>(null);
@@ -30,7 +30,7 @@ export function useFeed(location: { lat: number; long: number }, radius: number 
         // setPosts([]); // Don't clear immediately to avoid flicker, just loading state?
         // Actually clearing is safer for state consistency but flicker is bad.
         // Let's keep existing posts until new ones load if we want smoothness, but for clarity let's clear or handle in loading.
-    }, [location.lat, location.long, radius, categoryString, limit]);
+    }, [location.lat, location.long, radius, categoryString, limit, searchQuery]);
 
     useEffect(() => {
         const fetchFeed = async () => {
@@ -41,6 +41,7 @@ export function useFeed(location: { lat: number; long: number }, radius: number 
                     longitude: location.long.toString(),
                     radius: radius.toString(),
                     category: categoryString,
+                    search: searchQuery,
                     page: page.toString(),
                     limit: limit.toString()
                 });
@@ -61,7 +62,7 @@ export function useFeed(location: { lat: number; long: number }, radius: number 
         };
 
         fetchFeed();
-    }, [location.lat, location.long, radius, categoryString, page, limit]);
+    }, [location.lat, location.long, radius, categoryString, page, limit, searchQuery]);
 
     const nextPage = () => {
         if (!loading && hasMore) {
