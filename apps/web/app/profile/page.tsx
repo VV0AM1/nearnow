@@ -27,7 +27,6 @@ export default function ProfilePage() {
     const badges = calculateBadges(user);
 
     return (
-    return (
         <DashboardLayout>
             <div className="h-full flex flex-col overflow-hidden">
                 {/* Header Actions - Compact */}
