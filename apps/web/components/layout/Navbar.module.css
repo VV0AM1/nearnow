@@ -1,20 +1,59 @@
 /* Navbar.module.css */
 
-.navbarGlass {
-    /* Sticky/z-index moved to TSX */
-    /* Deep Glass - lighter at top */
-    background: rgba(15, 23, 42, 0.4);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+/* Container is transparent in TSX, but search needs style */
+.searchPill {
+    background: rgba(10, 10, 10, 0.4);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    width: 20rem;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* On scroll, it could become darker - logic in component or just keep it consistent */
+.searchPill:focus-within {
+    width: 32rem;
+    background: rgba(15, 15, 20, 0.6);
+    border-color: rgba(59, 130, 246, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(59, 130, 246, 0.1);
+}
 
-.searchContainer {
-    /* relative transition moved to TSX */
-    width: 20rem;
-    /* w-80 base */
+.actionPill {
+    background: rgba(10, 10, 10, 0.4);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+}
+
+.actionPill:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* Notification Pulse */
+.pulseDot {
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    }
+
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+    }
+
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
 }
 
 .searchContainer:focus-within {

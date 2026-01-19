@@ -14,11 +14,14 @@ export default function DashboardLayout({ children, initialUser }: DashboardLayo
             <div className="flex h-screen bg-background overflow-hidden relative">
                 <Sidebar initialUser={initialUser} />
 
-                <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-                    <DashboardHeader />
+                <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
+                    {/* Floating Header Overlay */}
+                    <div className="absolute top-0 left-0 right-0 z-50 pointer-events-none">
+                        <DashboardHeader />
+                    </div>
 
-                    {/* Page Content - No Scroll on Wrapper, Children handle scroll */}
-                    <div className="flex-1 overflow-hidden relative">
+                    {/* Page Content - Full Height, Underlays Header */}
+                    <div className="flex-1 h-full overflow-hidden relative">
                         {children}
                     </div>
                 </main>

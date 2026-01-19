@@ -19,49 +19,49 @@ export default function DashboardHeader() {
     const { setLocation } = useDashboard();
 
     return (
-        <header className={cn("sticky top-0 z-50 transition-all duration-300 h-16 flex items-center justify-between px-6", styles.navbarGlass)}>
-            {/* Mobile Menu Trigger */}
-            <div className="md:hidden -ml-2">
+        <header className="fixed top-0 left-0 right-0 z-50 flex items-start justify-between p-6 pointer-events-none md:pl-[calc(theme(spacing.80)+1.5rem)] lg:pl-6">
+            {/* Mobile Menu Trigger - Pointer Auto */}
+            <div className="md:hidden pointer-events-auto">
                 <MobileMenu />
             </div>
 
-            {/* Search Bar (Desktop) - Animated & Glass */}
-            <div className={cn("hidden md:block mx-6 relative transition-all duration-300", styles.searchContainer)}>
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
-                    <input
-                        type="text"
-                        placeholder="Search posts..."
-                        className={cn(
-                            "w-full bg-secondary/10 border border-white/5 rounded-full pl-10 pr-4 py-2 text-sm transition-all duration-300",
-                            "focus:bg-secondary/20 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 focus:shadow-[0_0_20px_rgba(59,130,246,0.1)] focus:outline-none placeholder:text-muted-foreground/50",
-                            styles.searchInput
-                        )}
-                    />
-                </div>
+            {/* Floating Search Pill - Pointer Auto */}
+            <div className={cn("relative hidden md:flex items-center rounded-full pointer-events-auto", styles.searchPill)}>
+                <Search className="absolute left-4 h-4 w-4 text-white/50" />
+                <input
+                    type="text"
+                    placeholder="Search posts..."
+                    className="w-full h-full bg-transparent border-none focus:outline-none focus:ring-0 pl-10 pr-6 text-sm text-white placeholder:text-muted-foreground/50 rounded-full"
+                    onFocus={() => setIsSearchOpen(true)}
+                />
             </div>
 
             {/* Hidden Triggers for Mobile interactions */}
-            <button id="mobile-search-trigger" className="hidden" onClick={() => setIsSearchOpen(true)} />
+            <button id="mobile-search-trigger" className="hidden pointer-events-auto" onClick={() => setIsSearchOpen(true)} />
 
             {/* Mobile Search Icon */}
-            <button className="md:hidden p-2 text-muted-foreground" onClick={() => setIsSearchOpen(true)}>
+            <button className="md:hidden p-3 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white pointer-events-auto" onClick={() => setIsSearchOpen(true)}>
                 <Search className="h-5 w-5" />
             </button>
 
             <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
 
-            <div className="flex items-center gap-4">
+            {/* Actions - Pointer Auto */}
+            <div className="flex items-center gap-4 pointer-events-auto">
                 <div className="md:hidden">
                     <SOSButton />
                 </div>
-                <NotificationsMenu />
+
+                {/* Wrap Notification in Glass Pill */}
+                <div className={cn("rounded-full h-10 w-10 flex items-center justify-center", styles.actionPill)}>
+                    <NotificationsMenu />
+                </div>
 
                 {/* Mobile Profile Avatar */}
-                <Link href="/profile" className="relative h-8 w-8 rounded-full bg-secondary/50 overflow-hidden border border-white/10 md:hidden">
+                <Link href="/profile" className={cn("relative h-10 w-10 rounded-full overflow-hidden", styles.actionPill)}>
                     {user?.avatar ? (
                         <img
-                            src={user.avatar.startsWith('http') ? user.avatar : user.avatar}
+                            src={user.avatar.startsWith('http') ? user.avatar : `${API_URL}/${user.avatar.replace(/^\//, '')}`}
                             alt={user.name || 'Profile'}
                             className="h-full w-full object-cover"
                         />
