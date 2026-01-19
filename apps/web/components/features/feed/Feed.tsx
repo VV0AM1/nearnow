@@ -4,7 +4,8 @@ import MapLoader from "../map/MapLoader";
 import PostDetailModal from "./PostDetailModal";
 import { useFeed } from "../../../hooks/useFeed";
 import { useMapPosts } from "../../../hooks/useMapPosts";
-import LocationSearch from "./LocationSearch"; // Restored
+import LocationSearch from "./LocationSearch";
+import MapStatsOverlay from "../map/MapStatsOverlay";
 import RadiusSlider from "./RadiusSlider";
 import CategoryFilter from "./CategoryFilter";
 import FeedList from "./FeedList";
@@ -77,13 +78,39 @@ export default function FeedContainer({ initialLocation, initialPosts = [], onRe
             {/* Toolbar: Location Search, Categories & Radius */}
             <div className="flex flex-col gap-4 mb-4 shrink-0 px-4 md:px-0">
                 <div className="flex flex-col md:flex-row gap-4 px-2 items-center">
-                    <div className="flex-1 md:max-w-2xl ml-1">
+                    <div className="flex-1 w-full md:max-w-2xl ml-1">
                         <LocationSearch
                             onLocationSelect={(lat, long) => setLocation({ lat, long })}
                         />
                     </div>
-                    <div className="md:w-64 hidden md:block">
-                        <RadiusSlider value={radius} onChange={setRadius} />
+
+                    <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+                        <div className="w-48 hidden md:block">
+                            <RadiusSlider value={radius} onChange={setRadius} />
+                        </div>
+
+                        <div className="hidden lg:flex items-center gap-2">
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/10 border border-white/5 backdrop-blur-md shadow-sm">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                </span>
+                                <span className="text-xs font-bold text-emerald-500">System Online</span>
+                            </div>
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/10 border border-white/5 backdrop-blur-md shadow-sm">
+                                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Active</span>
+                                <span className="text-xs font-black text-white">{mapPosts.length}</span>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={onReportClick}
+                            className="bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded-full font-bold shadow-[0_0_15px_rgba(239,68,68,0.4)] hover:shadow-[0_0_25px_rgba(239,68,68,0.6)] transition-all flex items-center gap-2 text-sm whitespace-nowrap ml-auto md:ml-0"
+                        >
+                            <span>+</span>
+                            <span className="hidden sm:inline">Report Incident</span>
+                            <span className="sm:hidden">Report</span>
+                        </button>
                     </div>
                 </div>
 
@@ -120,31 +147,12 @@ export default function FeedContainer({ initialLocation, initialPosts = [], onRe
                         </div>
                     </div>
 
+
+
                     {/* Map Visualization Section - Fixed */}
                     <div className="w-full h-[45vh] xl:h-full xl:flex-1 rounded-xl overflow-hidden shadow-sm border border-border relative order-first xl:order-last shrink-0">
-                        <div className="absolute top-4 right-4 z-10 flex flex-col items-end gap-2 pointer-events-none">
-                            <div className="flex items-center gap-2">
-                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/80 border border-white/10 backdrop-blur-md shadow-sm">
-                                    <span className="relative flex h-2 w-2">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                                    </span>
-                                    <span className="text-xs font-bold text-emerald-500">System Online</span>
-                                </div>
-                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/80 border border-white/10 backdrop-blur-md shadow-sm">
-                                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Active</span>
-                                    <span className="text-xs font-black text-white">{mapPosts.length}</span>
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={onReportClick}
-                                className="bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded-full font-bold shadow-[0_0_15px_rgba(239,68,68,0.4)] hover:shadow-[0_0_25px_rgba(239,68,68,0.6)] transition-all flex items-center gap-2 text-sm pointer-events-auto"
-                            >
-                                <span>+</span>
-                                <span className="hidden sm:inline">Report Incident</span>
-                                <span className="sm:hidden">Report</span>
-                            </button>
+                        <div className="absolute top-24 left-4 z-10 hidden sm:block pointer-events-none">
+                            <MapStatsOverlay posts={mapPosts} radius={radius} />
                         </div>
                         <MapLoader posts={mapPosts} center={location} radius={radius} highlightedPostId={highlightedPostId} />
                     </div>
