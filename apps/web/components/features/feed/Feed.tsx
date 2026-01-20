@@ -53,7 +53,7 @@ export default function FeedContainer({ initialLocation, initialPosts = [], onRe
     const { posts: mapPosts, loading: mapLoading } = useMapPosts(location, radius);
 
     return (
-        <div className="flex flex-col h-full w-full pt-20">
+        <div className="flex flex-col min-h-screen md:h-full w-full pt-20">
             {selectedPost && (
                 <PostDetailModal
                     post={selectedPost}
@@ -93,7 +93,7 @@ export default function FeedContainer({ initialLocation, initialPosts = [], onRe
                     </div>
 
                     <div className="flex items-center justify-between pl-2">
-                        <div className="flex-1 overflow-x-auto no-scrollbar p-2 pl-1">
+                        <div className="flex-1 overflow-x-auto no-scrollbar p-2 pl-1 pr-4 mask-fade-right">
                             <CategoryFilter selected={categories} onSelect={setCategories} />
                         </div>
                         {/* Mobile Only Radius if needed, otherwise hidden */}
@@ -110,8 +110,8 @@ export default function FeedContainer({ initialLocation, initialPosts = [], onRe
             ) : (
                 <div className="flex flex-col xl:flex-row gap-6 flex-1 min-h-0 px-4 md:px-6 pb-6">
                     {/* Feed List Section - Scrollable Internally */}
-                    <div className="w-full shrink-0 xl:w-[400px] flex flex-col h-full overflow-hidden">
-                        <div className="flex-1 overflow-y-auto px-1">
+                    <div className="w-full shrink-0 xl:w-[400px] flex flex-col md:h-full md:overflow-hidden">
+                        <div className="flex-1 md:overflow-y-auto px-1">
                             <FeedList
                                 posts={posts}
                                 onPostClick={setSelectedPost}
@@ -129,8 +129,8 @@ export default function FeedContainer({ initialLocation, initialPosts = [], onRe
 
 
                     {/* Map Visualization Section - Fixed */}
-                    <div className="w-full h-[45vh] xl:h-full xl:flex-1 rounded-xl overflow-hidden shadow-sm border border-border relative order-first xl:order-last shrink-0">
-                        <div className="absolute top-4 left-4 z-10 hidden sm:block pointer-events-none">
+                    <div className="w-full h-[55vh] md:h-[45vh] xl:h-full xl:flex-1 rounded-xl overflow-hidden shadow-sm border border-border relative order-first xl:order-last shrink-0">
+                        <div className="absolute top-4 left-4 z-10 pointer-events-none scale-90 origin-top-left md:scale-100">
                             <MapStatsOverlay posts={mapPosts} radius={radius} onReportClick={onReportClick} />
                         </div>
                         <MapLoader posts={mapPosts} center={location} radius={radius} highlightedPostId={highlightedPostId} />

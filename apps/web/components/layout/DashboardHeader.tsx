@@ -39,6 +39,7 @@ export default function DashboardHeader() {
 
             {/* Mobile Search Trigger */}
             <button
+                id="mobile-search-trigger"
                 className="md:hidden p-2 text-white/70 hover:text-white transition-colors"
                 onClick={() => setIsSearchOpen(true)}
             >

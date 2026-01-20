@@ -135,9 +135,14 @@ export default function MobileMenu() {
                                                     <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
                                                         {user?.avatar ? (
                                                             <img
-                                                                src={user.avatar.includes('http') ? user.avatar : user.avatar}
+                                                                src={user.avatar.startsWith('http') ? user.avatar : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/${user.avatar.replace(/^\//, '')}`}
                                                                 alt={user.name || 'User'}
                                                                 className="h-full w-full object-cover"
+                                                                onError={(e) => {
+                                                                    e.currentTarget.src = "https://github.com/shadcn.png"
+                                                                    e.currentTarget.style.display = "none"
+                                                                    e.currentTarget.parentElement?.classList.add("bg-primary/20")
+                                                                }}
                                                             />
                                                         ) : (
                                                             <User className="h-5 w-5 text-primary" />
