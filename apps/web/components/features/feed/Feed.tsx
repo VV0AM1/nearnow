@@ -4,10 +4,12 @@ import MapLoader from "../map/MapLoader";
 import PostDetailModal from "./PostDetailModal";
 import { useFeed } from "../../../hooks/useFeed";
 import { useMapPosts } from "../../../hooks/useMapPosts";
+import { useHaptic } from "../../../hooks/useHaptic";
 import LocationSearch from "./LocationSearch";
 import MapStatsOverlay from "../map/MapStatsOverlay";
 import RadiusSlider from "./RadiusSlider";
 import CategoryFilter from "./CategoryFilter";
+import DesktopCategoryList from "./filters/DesktopCategoryList";
 import FeedList from "./FeedList";
 import FeedListSkeleton from "../../ui/loading/FeedListSkeleton";
 import { useDashboard } from "../../../context/DashboardContext";
@@ -32,6 +34,29 @@ export default function FeedContainer({ initialLocation, initialPosts = [], onRe
 
     const [radius, setRadius] = useState(10);
     const [categories, setCategories] = useState<string[]>(["ALL"]);
+    const { triggerHaptic } = useHaptic();
+
+    const handleCategorySelect = (id: string) => {
+        triggerHaptic("light");
+
+        if (id === 'ALL') {
+            setCategories(['ALL']);
+            return;
+        }
+
+        let newSelected = [...categories];
+        // If ALL is currently selected, clear it
+        if (newSelected.includes('ALL')) newSelected = [];
+
+        if (newSelected.includes(id)) {
+            newSelected = newSelected.filter(c => c !== id);
+        } else {
+            newSelected.push(id);
+        }
+
+        if (newSelected.length === 0) newSelected = ['ALL'];
+        setCategories(newSelected);
+    };
 
     // Responsive Limit Logic
     const [limit, setLimit] = useState(4);
@@ -115,7 +140,7 @@ export default function FeedContainer({ initialLocation, initialPosts = [], onRe
                             {/* Mobile Filters moved here */}
                             <div className="md:hidden mb-4 overflow-x-auto no-scrollbar pb-2 mask-fade-right -mx-4 px-4 bg-background/80 backdrop-blur-md border-b border-white/5 sticky top-0 z-20 pt-2 flex items-center gap-2">
                                 <span className="text-[10px] font-bold text-muted-foreground uppercase shrink-0">Filter:</span>
-                                <CategoryFilter selected={categories} onSelect={setCategories} />
+                                <DesktopCategoryList selected={categories} onSelect={handleCategorySelect} className="w-full flex-1" />
                             </div>
                             <FeedList
                                 posts={posts}

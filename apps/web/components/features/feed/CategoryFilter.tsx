@@ -42,7 +42,7 @@ export default function CategoryFilter({ selected, onSelect }: CategoryFilterPro
     return (
         <>
             <MobileCategoryFilter selected={selected} onSelect={handleSelect} />
-            <DesktopCategoryList selected={selected} onSelect={handleSelect} />
+            <DesktopCategoryList selected={selected} onSelect={handleSelect} className="hidden md:flex" />
         </>
     );
 }
