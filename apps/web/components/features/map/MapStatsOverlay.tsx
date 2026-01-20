@@ -53,7 +53,7 @@ export default function MapStatsOverlay({ posts, radius, onReportClick }: MapSta
     const risk = getRiskLabel(density);
 
     return (
-        <div className="w-72 bg-black/80 backdrop-blur-xl rounded-2xl border border-white/10 p-4 shadow-2xl flex flex-col gap-4 animate-in fade-in slide-in-from-left-4 duration-500 pointer-events-auto">
+        <div className="w-[260px] sm:w-72 bg-black/80 backdrop-blur-xl rounded-2xl border border-white/10 p-3 sm:p-4 shadow-2xl flex flex-col gap-3 sm:gap-4 animate-in fade-in slide-in-from-left-4 duration-500 pointer-events-auto">
 
             {/* Top Row: System Status */}
             <div className="flex items-center justify-between pb-3 border-b border-white/5">

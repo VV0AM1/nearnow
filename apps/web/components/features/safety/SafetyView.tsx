@@ -78,7 +78,7 @@ export default function SafetyView() {
     return (
         <div className="flex flex-col min-h-screen lg:h-full w-full pt-20 bg-background">
             {/* Fixed Header */}
-            <div className="flex-none p-6 border-b border-white/5 bg-background/50 backdrop-blur-md flex justify-between items-center z-10">
+            <div className="flex-none p-4 sm:p-6 border-b border-white/5 bg-background/50 backdrop-blur-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 z-10">
                 <div>
                     <h1 className="text-2xl font-black bg-gradient-to-r from-emerald-400 via-blue-500 to-purple-500 bg-clip-text text-transparent flex items-center gap-3">
                         <Target className="h-6 w-6 text-blue-500" />
@@ -88,7 +88,7 @@ export default function SafetyView() {
                 </div>
 
                 {/* Compact Radius Control */}
-                <div className="flex items-center gap-4 bg-secondary/10 px-4 py-2 rounded-lg border border-white/5">
+                <div className="flex items-center justify-between w-full sm:w-auto gap-4 bg-secondary/10 px-4 py-2 rounded-lg border border-white/5">
                     <span className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Scope</span>
                     <input
                         type="range"
@@ -97,7 +97,7 @@ export default function SafetyView() {
                         step="1"
                         value={radius}
                         onChange={(e) => setRadius(parseInt(e.target.value))}
-                        className="w-32 h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-500 hover:accent-blue-400 transition-all"
+                        className="flex-1 sm:w-32 h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-500 hover:accent-blue-400 transition-all"
                     />
                     <span className="text-sm font-bold text-white min-w-[3rem] text-right">{radius} km</span>
                 </div>

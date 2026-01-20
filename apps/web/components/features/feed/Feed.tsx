@@ -113,7 +113,8 @@ export default function FeedContainer({ initialLocation, initialPosts = [], onRe
                     <div className="w-full shrink-0 xl:w-[400px] flex flex-col md:h-full md:overflow-hidden order-last xl:order-first">
                         <div className="flex-1 md:overflow-y-auto px-1">
                             {/* Mobile Filters moved here */}
-                            <div className="md:hidden mb-4 overflow-x-auto no-scrollbar pb-2 mask-fade-right -mx-4 px-4 bg-background sticky top-0 z-20 pt-2">
+                            <div className="md:hidden mb-4 overflow-x-auto no-scrollbar pb-2 mask-fade-right -mx-4 px-4 bg-background/80 backdrop-blur-md border-b border-white/5 sticky top-0 z-20 pt-2 flex items-center gap-2">
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase shrink-0">Filter:</span>
                                 <CategoryFilter selected={categories} onSelect={setCategories} />
                             </div>
                             <FeedList

@@ -39,7 +39,7 @@ export default function MobileMapFilter({ selectedCategory, onSelect, timeRange,
     const selectedCount = selectedCategory.includes('ALL') ? 0 : selectedCategory.length;
 
     const triggerButton = (
-        <div className="absolute top-24 right-4 z-[400] xl:hidden">
+        <div className="absolute top-4 right-4 z-[400] xl:hidden">
             <button
                 onClick={handleOpen}
                 className="h-12 w-12 flex items-center justify-center bg-card rounded-full border border-border shadow-sm active:scale-95 transition-transform"
