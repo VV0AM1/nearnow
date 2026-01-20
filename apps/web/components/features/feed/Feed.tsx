@@ -93,10 +93,10 @@ export default function FeedContainer({ initialLocation, initialPosts = [], onRe
                     </div>
 
                     <div className="flex items-center justify-between pl-2">
-                        <div className="flex-1 overflow-x-auto no-scrollbar p-2 pl-1 pr-4 mask-fade-right">
+                        {/* Mobile Category Filter will be inside the list */}
+                        <div className="hidden md:block flex-1 overflow-x-auto no-scrollbar p-2 pl-1 pr-4 mask-fade-right">
                             <CategoryFilter selected={categories} onSelect={setCategories} />
                         </div>
-                        {/* Mobile Only Radius if needed, otherwise hidden */}
                     </div>
                 </div>
             </div>
@@ -110,8 +110,12 @@ export default function FeedContainer({ initialLocation, initialPosts = [], onRe
             ) : (
                 <div className="flex flex-col xl:flex-row gap-6 flex-1 min-h-0 px-4 md:px-6 pb-6">
                     {/* Feed List Section - Scrollable Internally */}
-                    <div className="w-full shrink-0 xl:w-[400px] flex flex-col md:h-full md:overflow-hidden">
+                    <div className="w-full shrink-0 xl:w-[400px] flex flex-col md:h-full md:overflow-hidden order-last xl:order-first">
                         <div className="flex-1 md:overflow-y-auto px-1">
+                            {/* Mobile Filters moved here */}
+                            <div className="md:hidden mb-4 overflow-x-auto no-scrollbar pb-2 mask-fade-right -mx-4 px-4 bg-background sticky top-0 z-20 pt-2">
+                                <CategoryFilter selected={categories} onSelect={setCategories} />
+                            </div>
                             <FeedList
                                 posts={posts}
                                 onPostClick={setSelectedPost}

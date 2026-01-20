@@ -76,7 +76,7 @@ export default function SafetyView() {
     }, [location.latitude, location.longitude, radius]);
 
     return (
-        <div className="h-full flex flex-col overflow-hidden bg-background pt-20">
+        <div className="flex flex-col min-h-screen lg:h-full w-full pt-20 bg-background">
             {/* Fixed Header */}
             <div className="flex-none p-6 border-b border-white/5 bg-background/50 backdrop-blur-md flex justify-between items-center z-10">
                 <div>
@@ -103,11 +103,11 @@ export default function SafetyView() {
                 </div>
             </div>
 
-            {/* Main Content Grid - No Window Scroll */}
-            <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-12 gap-0 relative">
+            {/* Main Content Grid - Window Scroll on Mobile, Internal on Desktop */}
+            <div className="flex-1 lg:overflow-hidden grid grid-cols-1 lg:grid-cols-12 gap-0 relative">
 
                 {/* Left Panel: Rankings (Scrollable) */}
-                <div className="lg:col-span-8 h-full overflow-y-auto custom-scrollbar p-6 bg-gradient-to-b from-transparent to-black/20">
+                <div className="lg:col-span-8 lg:h-full lg:overflow-y-auto custom-scrollbar p-6 bg-gradient-to-b from-transparent to-black/20">
                     {loading ? (
                         <div className="h-full flex flex-col items-center justify-center text-zinc-500 animate-pulse gap-4">
                             <Activity className="h-8 w-8 animate-spin" />
@@ -143,7 +143,7 @@ export default function SafetyView() {
                 </div>
 
                 {/* Right Panel: Highlights & Alerts (Scrollable) */}
-                <div className="lg:col-span-4 h-full overflow-y-auto custom-scrollbar border-l border-white/5 bg-secondary/5 p-6 space-y-8 backdrop-blur-sm">
+                <div className="lg:col-span-4 lg:h-full lg:overflow-y-auto custom-scrollbar border-l border-white/5 bg-secondary/5 p-6 space-y-8 backdrop-blur-sm">
 
                     {/* Top Safe Section */}
                     <div>
