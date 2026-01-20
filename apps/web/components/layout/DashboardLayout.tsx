@@ -13,17 +13,17 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children, initialUser }: DashboardLayoutProps) {
     return (
         <DashboardProvider>
-            <div className="flex h-screen bg-background overflow-hidden relative">
+            <div className="flex min-h-screen lg:h-screen bg-background lg:overflow-hidden relative">
                 <Sidebar initialUser={initialUser} />
 
-                <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
+                <main className="flex-1 flex flex-col min-w-0 lg:h-full lg:overflow-hidden relative">
                     {/* Floating Header Overlay - Always Visible */}
                     <div className="absolute top-0 left-0 right-0 z-50 pointer-events-none">
                         <DashboardHeader />
                     </div>
 
                     {/* Page Content - Full Height, Underlays Header */}
-                    <div className="flex-1 h-full overflow-hidden relative">
+                    <div className="flex-1 lg:h-full lg:overflow-hidden relative">
                         {children}
                     </div>
                 </main>

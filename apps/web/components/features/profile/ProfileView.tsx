@@ -87,7 +87,7 @@ export default function ProfileView() {
     };
 
     return (
-        <div className="h-full flex flex-col overflow-hidden pt-20">
+        <div className="flex flex-col min-h-screen lg:h-full lg:overflow-hidden pt-20">
             {/* Header Actions - Compact */}
             <div className="flex-none px-6 py-4 flex items-center justify-between z-10 shrink-0">
                 <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-white" onClick={() => window.location.href = '/'}>
@@ -108,11 +108,11 @@ export default function ProfileView() {
             </div>
 
             {/* Main Content Grid */}
-            <div className="flex-1 overflow-hidden px-4 md:px-6 pb-6 pt-0">
-                <div className="h-full grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="flex-1 lg:overflow-hidden px-4 md:px-6 pb-6 pt-0">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:h-full">
 
                     {/* LEFT COLUMN: IDENTITY & STATS */}
-                    <div className="lg:col-span-5 xl:col-span-4 h-full overflow-y-auto custom-scrollbar rounded-3xl bg-secondary/10 border border-white/5 flex flex-col relative">
+                    <div className="lg:col-span-5 xl:col-span-4 lg:h-full lg:overflow-y-auto custom-scrollbar rounded-3xl bg-secondary/10 border border-white/5 flex flex-col relative">
                         {/* Banner */}
                         <div className="h-32 w-full bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 relative shrink-0">
                             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
@@ -225,7 +225,7 @@ export default function ProfileView() {
                     </div>
 
                     {/* RIGHT COLUMN: CONTENT */}
-                    <div className="lg:col-span-7 xl:col-span-8 h-full flex flex-col overflow-hidden rounded-3xl bg-secondary/5 border border-white/5 backdrop-blur-sm">
+                    <div className="lg:col-span-7 xl:col-span-8 lg:h-full flex flex-col lg:overflow-hidden rounded-3xl bg-secondary/5 border border-white/5 backdrop-blur-sm min-h-[500px]">
                         {/* Tabs Header */}
                         <div className="flex-none px-6 pt-6 border-b border-white/5">
                             <div className="flex gap-8">
@@ -253,7 +253,7 @@ export default function ProfileView() {
                         </div>
 
                         {/* Scrollable Content */}
-                        <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+                        <div className="flex-1 lg:overflow-y-auto custom-scrollbar p-6">
                             {activeTab === 'overview' ? (
                                 <div className="space-y-8 animate-in fade-in zoom-in-95 duration-300">
                                     {/* Badges Section */}
