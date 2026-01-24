@@ -20,7 +20,7 @@ export default function Signup() {
 
         setLoading(true);
         try {
-            await api.post('/auth/register', { name, email, password });
+            await api.post('/auth/signup', { name, email, password });
             Alert.alert('Success', 'Account created! Please login.');
             router.back();
         } catch (error: any) {

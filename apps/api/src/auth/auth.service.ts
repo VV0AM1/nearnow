@@ -68,8 +68,8 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Trigger OTP flow
-    await this.requestOtp(user.email);
+    // Trigger OTP flow (Non-blocking)
+    this.requestOtp(user.email).catch(e => console.error("OTP Send Failed:", e));
 
     return {
       message: 'OTP sent to your email',
@@ -102,11 +102,11 @@ export class AuthService {
 
     try {
       if (signupInput.name) {
-        await this.emailService.sendWelcome(user.email, signupInput.name);
+        this.emailService.sendWelcome(user.email, signupInput.name).catch(e => console.error("Welcome Email Failed:", e));
       }
-      await this.requestOtp(user.email);
+      this.requestOtp(user.email).catch(e => console.error("OTP Email Failed:", e));
     } catch (e) {
-      console.error("Email failed:", e);
+      console.error("Email initiation failed:", e);
     }
 
     return {
