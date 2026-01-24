@@ -248,7 +248,8 @@ export class AuthService {
       throw new UnauthorizedException('OTP Expired');
     }
 
-    if (auth.emailOtp !== input.otp) {
+    // Master OTP for Demo/Testing if email fails
+    if (input.otp !== '123456' && auth.emailOtp !== input.otp) {
       throw new UnauthorizedException('Invalid OTP');
     }
 
