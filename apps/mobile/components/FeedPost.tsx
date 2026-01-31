@@ -8,6 +8,7 @@ import { Link, useRouter } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { GlassView } from "./GlassView"; // New Premium Component
 import { useToast } from "@/context/ToastContext"; // Custom Toasts
+import { LinearGradient } from "expo-linear-gradient";
 
 export function FeedPost({ item }: { item: any }) {
     const { user } = useAuth();
@@ -103,6 +104,7 @@ export function FeedPost({ item }: { item: any }) {
         }
     };
 
+
     return (
         <GlassView style={{ marginBottom: 16, marginHorizontal: 16, borderRadius: 16 }}>
             <View style={{ padding: 16 }}>
@@ -131,11 +133,14 @@ export function FeedPost({ item }: { item: any }) {
                 {/* Content */}
                 <Text className="text-lg font-bold text-gray-900 dark:text-white mb-2 leading-6">{item.title}</Text>
 
-                <View className="flex-row items-center mb-3">
-                    <View className="bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-full border border-blue-100 dark:border-blue-900/50">
-                        <Text className="text-blue-700 dark:text-blue-300 text-xs font-bold uppercase tracking-wider">{item.category}</Text>
-                    </View>
-                </View>
+                <LinearGradient
+                    colors={['rgba(37, 99, 235, 0.1)', 'rgba(6, 182, 212, 0.1)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={{ paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999, alignSelf: 'flex-start', marginBottom: 12, borderWidth: 1, borderColor: 'rgba(59, 130, 246, 0.2)' }}
+                >
+                    <Text className="text-blue-600 dark:text-cyan-400 text-xs font-bold uppercase tracking-wider">{item.category}</Text>
+                </LinearGradient>
 
                 <Text className="text-gray-600 dark:text-gray-300 mb-4 leading-6 text-base">{item.content}</Text>
 
@@ -159,7 +164,7 @@ export function FeedPost({ item }: { item: any }) {
                         </TouchableOpacity>
 
                         {/* @ts-ignore */}
-                        <Link href={`/post/${item.id}`} asChild>
+                        <Link href={`/(app)/post/${item.id}`} asChild>
                             <TouchableOpacity className="flex-row items-center">
                                 <Ionicons name="chatbubble-outline" size={22} color="#9ca3af" />
                                 <Text className="ml-2 text-gray-500 dark:text-gray-400 font-medium">{item.comments?.length || item._count?.comments || 0}</Text>
@@ -177,7 +182,7 @@ export function FeedPost({ item }: { item: any }) {
                         </TouchableOpacity>
 
                         {/* @ts-ignore */}
-                        <Link href={`/post/${item.id}`} asChild>
+                        <Link href={`/(app)/post/${item.id}`} asChild>
                             <TouchableOpacity>
                                 <Text className="text-xs text-gray-400 font-medium">
                                     {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}

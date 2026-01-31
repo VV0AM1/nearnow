@@ -513,7 +513,7 @@ export default function MapScreen() {
             </View>
 
             {/* Bottom Left: Current Location */}
-            <View className="absolute bottom-8 left-4 z-50">
+            <View className="absolute bottom-28 left-4 z-50">
                 <TouchableOpacity
                     onPress={() => {
                         if (location?.coords) {
@@ -531,7 +531,7 @@ export default function MapScreen() {
             </View>
 
             {/* Bottom Right: Filter & Time Range */}
-            <View className="absolute bottom-8 right-4 items-end z-50">
+            <View className="absolute bottom-28 right-4 items-end z-50">
 
                 {/* Expanded Time Filter */}
                 {showFilters && (

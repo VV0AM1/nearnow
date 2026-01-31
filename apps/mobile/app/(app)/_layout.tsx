@@ -22,7 +22,7 @@ function CreateTabBarButton({ children, onPress }: { children: React.ReactNode, 
             }}
         >
             <LinearGradient
-                colors={['#f43f5e', '#f97316']}
+                colors={['#2563eb', '#06b6d4']}
                 style={{
                     width: 60,
                     height: 60,
@@ -132,6 +132,7 @@ export default function AppLayout() {
                 name="safety"
                 options={{
                     title: 'Safety',
+                    headerShown: false,
                     tabBarIcon: ({ color, focused }) => (
                         <Ionicons name={focused ? "shield-checkmark" : "shield-checkmark-outline"} size={26} color={color} />
                     ),
@@ -141,6 +142,7 @@ export default function AppLayout() {
                 name="profile"
                 options={{
                     title: 'Profile',
+                    headerShown: false,
                     tabBarIcon: ({ color, focused }) => (
                         <Ionicons name={focused ? "person" : "person-outline"} size={26} color={color} />
                     ),

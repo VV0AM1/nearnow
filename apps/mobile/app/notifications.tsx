@@ -97,23 +97,7 @@ export default function NotificationsScreen() {
     return (
         <View className="flex-1 bg-[#f9fafb] dark:bg-[#020817]">
             <SafeAreaView className="flex-1" edges={['top']}>
-                {/* Header */}
-                <View className="flex-row items-center justify-between px-6 py-4 z-10">
-                    <View className="flex-row items-center">
-                        <TouchableOpacity
-                            onPress={() => router.back()}
-                            className="mr-4 p-2 bg-white dark:bg-white/10 rounded-full border border-gray-100 dark:border-white/5"
-                        >
-                            <Ionicons name="arrow-back" size={20} color={isDark ? "white" : "black"} />
-                        </TouchableOpacity>
-                        <Text className="text-2xl font-bold dark:text-white">Notifications</Text>
-                    </View>
-                    <TouchableOpacity onPress={() => router.push('/(app)/profile' as any)}>
-                        <View className="p-2 bg-white dark:bg-white/10 rounded-full border border-gray-100 dark:border-white/5">
-                            <Ionicons name="settings-outline" size={20} color={isDark ? "#e5e7eb" : "#4b5563"} />
-                        </View>
-                    </TouchableOpacity>
-                </View>
+                {/* Header Removed - Using System Header */}
 
                 {loading && !refreshing ? (
                     renderSkeleton()

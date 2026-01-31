@@ -101,25 +101,27 @@ export default function SafetyScreen() {
         <View className="flex-1 bg-[#f9fafb] dark:bg-[#020817]">
             <SafeAreaView className="flex-1" edges={['top']}>
                 <ScrollView showsVerticalScrollIndicator={false}>
-                    {/* Header */}
-                    <View className="p-6">
-                        <Text className="text-zinc-500 dark:text-gray-400 uppercase text-xs font-bold tracking-widest mb-2">Command Center</Text>
-                        <Text className="text-4xl font-black text-gray-900 dark:text-white">Safety Index</Text>
-
+                    {/* Main Content */}
+                    <View className="px-6 pt-6">
                         {/* Radius Control */}
-                        <GlassView style={{ marginTop: 24, padding: 16, borderRadius: 16 }}>
-                            <View className="flex-row justify-between items-center mb-4">
-                                <Text className="text-gray-500 dark:text-gray-400 text-xs uppercase font-bold">Analysis Radius</Text>
-                                <Text className="text-blue-600 dark:text-blue-400 font-black text-2xl">{radius} km</Text>
+                        <GlassView style={{ padding: 20, borderRadius: 24, marginBottom: 24 }}>
+                            <View className="flex-row justify-between items-center mb-6">
+                                <View>
+                                    <Text className="text-gray-900 dark:text-white font-bold text-lg">Scan Radius</Text>
+                                    <Text className="text-gray-500 text-xs">Analyze safety in range</Text>
+                                </View>
+                                <View className="bg-blue-600/10 px-3 py-1 rounded-full border border-blue-500/20">
+                                    <Text className="text-blue-600 dark:text-blue-400 font-black">{radius} km</Text>
+                                </View>
                             </View>
-                            <View className="flex-row space-x-2 gap-2">
-                                {[5, 10, 25].map(r => (
+                            <View className="flex-row gap-3">
+                                {[5, 10, 25, 50].map(r => (
                                     <TouchableOpacity
                                         key={r}
                                         onPress={() => setRadius(r)}
-                                        className={`flex-1 py-2 rounded-lg items-center ${radius === r ? 'bg-blue-600' : 'bg-gray-100 dark:bg-white/5'}`}
+                                        className={`flex-1 py-3 rounded-xl items-center justify-center transition-all ${radius === r ? 'bg-blue-600 shadow-lg shadow-blue-500/25' : 'bg-gray-100 dark:bg-white/5 border border-transparent dark:border-white/5'}`}
                                     >
-                                        <Text className={`font-bold ${radius === r ? 'text-white' : 'text-gray-600 dark:text-gray-400'}`}>{r}km</Text>
+                                        <Text className={`font-bold text-xs ${radius === r ? 'text-white' : 'text-gray-600 dark:text-gray-400'}`}>{r}km</Text>
                                     </TouchableOpacity>
                                 ))}
                             </View>

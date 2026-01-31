@@ -122,34 +122,39 @@ export default function ProfileScreen() {
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={isDark ? 'white' : 'black'} />}
         >
             {/* Header / Avatar */}
-            <View className="items-center pt-8 pb-6 mb-4">
-                <View className="relative">
-                    {profile?.avatar ? (
-                        <Image
-                            source={{ uri: `${API_URL.replace('/api', '')}${profile.avatar}` }}
-                            className="w-24 h-24 rounded-full border-4 border-white dark:border-white/10"
-                        />
-                    ) : (
-                        <View className="w-24 h-24 bg-blue-600 rounded-full items-center justify-center border-4 border-white dark:border-white/10 shadow-lg shadow-blue-900/20">
-                            <Text className="text-white text-4xl font-bold">{profile?.name?.[0] || 'U'}</Text>
+            <View className="px-6 pt-12 pb-6">
+                <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center gap-4">
+                        <View className="relative">
+                            {profile?.avatar ? (
+                                <Image
+                                    source={{ uri: `${API_URL.replace('/api', '')}${profile.avatar}` }}
+                                    className="w-20 h-20 rounded-full border-4 border-white dark:border-white/10"
+                                />
+                            ) : (
+                                <View className="w-20 h-20 bg-blue-600 rounded-full items-center justify-center border-4 border-white dark:border-white/10 shadow-lg shadow-blue-900/20">
+                                    <Text className="text-white text-3xl font-bold">{profile?.name?.[0] || 'U'}</Text>
+                                </View>
+                            )}
+                            <TouchableOpacity className="absolute bottom-0 right-0 bg-gray-900 dark:bg-white p-1.5 rounded-full border-2 border-white dark:border-gray-900">
+                                <Ionicons name="pencil" size={12} color={isDark ? 'black' : 'white'} />
+                            </TouchableOpacity>
                         </View>
-                    )}
-                </View>
-
-                <Text className="text-2xl font-bold mt-4 dark:text-white">{profile?.name || 'Loading...'}</Text>
-                <Text className="text-gray-500 dark:text-gray-400 font-medium">
-                    Joined {profile?.createdAt ? format(new Date(profile.createdAt), 'MMMM yyyy') : '...'}
-                </Text>
-
-                {/* Level / XP */}
-                <View className="w-4/5 mt-6">
-                    <View className="flex-row justify-between mb-2">
-                        <Text className="font-bold text-blue-600 dark:text-blue-400">Level {level} <Text className="text-gray-500 dark:text-gray-500 font-normal">({profile?.gamification?.rank || 'Novice'})</Text></Text>
-                        <Text className="text-gray-500 dark:text-gray-400 text-xs font-semibold">{xp} / {nextLevelXp} XP</Text>
+                        <View>
+                            <Text className="text-2xl font-black dark:text-white">{profile?.name || 'User'}</Text>
+                            <Text className="text-gray-500 dark:text-gray-400 text-xs font-semibold uppercase tracking-wide">
+                                Level {level} • {profile?.gamification?.rank || 'Novice'}
+                            </Text>
+                            <View className="mt-2 h-1.5 w-32 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
+                                <View style={{ width: `${progress}%` }} className="h-full bg-blue-600 rounded-full" />
+                            </View>
+                        </View>
                     </View>
-                    <View className="h-2 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
-                        <View style={{ width: `${progress}%` }} className="h-full bg-blue-600 rounded-full" />
-                    </View>
+
+                    {/* Settings / Logout (Mini) */}
+                    <TouchableOpacity onPress={() => { signOut(); router.replace('/login'); }}>
+                        <Ionicons name="log-out-outline" size={24} color={isDark ? '#ef4444' : '#ef4444'} />
+                    </TouchableOpacity>
                 </View>
             </View>
 
@@ -338,17 +343,7 @@ export default function ProfileScreen() {
                 </View>
             </GlassView>
 
-            {/* 5. Sign Out */}
-            <TouchableOpacity
-                onPress={() => {
-                    signOut();
-                    router.replace('/login');
-                }}
-                style={{ backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2', padding: 16, margin: 16, marginTop: 0, borderRadius: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: isDark ? 'rgba(239, 68, 68, 0.2)' : 'transparent' }}
-            >
-                <Ionicons name="log-out-outline" size={20} color="#ef4444" />
-                <Text style={{ color: '#ef4444', fontWeight: 'bold' }}>Sign Out</Text>
-            </TouchableOpacity>
+
 
             <View className="h-10" />
         </ScrollView>
