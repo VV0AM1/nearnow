@@ -1,6 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { UploadsService } from './uploads.service';
-import { LocalDiskStorage, STORAGE_ADAPTER } from './storage';
+import { createStorage, STORAGE_ADAPTER } from './storage';
 import { appConfig } from '../common/env';
 
 @Global()
@@ -8,7 +8,8 @@ import { appConfig } from '../common/env';
   providers: [
     {
       provide: STORAGE_ADAPTER,
-      useFactory: () => new LocalDiskStorage(appConfig().uploadDir),
+      useFactory: () =>
+        createStorage(appConfig().storage, appConfig().uploadDir),
     },
     UploadsService,
   ],

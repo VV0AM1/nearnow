@@ -83,4 +83,41 @@ describe('startup configuration', () => {
       loadConfig({ DATABASE_URL: 'x', GEOCODER_PROVIDER: 'nominatim' }),
     ).toThrow(/GEOCODER_USER_AGENT/);
   });
+
+  it('defaults to local storage and validates object-storage settings', () => {
+    expect(loadConfig({ DATABASE_URL: 'x' }).storage).toEqual({
+      provider: 'local',
+    });
+    expect(() =>
+      loadConfig({ DATABASE_URL: 'x', STORAGE_PROVIDER: 'ftp' }),
+    ).toThrow(/STORAGE_PROVIDER/);
+    expect(() =>
+      loadConfig({ DATABASE_URL: 'x', STORAGE_PROVIDER: 's3' }),
+    ).toThrow(/S3_BUCKET is required/);
+    expect(() =>
+      loadConfig({
+        DATABASE_URL: 'x',
+        STORAGE_PROVIDER: 's3',
+        S3_BUCKET: 'b',
+        S3_ACCESS_KEY_ID: 'k',
+        S3_SECRET_ACCESS_KEY: 's',
+        STORAGE_PUBLIC_URL: 'cdn.example.com',
+      }),
+    ).toThrow(/STORAGE_PUBLIC_URL must start/);
+    const cfg = loadConfig({
+      DATABASE_URL: 'x',
+      STORAGE_PROVIDER: 's3',
+      S3_ENDPOINT: 'https://acc.r2.cloudflarestorage.com',
+      S3_BUCKET: 'b',
+      S3_ACCESS_KEY_ID: 'k',
+      S3_SECRET_ACCESS_KEY: 's',
+      STORAGE_PUBLIC_URL: 'https://media.example.com/',
+    });
+    expect(cfg.storage).toMatchObject({
+      provider: 's3',
+      region: 'auto',
+      publicUrl: 'https://media.example.com',
+      forcePathStyle: false,
+    });
+  });
 });

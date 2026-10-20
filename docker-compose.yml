@@ -24,6 +24,17 @@ services:
     volumes:
       - redis_data:/data
 
+  # S3-compatible mock for testing STORAGE_PROVIDER=s3 locally and in the e2e suite
+  # (production uses Cloudflare R2 or AWS S3). Accepts any credentials; data is not persisted.
+  s3mock:
+    image: adobe/s3mock@sha256:ab01a6946750f451ca215a47e91030695b260e4003b8a5a6201d25029b8fca92
+    container_name: nearnow_s3mock
+    restart: unless-stopped
+    environment:
+      COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS: nearnow-dev
+    ports:
+      - "127.0.0.1:9090:9090"
+
 volumes:
   postgres_data:
   redis_data:

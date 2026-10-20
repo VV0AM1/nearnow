@@ -63,6 +63,10 @@ async function bootstrap() {
     logger.warn(
       'Email delivery not configured — verification codes are logged (development only)',
     );
+  if (config.isProduction && config.storage.provider === 'local')
+    logger.warn(
+      'Photos are stored on local disk. Use STORAGE_PROVIDER=s3 unless UPLOAD_DIR is a persistent volume.',
+    );
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bodyParser: false,

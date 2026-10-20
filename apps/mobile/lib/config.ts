@@ -1,3 +1,5 @@
+import Constants from 'expo-constants';
+
 /**
  * Build-time configuration from EXPO_PUBLIC_* variables (see .env.example).
  * Nothing secret belongs here: these values are embedded in the app bundle.
@@ -11,11 +13,14 @@ function readUrl(raw: string | undefined): { url: string | null; error: string |
 
 const api = readUrl(process.env.EXPO_PUBLIC_API_URL);
 
+/** Set by `eas init` in app.json (extra.eas.projectId); the env var can override it. */
+const appJsonProjectId = (Constants.expoConfig?.extra as { eas?: { projectId?: string } } | undefined)?.eas?.projectId;
+
 export const config = {
   apiUrl: api.url ?? '',
   /** Non-null when the build is misconfigured; the app shows a configuration screen. */
   configError: api.error,
-  easProjectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID?.trim() || null,
+  easProjectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID?.trim() || appJsonProjectId || null,
   privacyUrl: process.env.EXPO_PUBLIC_PRIVACY_URL?.trim() || null,
   supportEmail: process.env.EXPO_PUBLIC_SUPPORT_EMAIL?.trim() || null,
   /** EU-wide emergency number; NearNow is not an emergency service. */

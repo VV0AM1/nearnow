@@ -67,8 +67,8 @@ export class UsersService {
     });
     const avatar = await this.uploads.storeImage(file);
     await this.prisma.user.update({ where: { id }, data: { avatar } });
-    if (previous?.avatar?.startsWith('/uploads/'))
-      await this.uploads.remove(previous.avatar);
+    // The storage adapter ignores URLs it does not own (e.g. a Google profile photo).
+    await this.uploads.remove(previous?.avatar);
     return this.findProfile(id);
   }
 
@@ -180,8 +180,7 @@ export class UsersService {
     });
 
     for (const p of posts) await this.uploads.remove(p.imageUrl);
-    if (user?.avatar?.startsWith('/uploads/'))
-      await this.uploads.remove(user.avatar);
+    await this.uploads.remove(user?.avatar);
     return { deleted: true };
   }
 }

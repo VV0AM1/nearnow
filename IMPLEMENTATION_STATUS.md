@@ -223,8 +223,8 @@ Existing Render env vars (`FRONTEND_URL`, `JWT_SECRET`, email and Google) satisf
 | API | `prisma migrate diff --from-migrations … --to-schema-datamodel …` | no drift |
 | API | `npm run lint` | **0 errors, 0 warnings** (was 858 problems after formatting) |
 | API | `npm run typecheck` / `npm run build` | pass / pass |
-| API | `npx jest` (unit) | **54 passed** (14 suites) |
-| API | `npm run test:e2e` (real Postgres `nearnow_test`) | **29 passed**: auth, cross-user access, moderation/audit, validation, feed filters, expiry, upload + EXIF stripping, votes, confirmations, reports, urgent-alert policy, lost & found + contact/block, account deletion, socket isolation |
+| API | `npx jest` (unit) | **61 passed** (16 suites; was 54 before the 2026-10-20 storage and push work) |
+| API | `npm run test:e2e` (real Postgres `nearnow_test` + S3Mock) | **32 passed** (29 + 3 S3 storage): auth, cross-user access, moderation/audit, validation, feed filters, expiry, upload + EXIF stripping, votes, confirmations, reports, urgent-alert policy, lost & found + contact/block, account deletion, socket isolation |
 | API | `npx ts-node prisma/seed.ts --demo` (local) | 3 cities, 3 `[DEMO]` posts |
 | Mobile | `npx tsc --noEmit` / `npx eslint .` | pass / pass |
 | Mobile | `npx jest` | **13 passed** |
@@ -266,17 +266,53 @@ Existing Render env vars (`FRONTEND_URL`, `JWT_SECRET`, email and Google) satisf
 
 ---
 
+## 8a. Innovation strategy (`NearNow_Innovation_Strategy_and_Agent_Addendum.md`, 2026-10-20)
+
+The addendum keeps the order above (A → B → C first) and then adds the **local change-to-action loop** as the product's main differentiator. Tracking:
+
+| Strategy stage | Item | Status |
+|---|---|---|
+| 0 — Release foundation | Phase A above | Partly done (code-side done; account-dependent steps blocked) |
+| 1 — Finish mobile | Phases B and C above | Not started |
+| 2 — Local Change Brief | "Since you last checked" brief built from existing lifecycle fields, deterministic, no LLM | Not started |
+| 2 | One-tap reality check: add "I can't confirm" next to the existing still-happening / no-longer-present answers; impact receipt showing real counts | Not started (confirmation API exists) |
+| 2 | Saved areas, topic lenses, quiet and controllable notifications | Partly done (one area, categories, quiet hours and pause exist) |
+| 3 — Practicality Layer | Structured disruption subtypes, one reviewed official source, map plus accessible list, unknown shown as unknown | Not started (official-data interface exists) |
+| 4 — Distribution | Public share pages with privacy rules, partner QR entry points | Not started |
+| 4 | Area Desk partner dashboard | Not started — only after a committed pilot partner |
+| 5 | Newcomer guide, event reminders, community missions, trusted journeys | Not started — each needs evidence first |
+| — | Privacy-conscious analytics plan (outcome metrics, no GPS or content in analytics) | Not started |
+
+Product guardrails from the addendum that are already enforced:
+- no safety scores;
+- no report counts presented as safety;
+- an honest urgent-help flow;
+- approximate locations;
+- opt-in alerts with rate limits;
+- a moderation audit trail.
+
+These must be kept in every new feature.
+
 ## 8. Roadmap — next phases
 
 The order matters. Device builds come first, because nothing can be judged on a phone without them. The UI rebuild comes **before** the remaining mobile features, so those features are built once in the new design instead of twice.
 
 ### Phase A — Release foundation (prerequisite for everything else)
-- [ ] `eas.json` with `development`, `preview` (staging) and `production` profiles, each with its own `EXPO_PUBLIC_API_URL`.
-- [ ] iOS `bundleIdentifier`, Android `package`, app icon and splash screen.
-- [ ] Development build installed on one iPhone and one Android phone.
-- [ ] Staging API (separate database) with the migration applied; the run-through in §6 performed and its results recorded.
-- [ ] Object-storage adapter (S3-compatible, e.g. Cloudflare R2 or AWS S3) behind the existing `StorageAdapter`, so photos survive redeploys.
-- [ ] Push enabled end to end: EAS credentials, `PUSH_PROVIDER=expo`, and Expo delivery receipts checked.
+Step-by-step for the account-dependent steps: `docs/RELEASE_SETUP.md`.
+
+- [x] `eas.json` with `development` (dev client), `preview` (staging) and `production` profiles. Each reads `EXPO_PUBLIC_API_URL` from its EAS environment; `expo-dev-client` is installed; the push project id is read from `app.json` after `eas init`. **Done** (local checks: typecheck, lint, tests, both exports and expo-doctor 18/18 pass) — **Blocked** for real builds until you log in to EAS.
+- [ ] iOS `bundleIdentifier`, Android `package`, app icon and splash screen. **Blocked:** needs your choice of a permanent ID.
+- [ ] Development build installed on one iPhone and one Android phone. **Blocked:** Expo account; the iPhone also needs a paid Apple Developer account.
+- [ ] Staging API (separate database) with the migration applied; the run-through in §6 performed and its results recorded. **Blocked:** Render and Neon access.
+- [x] Object-storage adapter: `S3Storage` (Cloudflare R2, AWS S3 or any S3-compatible store) behind `StorageAdapter`, switched with `STORAGE_PROVIDER=s3`.
+  - Random keys, `immutable` cache headers, public-URL serving.
+  - Deletes only objects under its own URL; local disk stays the default.
+  - Production startup warns when local disk is used.
+  - **Done + tests pass:** unit tests, plus an integration test against the S3Mock container (`docker compose up -d s3mock`).
+  - **Blocked** for real use until an R2 bucket and keys exist.
+- [~] Push end to end.
+  - **Done + tests pass:** Expo delivery receipts are fetched after 15 minutes and expire after 24 hours; tokens reported as `DeviceNotRegistered` are revoked at either the send or receipt step; failed receipt requests are retried.
+  - **Blocked:** EAS/FCM/APNs credentials, `PUSH_PROVIDER=expo` on staging, and a test on a physical device.
 
 ### Phase B — Mobile UI rebuild: modern iOS look and feel
 **Goal:** NearNow should feel like a first-party iOS app — calm, fast, legible and tactile — and stay native and accessible on Android.

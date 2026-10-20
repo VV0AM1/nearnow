@@ -14,6 +14,51 @@ export interface AppConfig {
   pushProvider: 'expo' | null;
   geocoderProvider: 'nominatim' | null;
   geocoderUserAgent: string | null;
+  storage: StorageConfig;
+}
+
+export type StorageConfig =
+  | { provider: 'local' }
+  | {
+      provider: 's3';
+      endpoint: string | null;
+      region: string;
+      bucket: string;
+      accessKeyId: string;
+      secretAccessKey: string;
+      /** Public base URL of the bucket (custom domain or r2.dev URL), no trailing slash. */
+      publicUrl: string;
+      forcePathStyle: boolean;
+    };
+
+function loadStorage(env: NodeJS.ProcessEnv, errors: string[]): StorageConfig {
+  const provider = env.STORAGE_PROVIDER || 'local';
+  if (provider === 'local') return { provider: 'local' };
+  if (provider !== 's3') {
+    errors.push(`Unsupported STORAGE_PROVIDER "${provider}" (use local or s3)`);
+    return { provider: 'local' };
+  }
+  const required = [
+    'S3_BUCKET',
+    'S3_ACCESS_KEY_ID',
+    'S3_SECRET_ACCESS_KEY',
+    'STORAGE_PUBLIC_URL',
+  ] as const;
+  for (const key of required)
+    if (!env[key]) errors.push(`${key} is required when STORAGE_PROVIDER=s3`);
+  const publicUrl = (env.STORAGE_PUBLIC_URL || '').replace(/\/+$/, '');
+  if (publicUrl && !/^https?:\/\//.test(publicUrl))
+    errors.push('STORAGE_PUBLIC_URL must start with http:// or https://');
+  return {
+    provider: 's3',
+    endpoint: env.S3_ENDPOINT || null,
+    region: env.S3_REGION || 'auto',
+    bucket: env.S3_BUCKET || '',
+    accessKeyId: env.S3_ACCESS_KEY_ID || '',
+    secretAccessKey: env.S3_SECRET_ACCESS_KEY || '',
+    publicUrl,
+    forcePathStyle: env.S3_FORCE_PATH_STYLE === 'true',
+  };
 }
 
 const DEV_JWT_SECRET = 'nearnow-dev-only-secret-do-not-use-in-production';
@@ -64,6 +109,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     );
   }
 
+  const storage = loadStorage(env, errors);
+
   if (errors.length) {
     throw new Error(`Invalid configuration:\n - ${errors.join('\n - ')}`);
   }
@@ -80,6 +127,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     pushProvider,
     geocoderProvider,
     geocoderUserAgent: env.GEOCODER_USER_AGENT || null,
+    storage,
   };
 }
 
