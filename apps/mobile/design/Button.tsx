@@ -85,16 +85,18 @@ export interface IconButtonProps {
   size?: number;
   badge?: number;
   selected?: boolean;
+  disabled?: boolean;
 }
 
-export function IconButton({ icon, label, onPress, variant = 'plain', color, size = 22, badge, selected }: IconButtonProps) {
+export function IconButton({ icon, label, onPress, variant = 'plain', color, size = 22, badge, selected, disabled }: IconButtonProps) {
   const t = useTokens();
   const dim = t.minTouch;
   return (
     <PressableScale
       onPress={onPress}
+      disabled={disabled}
       accessibilityLabel={badge ? `${label}, ${badge}` : label}
-      accessibilityState={selected !== undefined ? { selected } : undefined}
+      accessibilityState={{ selected, disabled }}
       hitSlop={4}
       style={{
         width: dim,
@@ -106,7 +108,7 @@ export function IconButton({ icon, label, onPress, variant = 'plain', color, siz
         overflow: 'hidden',
       }}
     >
-      <Icon name={icon} size={size} color={color ?? (selected ? t.colors.accent : t.colors.label)} />
+      <Icon name={icon} size={size} color={disabled ? t.colors.labelTertiary : (color ?? (selected ? t.colors.accent : t.colors.label))} />
       {badge ? (
         <View
           accessibilityElementsHidden

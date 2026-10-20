@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, FlatList, Image, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Alert, FlatList, KeyboardAvoidingView, Platform, TextInput, View } from 'react-native';
+import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '@/services/api';
 import { useI18n } from '@/lib/i18n';
@@ -14,12 +15,12 @@ import { usePostActions } from '@/hooks/usePostActions';
 import { CategoryBadge, TrustLine } from '@/components/PostStatus';
 import { ReportSheet } from '@/components/ReportSheet';
 import { ContactPanel, MatchesPanel } from '@/components/LostFoundPanel';
-import { Button, IconButton, SectionTitle, StateView, useColors } from '@/components/ui';
+import { Avatar, Banner, Button, Card, Icon, IconButton, ListRow, ListSection, StateView, Text, continuous, useTokens, type IoniconName } from '@/design';
 
 export default function PostDetails() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useI18n();
-  const c = useColors();
+  const tokens = useTokens();
   const [post, setPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [error, setError] = useState<unknown>(null);
@@ -42,16 +43,34 @@ export default function PostDetails() {
     void load();
   }, [load]);
 
-  if (loading && !post) return <StateView kind="loading" />;
+  if (loading && !post) {
+    return (
+      <View style={{ flex: 1, backgroundColor: tokens.colors.background, justifyContent: 'center' }}>
+        <StateView kind="loading" />
+      </View>
+    );
+  }
   if (error || !post) {
     const notFound = toAppError(error).kind === 'notFound';
     return (
-      <View style={{ flex: 1, backgroundColor: c.bg, justifyContent: 'center' }}>
+      <View style={{ flex: 1, backgroundColor: tokens.colors.background, justifyContent: 'center' }}>
         <StateView kind={notFound ? 'empty' : 'error'} title={notFound ? t('post.notFound') : describeError(error, t)} actionLabel={notFound ? undefined : t('common.retry')} onAction={load} />
       </View>
     );
   }
   return <PostBody post={post} setPost={setPost} comments={comments} setComments={setComments} />;
+}
+
+function MetaLine({ icon, children }: { icon: IoniconName; children: string }) {
+  const tokens = useTokens();
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm }}>
+      <Icon name={icon} size={15} color={tokens.colors.labelSecondary} />
+      <Text variant="subheadline" tone="secondary" style={{ flex: 1 }}>
+        {children}
+      </Text>
+    </View>
+  );
 }
 
 function PostBody({
@@ -66,9 +85,10 @@ function PostBody({
   setComments: (fn: (prev: Comment[]) => Comment[]) => void;
 }) {
   const { t, dateLocale } = useI18n();
-  const c = useColors();
+  const tokens = useTokens();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const { showToast } = useToast();
   const { liked, likes, saved, toggleLike, toggleSave, share } = usePostActions(post);
   const [reporting, setReporting] = useState(false);
@@ -152,121 +172,188 @@ function PostBody({
       },
     ]);
 
+  const openMap = () => router.push({ pathname: '/(app)/map', params: { focus: post.id, lat: String(post.latitude), lng: String(post.longitude) } });
+  const place = [post.neighborhood?.name, post.distanceKm !== undefined ? t('post.distance', { km: formatKm(post.distanceKm) }) : null, post.isApproximateLocation ? t('post.approxLocation') : null]
+    .filter(Boolean)
+    .join(' · ');
+  const answer = post.viewer?.confirmation ?? null;
+
   const header = (
-    <View style={{ padding: 16, gap: 12 }}>
-      {post.status === 'REMOVED' ? <Text style={{ color: c.danger }}>{t('post.removed')}</Text> : null}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <CategoryBadge post={post} />
-        {post.lostFound ? (
-          <Text style={{ color: c.muted, fontWeight: '700' }}>
-            {post.lostFound.direction === 'LOST' ? t('post.lost') : t('post.found')} · {t(`itemType.${post.lostFound.itemType}`)}
-          </Text>
-        ) : null}
-      </View>
-      <Text accessibilityRole="header" style={{ color: c.text, fontSize: 22, fontWeight: '800' }}>
-        {post.title}
-      </Text>
-      <TrustLine post={post} />
-      <Text style={{ color: c.muted, fontSize: 13 }}>
-        {[post.neighborhood?.name, post.distanceKm !== undefined ? t('post.distance', { km: formatKm(post.distanceKm) }) : null, post.isApproximateLocation ? t('post.approxLocation') : null, post.author ? t('post.by', { name: post.author.name }) : null]
-          .filter(Boolean)
-          .join(' · ')}
-      </Text>
-      {post.lostFound ? (
-        <Text style={{ color: c.muted, fontSize: 13 }}>
-          {t('post.when', { from: shortDate(post.lostFound.occurredFrom, dateLocale), to: shortDate(post.lostFound.occurredTo, dateLocale) })}
+    <View style={{ padding: tokens.space.lg, gap: tokens.space.lg }}>
+      {post.status === 'REMOVED' ? <Banner tone="danger" icon="ban" message={t('post.removed')} /> : null}
+
+      <View style={{ gap: tokens.space.sm }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: tokens.space.sm }}>
+          <CategoryBadge post={post} />
+          {post.lostFound ? (
+            <Text variant="footnote" weight="600" tone="secondary">
+              {post.lostFound.direction === 'LOST' ? t('post.lost') : t('post.found')} · {t(`itemType.${post.lostFound.itemType}`)}
+            </Text>
+          ) : null}
+        </View>
+        <Text variant="title1" weight="700">
+          {post.title}
         </Text>
-      ) : null}
-      {post.content ? <Text style={{ color: c.text, fontSize: 16, lineHeight: 24 }}>{post.content}</Text> : null}
-      {image ? <Image source={{ uri: image }} style={{ width: '100%', height: 260, borderRadius: 12, backgroundColor: c.border }} resizeMode="cover" accessibilityIgnoresInvertColors /> : null}
-      {post.resolvedAt ? <Text style={{ color: c.success }}>{t('post.resolvedBy', { time: timeAgo(post.resolvedAt, dateLocale) })}{post.resolutionNote ? ` — ${post.resolutionNote}` : ''}</Text> : null}
-
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderBottomWidth: 1, borderColor: c.border }}>
-        <IconButton icon={liked ? 'thumbs-up' : 'thumbs-up-outline'} label={`${t('post.like')}, ${likes}`} onPress={toggleLike} color={liked ? c.primary : c.muted} />
-        <Text style={{ color: c.muted }}>{likes}</Text>
-        <View style={{ flex: 1 }} />
-        <IconButton icon={saved ? 'bookmark' : 'bookmark-outline'} label={saved ? t('post.unsave') : t('post.save')} onPress={toggleSave} color={saved ? c.primary : c.muted} />
-        <IconButton icon="share-outline" label={t('post.share')} onPress={share} color={c.muted} />
-        <IconButton icon="map-outline" label={t('post.viewOnMap')} onPress={() => router.push({ pathname: '/(app)/map', params: { focus: post.id, lat: String(post.latitude), lng: String(post.longitude) } })} color={c.muted} />
-        {!isAuthor ? <IconButton icon="flag-outline" label={t('post.report')} onPress={() => setReporting(true)} color={c.muted} /> : null}
+        <TrustLine post={post} />
       </View>
 
+      {image ? (
+        <Image
+          source={{ uri: image }}
+          contentFit="cover"
+          transition={tokens.reduceMotion ? 0 : 200}
+          accessibilityIgnoresInvertColors
+          style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: tokens.radius.lg, backgroundColor: tokens.colors.surfaceSecondary, ...continuous }}
+        />
+      ) : null}
+
+      {post.content ? <Text variant="body">{post.content}</Text> : null}
+
+      <View style={{ gap: tokens.space.xs }}>
+        {place ? <MetaLine icon="location-outline">{place}</MetaLine> : null}
+        {post.lostFound ? (
+          <MetaLine icon="calendar-outline">{t('post.when', { from: shortDate(post.lostFound.occurredFrom, dateLocale), to: shortDate(post.lostFound.occurredTo, dateLocale) })}</MetaLine>
+        ) : null}
+        {post.author ? <MetaLine icon="person-circle-outline">{t('post.by', { name: post.author.name })}</MetaLine> : null}
+      </View>
+
+      {post.resolvedAt ? (
+        <Banner
+          tone="success"
+          icon="checkmark-done"
+          message={`${t('post.resolvedBy', { time: timeAgo(post.resolvedAt, dateLocale) })}${post.resolutionNote ? ` — ${post.resolutionNote}` : ''}`}
+        />
+      ) : null}
+
+      {/* Actions */}
+      <Card padded={false} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingVertical: tokens.space.xs }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <IconButton icon={liked ? 'thumbs-up' : 'thumbs-up-outline'} label={`${t('post.like')}, ${likes}`} onPress={toggleLike} selected={liked} />
+          <Text variant="subheadline" weight="600" tone="secondary">
+            {String(likes)}
+          </Text>
+        </View>
+        <IconButton icon={saved ? 'bookmark' : 'bookmark-outline'} label={saved ? t('post.unsave') : t('post.save')} onPress={toggleSave} selected={saved} />
+        <IconButton icon="share-outline" label={t('post.share')} onPress={share} />
+        <IconButton icon="map-outline" label={t('post.viewOnMap')} onPress={openMap} />
+        {!isAuthor ? <IconButton icon="flag-outline" label={t('post.report')} onPress={() => setReporting(true)} /> : null}
+      </Card>
+
+      {/* Reality check */}
       {active && !isAuthor && post.category !== 'LOST_FOUND' ? (
-        <View style={{ gap: 8 }}>
-          <SectionTitle>{t('post.confirmPrompt')}</SectionTitle>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+        <Card style={{ gap: tokens.space.md }}>
+          <Text variant="headline">{t('post.confirmPrompt')}</Text>
+          <View style={{ flexDirection: 'row', gap: tokens.space.sm }}>
             <Button
               title={t('post.stillHappening')}
-              variant={post.viewer?.confirmation === 'STILL_HAPPENING' ? 'primary' : 'secondary'}
+              icon={answer === 'STILL_HAPPENING' ? 'checkmark' : undefined}
+              variant={answer === 'STILL_HAPPENING' ? 'filled' : 'tinted'}
               onPress={() => confirm('STILL_HAPPENING')}
               disabled={confirming}
+              haptic
               style={{ flex: 1 }}
             />
             <Button
               title={t('post.noLonger')}
-              variant={post.viewer?.confirmation === 'NO_LONGER_PRESENT' ? 'primary' : 'secondary'}
+              icon={answer === 'NO_LONGER_PRESENT' ? 'checkmark' : undefined}
+              variant={answer === 'NO_LONGER_PRESENT' ? 'filled' : 'tinted'}
               onPress={() => confirm('NO_LONGER_PRESENT')}
               disabled={confirming}
+              haptic
               style={{ flex: 1 }}
             />
           </View>
-        </View>
+        </Card>
       ) : null}
 
       {post.lostFound && isAuthor && active ? <MatchesPanel post={post} /> : null}
       {post.lostFound && !isAuthor && active && post.lostFound.status === 'OPEN' ? <ContactPanel post={post} /> : null}
 
       {isAuthor ? (
-        <View style={{ gap: 8 }}>
-          {post.status === 'ACTIVE' || post.status === 'EXPIRED' ? <Button title={post.lostFound ? t('post.markReturned') : t('post.resolve')} icon="checkmark-done" variant="secondary" onPress={resolve} /> : null}
-          <Button title={t('post.delete')} icon="trash-outline" variant="ghost" onPress={remove} />
-        </View>
+        <ListSection style={{ marginBottom: 0 }}>
+          {post.status === 'ACTIVE' || post.status === 'EXPIRED' ? (
+            <ListRow title={post.lostFound ? t('post.markReturned') : t('post.resolve')} icon="checkmark-done" iconColor={tokens.colors.success} accessory="none" onPress={resolve} />
+          ) : null}
+          <ListRow title={t('post.delete')} icon="trash" destructive accessory="none" onPress={remove} />
+        </ListSection>
       ) : null}
 
-      <SectionTitle>{`${t('post.comments')} (${comments.length})`}</SectionTitle>
+      <Text variant="title3" weight="700" accessibilityRole="header">
+        {`${t('post.comments')} (${comments.length})`}
+      </Text>
     </View>
   );
 
+  const canSend = !!text.trim() && !sending;
+
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0} style={{ flex: 1, backgroundColor: c.bg }}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
+      style={{ flex: 1, backgroundColor: tokens.colors.background }}
+    >
       <Stack.Screen options={{ title: t(`category.${post.category}`) }} />
       <FlatList
         data={comments}
         keyExtractor={(cm) => cm.id}
         ListHeaderComponent={header}
-        ListEmptyComponent={<Text style={{ color: c.muted, paddingHorizontal: 16 }}>{t('post.noComments')}</Text>}
+        ListEmptyComponent={
+          <Text variant="subheadline" tone="secondary" style={{ paddingHorizontal: tokens.space.lg }}>
+            {t('post.noComments')}
+          </Text>
+        }
         renderItem={({ item }) => (
-          <View style={{ paddingHorizontal: 16, paddingVertical: 8 }}>
-            <Text style={{ color: c.text, fontWeight: '700' }}>
-              {item.author?.name ?? '—'} <Text style={{ color: c.muted, fontWeight: '400', fontSize: 12 }}>{timeAgo(item.createdAt, dateLocale)}</Text>
-            </Text>
-            <Text style={{ color: c.text, marginTop: 2, lineHeight: 20 }}>{item.content}</Text>
+          <View style={{ flexDirection: 'row', gap: tokens.space.md, paddingHorizontal: tokens.space.lg, paddingVertical: tokens.space.sm }}>
+            <Avatar uri={mediaUrl(item.author?.avatar)} name={item.author?.name} size={32} />
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text variant="subheadline" weight="600">
+                {item.author?.name ?? '—'}
+                <Text variant="footnote" tone="secondary">{`  ${timeAgo(item.createdAt, dateLocale)}`}</Text>
+              </Text>
+              <Text variant="body">{item.content}</Text>
+            </View>
           </View>
         )}
-        contentContainerStyle={{ paddingBottom: 16 }}
+        contentContainerStyle={{ paddingBottom: tokens.space.lg }}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
       />
       {post.status !== 'REMOVED' ? (
-        <View style={{ flexDirection: 'row', alignItems: 'center', padding: 8, paddingBottom: 8 + insets.bottom, borderTopWidth: 1, borderTopColor: c.border, backgroundColor: c.card, gap: 8 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'flex-end',
+            gap: tokens.space.sm,
+            paddingHorizontal: tokens.space.md,
+            paddingTop: tokens.space.sm,
+            paddingBottom: tokens.space.sm + insets.bottom,
+            borderTopWidth: 0.5,
+            borderTopColor: tokens.colors.separator,
+            backgroundColor: tokens.colors.surface,
+          }}
+        >
           <TextInput
             accessibilityLabel={t('post.addComment')}
             value={text}
             onChangeText={setText}
             placeholder={t('post.addComment')}
-            placeholderTextColor={c.muted}
+            placeholderTextColor={tokens.colors.labelTertiary}
             maxLength={1000}
             multiline
-            style={{ flex: 1, minHeight: 44, maxHeight: 120, color: c.text, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: c.border }}
+            style={{
+              flex: 1,
+              minHeight: 40,
+              maxHeight: 120,
+              color: tokens.colors.label,
+              fontSize: 17,
+              paddingHorizontal: tokens.space.md,
+              paddingTop: 10,
+              paddingBottom: 10,
+              borderRadius: 20,
+              backgroundColor: tokens.colors.surfaceSecondary,
+            }}
           />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('common.send')}
-            disabled={!text.trim() || sending}
-            onPress={sendComment}
-            style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', opacity: !text.trim() || sending ? 0.4 : 1 }}
-          >
-            <Ionicons name="send" size={22} color={c.primary} />
-          </Pressable>
+          <IconButton icon="arrow-up-circle" size={32} label={t('common.send')} color={tokens.colors.accent} disabled={!canSend} onPress={sendComment} />
         </View>
       ) : null}
       {reporting ? <ReportSheet postId={post.id} visible={reporting} onClose={() => setReporting(false)} /> : null}

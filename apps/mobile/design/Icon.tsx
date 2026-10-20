@@ -93,6 +93,14 @@ const SF: Partial<Record<IoniconName, SFSymbol>> = {
   'phone-portrait-outline': 'iphone',
   'color-palette-outline': 'paintpalette',
   language: 'globe',
+  pencil: 'pencil',
+  mail: 'envelope.fill',
+  'document-text': 'doc.text.fill',
+  'help-circle': 'questionmark.circle.fill',
+  'color-palette': 'paintpalette.fill',
+  'calendar-outline': 'calendar',
+  'arrow-up-circle': 'arrow.up.circle.fill',
+  trash: 'trash.fill',
 };
 
 export interface IconProps {

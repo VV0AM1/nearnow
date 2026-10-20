@@ -357,10 +357,10 @@ Step-by-step for the account-dependent steps: `docs/RELEASE_SETUP.md`.
   - "New posts" pill driven by real-time updates — still to do: it depends on the mobile socket client (see the Phase C real-time item)
 - [ ] Map: full-bleed map with floating glass controls, a bottom sheet with detents (a post list at the low detent, details at the high one), and a filter sheet.
 - [ ] Create: a sheet-based flow with a progress indicator, a category grid with symbols, a draggable pin with a precision ring showing the approximate radius, photo attachment as a thumbnail strip, and a review step showing exactly what becomes public.
-- [ ] Post detail: hero image with a stretchy header, a clear status and trust strip, sticky actions, an iMessage-style comment composer, and Lost & Found matches as a horizontal card rail.
+- [~] Post detail (partly done: rebuilt on the kit with a title1 heading, trust line, image via `expo-image`, metadata lines with icons, an actions card, a "still happening?" card with haptics and a checkmark on your answer, author actions as a grouped list, comments with avatars, and a pill-shaped comment composer whose send button is properly disabled; still to do: the stretchy hero header, sticky actions and the Lost & Found matches rail) — hero image with a stretchy header, a clear status and trust strip, sticky actions, an iMessage-style comment composer, and Lost & Found matches as a horizontal card rail.
 - [ ] Lost & Found: a segmented Lost / Found control, item-type symbols and status badges.
 - [ ] Notifications: grouped by day, swipe to mark read, unread dots.
-- [ ] Profile and settings: an iOS Settings-style grouped list (account, area, alerts, language, appearance, privacy, support, delete account).
+- [x] Profile and settings (done: avatar with a camera badge, stats card, grouped sections for area/alerts/saved/contacts, an appearance segmented control, a language list with checkmarks, privacy/support, and sign-out / delete account; the delete dialog is on the kit and avoids the keyboard) — an iOS Settings-style grouped list (account, area, alerts, language, appearance, privacy, support, delete account).
 - [ ] Urgent help: a calm but unmistakable sheet with a large Call 112 button, an accessible countdown ring, and the honest result screen.
 
 **Acceptance criteria**
