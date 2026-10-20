@@ -1,17 +1,17 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import api from '@/services/api';
 import { useI18n } from '@/lib/i18n';
 import { describeError } from '@/lib/errors';
 import { isEmail, isOtp, PASSWORD_MIN } from '@/lib/validation';
 import { useToast } from '@/context/ToastContext';
-import { Button, Field, useColors } from '@/components/ui';
+import { Banner, Button, Text, TextField, useTokens } from '@/design';
 import { PasswordField } from '@/components/AuthForms';
 
 export default function ForgotPassword() {
   const { t } = useI18n();
-  const c = useColors();
+  const tokens = useTokens();
   const router = useRouter();
   const { showToast } = useToast();
   const [email, setEmail] = useState('');
@@ -56,28 +56,39 @@ export default function ForgotPassword() {
   };
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: c.bg }}>
-      <ScrollView contentContainerStyle={{ padding: 24 }} keyboardShouldPersistTaps="handled">
-        <Text style={{ color: c.muted, marginBottom: 20 }}>{step === 'email' ? t('auth.resetIntro') : info}</Text>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: tokens.colors.background }}>
+      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: tokens.space.xl }} keyboardShouldPersistTaps="handled">
+        <Text variant="subheadline" tone="secondary" style={{ marginBottom: tokens.space.xl }}>
+          {step === 'email' ? t('auth.resetIntro') : info}
+        </Text>
         {step === 'email' ? (
           <>
-            <Field label={t('auth.email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoComplete="email" />
-            {error ? <Text style={{ color: c.danger, marginBottom: 12 }}>{error}</Text> : null}
-            <Button title={t('auth.sendCode')} onPress={sendCode} loading={busy} />
+            <TextField label={t('auth.email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoComplete="email" />
+            {error ? (
+              <View style={{ marginBottom: tokens.space.lg }}>
+                <Banner tone="danger" icon="alert-circle" message={error} />
+              </View>
+            ) : null}
+            <Button title={t('auth.sendCode')} size="large" block onPress={sendCode} loading={busy} />
           </>
         ) : (
           <>
-            <Field
+            <TextField
               label={t('auth.code')}
               value={otp}
               onChangeText={(v) => setOtp(v.replace(/\D/g, '').slice(0, 6))}
               keyboardType="number-pad"
               textContentType="oneTimeCode"
+              autoComplete="one-time-code"
             />
             <PasswordField label={t('auth.newPassword')} value={password} onChangeText={setPassword} newPassword />
-            {error ? <Text style={{ color: c.danger, marginBottom: 12 }}>{error}</Text> : null}
-            <Button title={t('auth.resetPassword')} onPress={reset} loading={busy} />
-            <Button title={t('common.back')} variant="ghost" onPress={() => setStep('email')} style={{ marginTop: 8 }} />
+            {error ? (
+              <View style={{ marginBottom: tokens.space.lg }}>
+                <Banner tone="danger" icon="alert-circle" message={error} />
+              </View>
+            ) : null}
+            <Button title={t('auth.resetPassword')} size="large" block onPress={reset} loading={busy} />
+            <Button title={t('common.back')} variant="plain" block onPress={() => setStep('email')} style={{ marginTop: tokens.space.sm }} />
           </>
         )}
       </ScrollView>

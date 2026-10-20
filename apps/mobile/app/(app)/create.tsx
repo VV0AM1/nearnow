@@ -1,9 +1,9 @@
 import { useCallback, useRef, useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import api from '@/services/api';
 import { useArea } from '@/context/LocationContext';
@@ -12,17 +12,21 @@ import { useI18n } from '@/lib/i18n';
 import { describeError } from '@/lib/errors';
 import { buildPostFormData, emptyDraft, isDirty, type LfWindow, type PickedImage, type PostDraft } from '@/lib/post-form';
 import { CONTENT_MAX, IMAGE_TYPES, MAX_IMAGE_BYTES, TITLE_MAX, validTitle } from '@/lib/validation';
-import { LOST_FOUND_ITEM_TYPES, type CreatedPost } from '@/lib/types';
-import { CATEGORY_META, CATEGORY_ORDER } from '@/constants/categories';
+import { LOST_FOUND_ITEM_TYPES, type Category, type CreatedPost } from '@/lib/types';
+import { CATEGORY_META, CATEGORY_ORDER, ITEM_TYPE_ICON } from '@/constants/categories';
 import { LeafletMap, type LeafletMapHandle } from '@/components/LeafletMap';
+import { CategoryBadge } from '@/components/PostStatus';
 import type { FromMap } from '@/lib/map-bridge';
-import { Button, Chip, Field, SectionTitle, useColors } from '@/components/ui';
+import { Banner, Button, Card, Chip, GlassSurface, Icon, IconButton, ListRow, ListSection, ListSwitchRow, PressableScale, Text, TextField, continuous, useTokens } from '@/design';
 
 type Step = 1 | 2 | 3 | 4;
+const STEPS: Step[] = [1, 2, 3, 4];
+/** Grid the server snaps approximate locations to (`approximateCoordinate`, shown as "~300 m"). */
+const APPROX_CELL_KM = 0.3;
 
 export default function CreateScreen() {
   const { t } = useI18n();
-  const c = useColors();
+  const tokens = useTokens();
   const router = useRouter();
   const { showToast } = useToast();
   const { area } = useArea();
@@ -35,6 +39,9 @@ export default function CreateScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [progress, setProgress] = useState<number | null>(null);
   const submittingRef = useRef(false);
+  // Map scale for the approximate-location ring: centre-to-corner distance and the view size.
+  const [viewKm, setViewKm] = useState<number | null>(null);
+  const [mapSize, setMapSize] = useState<{ width: number; height: number } | null>(null);
 
   const update = (patch: Partial<PostDraft>) => setDraft((d) => ({ ...d, ...patch }));
 
@@ -55,8 +62,9 @@ export default function CreateScreen() {
   };
 
   const onMapMessage = useCallback((msg: FromMap) => {
-    if (msg.type === 'MOVE_END' || msg.type === 'READY') {
-      if (msg.type === 'MOVE_END') setDraft((d) => ({ ...d, latitude: msg.lat, longitude: msg.lng }));
+    if (msg.type === 'MOVE_END') {
+      setDraft((d) => ({ ...d, latitude: msg.lat, longitude: msg.lng }));
+      setViewKm(msg.radiusKm);
     }
   }, []);
 
@@ -128,34 +136,50 @@ export default function CreateScreen() {
   };
 
   const header = (
-    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8, gap: 8 }}>
-      {step > 1 ? (
-        <Pressable accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={() => setStep((s) => (s - 1) as Step)} style={{ padding: 8 }}>
-          <Ionicons name="arrow-back" size={24} color={c.text} />
-        </Pressable>
-      ) : null}
-      <View style={{ flex: 1 }}>
-        <Text accessibilityRole="header" style={{ color: c.text, fontSize: 20, fontWeight: '700' }}>
-          {t('create.title')}
-        </Text>
-        <Text style={{ color: c.muted, fontSize: 12 }}>{t('create.step', { n: step })}</Text>
+    <View style={{ paddingHorizontal: tokens.space.sm, paddingTop: tokens.space.xs, paddingBottom: tokens.space.sm, gap: tokens.space.sm }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: tokens.minTouch }}>
+        {step > 1 ? <IconButton icon="chevron-back" label={t('common.back')} onPress={() => setStep((s) => (s - 1) as Step)} color={tokens.colors.accent} /> : <View style={{ width: tokens.space.sm }} />}
+        <View style={{ flex: 1, paddingHorizontal: tokens.space.xs }}>
+          <Text variant="title2" weight="700">
+            {t('create.title')}
+          </Text>
+          <Text variant="footnote" tone="secondary">
+            {t('create.step', { n: step })}
+          </Text>
+        </View>
+        {isDirty(draft, image) ? <Button title={t('common.cancel')} variant="plain" onPress={cancel} /> : null}
       </View>
-      {isDirty(draft, image) ? <Button title={t('common.cancel')} variant="ghost" onPress={cancel} /> : null}
+      <View
+        accessible
+        accessibilityRole="progressbar"
+        accessibilityLabel={t('create.step', { n: step })}
+        accessibilityValue={{ min: 1, max: 4, now: step }}
+        style={{ flexDirection: 'row', gap: 6, paddingHorizontal: tokens.space.sm }}
+      >
+        {STEPS.map((s) => (
+          <View key={s} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: s <= step ? tokens.colors.accent : tokens.colors.separator }} />
+        ))}
+      </View>
     </View>
   );
 
   const footer = (
-    <View style={{ padding: 16, borderTopWidth: 1, borderTopColor: c.border, backgroundColor: c.card, gap: 8 }}>
-      {errors ? (
-        <Text accessibilityLiveRegion="polite" style={{ color: c.danger }}>
-          {errors}
-        </Text>
+    <View style={{ padding: tokens.space.lg, borderTopWidth: 0.5, borderTopColor: tokens.colors.separator, backgroundColor: tokens.colors.surface, gap: tokens.space.sm }}>
+      {errors ? <Banner tone="danger" icon="alert-circle" message={errors} /> : null}
+      {progress !== null ? (
+        <View style={{ height: 4, borderRadius: 2, backgroundColor: tokens.colors.accentSoft, overflow: 'hidden' }}>
+          <View style={{ width: `${progress}%`, height: 4, backgroundColor: tokens.colors.accent }} />
+        </View>
       ) : null}
       {step < 4 ? (
-        <Button title={t('common.next')} onPress={goNext} disabled={step === 1 && !draft.category} />
+        <Button title={t('common.next')} size="large" block onPress={goNext} disabled={step === 1 && !draft.category} />
       ) : (
         <Button
           title={progress !== null ? t('create.uploading', { p: progress }) : submitting ? t('create.posting') : t('create.post')}
+          icon="paper-plane"
+          size="large"
+          block
+          haptic
           onPress={submit}
           loading={submitting}
         />
@@ -164,26 +188,33 @@ export default function CreateScreen() {
   );
 
   if (step === 2) {
+    // Pixels per km = half the view's diagonal / centre-to-corner distance reported by the map.
+    const ringPx = viewKm && mapSize ? Math.min((APPROX_CELL_KM * Math.hypot(mapSize.width, mapSize.height)) / 2 / viewKm, Math.max(mapSize.width, mapSize.height) * 2) : null;
     const start = draft.latitude !== null ? { lat: draft.latitude, lng: draft.longitude! } : area ? { lat: area.latitude, lng: area.longitude } : null;
     return (
-      <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
+      <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: tokens.colors.background }}>
         {header}
-        <Text style={{ color: c.muted, paddingHorizontal: 16, paddingBottom: 8 }}>{t('create.moveMap')}</Text>
-        <View style={{ flex: 1 }}>
+        <Text variant="subheadline" tone="secondary" style={{ paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.sm }}>
+          {t('create.moveMap')}
+        </Text>
+        <View style={{ flex: 1 }} onLayout={(e) => setMapSize({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height })}>
           {start ? <LeafletMap ref={map} initial={{ ...start, zoom: 16 }} onMessage={onMapMessage} pinMode accessibilityLabel={t('create.locationTitle')} /> : null}
           <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="location" size={44} color={c.danger} style={{ marginTop: -44 }} />
+            {draft.approximate && ringPx ? (
+              <View style={{ position: 'absolute', width: ringPx, height: ringPx, borderRadius: ringPx / 2, backgroundColor: tokens.colors.accentSoft, borderWidth: 1.5, borderColor: tokens.colors.accent }} />
+            ) : null}
+            <View style={{ marginTop: -40 }}>
+              <Icon name="location" size={44} color={tokens.colors.danger} />
+            </View>
           </View>
-          <View style={{ position: 'absolute', top: 8, right: 8 }}>
-            <Button title={t('create.useMyLocation')} icon="navigate" variant="secondary" onPress={locateMe} />
+          <View style={{ position: 'absolute', top: tokens.space.md, right: tokens.space.md }}>
+            <GlassSurface style={{ borderRadius: tokens.radius.pill }}>
+              <Button title={t('create.useMyLocation')} icon="navigate" variant="plain" size="small" onPress={locateMe} />
+            </GlassSurface>
           </View>
         </View>
-        <View style={{ padding: 16, backgroundColor: c.card, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: c.text, fontWeight: '600' }}>{t('create.approximate')}</Text>
-            <Text style={{ color: c.muted, fontSize: 12 }}>{t('create.approximateHint')}</Text>
-          </View>
-          <Switch accessibilityLabel={t('create.approximate')} value={draft.approximate} onValueChange={(v) => update({ approximate: v })} />
+        <View style={{ backgroundColor: tokens.colors.surface }}>
+          <ListSwitchRow title={t('create.approximate')} subtitle={t('create.approximateHint')} icon="eye-off" iconColor="#8E8E93" value={draft.approximate} onValueChange={(v) => update({ approximate: v })} />
         </View>
         {footer}
       </SafeAreaView>
@@ -191,54 +222,53 @@ export default function CreateScreen() {
   }
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
+    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: tokens.colors.background }}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         {header}
-        <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: 16, gap: 8 }} keyboardShouldPersistTaps="handled">
+        <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: tokens.space.lg, gap: tokens.space.md }} keyboardShouldPersistTaps="handled">
           {step === 1 ? (
             <>
-              <SectionTitle>{t('create.chooseCategory')}</SectionTitle>
-              {CATEGORY_ORDER.filter((id) => id !== 'DANGER').map((id) => {
-                const meta = CATEGORY_META[id];
-                const selected = draft.category === id;
-                return (
-                  <Pressable
-                    key={id}
-                    accessibilityRole="radio"
-                    accessibilityState={{ checked: selected }}
-                    onPress={() => update({ category: id })}
-                    style={{ flexDirection: 'row', gap: 12, padding: 14, borderRadius: 14, borderWidth: 2, borderColor: selected ? meta.color : c.border, backgroundColor: c.card }}
-                  >
-                    <Ionicons name={meta.icon} size={24} color={meta.color} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: c.text, fontWeight: '700', fontSize: 16 }}>{t(meta.label)}</Text>
-                      <Text style={{ color: c.muted, marginTop: 2 }}>{t(`create.guidance.${id}`)}</Text>
-                    </View>
-                  </Pressable>
-                );
-              })}
-              <Text style={{ color: c.muted, fontSize: 13, marginTop: 8 }}>{t('create.guidance.DANGER')}</Text>
+              <Text variant="title3" weight="700">
+                {t('create.chooseCategory')}
+              </Text>
+              <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.md }}>
+                {CATEGORY_ORDER.filter((id) => id !== 'DANGER').map((id) => (
+                  <CategoryTile key={id} id={id} selected={draft.category === id} onPress={() => update({ category: id })} />
+                ))}
+              </View>
+              {draft.category ? (
+                <Card>
+                  <Text variant="subheadline">{t(`create.guidance.${draft.category}`)}</Text>
+                </Card>
+              ) : null}
+              <Banner tone="danger" icon="alert-circle" message={t('create.guidance.DANGER')} />
             </>
           ) : null}
 
           {step === 3 && draft.category ? (
             <>
-              <Text style={{ color: c.muted, marginBottom: 8 }}>{t(`create.guidance.${draft.category}`)}</Text>
+              <Text variant="subheadline" tone="secondary">
+                {t(`create.guidance.${draft.category}`)}
+              </Text>
               {draft.category === 'LOST_FOUND' ? (
-                <View style={{ gap: 8, marginBottom: 8 }}>
-                  <SectionTitle>{t('create.lfDirection')}</SectionTitle>
-                  <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <Chip label={t('create.lost')} selected={draft.lfDirection === 'LOST'} onPress={() => update({ lfDirection: 'LOST' })} />
-                    <Chip label={t('create.found')} selected={draft.lfDirection === 'FOUND'} onPress={() => update({ lfDirection: 'FOUND' })} />
+                <View style={{ gap: tokens.space.sm, marginBottom: tokens.space.sm }}>
+                  <Text variant="headline">{t('create.lfDirection')}</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm }}>
+                    <Chip label={t('create.lost')} icon="help-circle-outline" selected={draft.lfDirection === 'LOST'} onPress={() => update({ lfDirection: 'LOST' })} />
+                    <Chip label={t('create.found')} icon="hand-left-outline" selected={draft.lfDirection === 'FOUND'} onPress={() => update({ lfDirection: 'FOUND' })} />
                   </View>
-                  <SectionTitle>{t('create.itemType')}</SectionTitle>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  <Text variant="headline" style={{ marginTop: tokens.space.sm }}>
+                    {t('create.itemType')}
+                  </Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm }}>
                     {LOST_FOUND_ITEM_TYPES.map((it) => (
-                      <Chip key={it} label={t(`itemType.${it}`)} selected={draft.lfItemType === it} onPress={() => update({ lfItemType: it })} />
+                      <Chip key={it} label={t(`itemType.${it}`)} icon={ITEM_TYPE_ICON[it]} selected={draft.lfItemType === it} onPress={() => update({ lfItemType: it })} />
                     ))}
                   </View>
-                  <SectionTitle>{t('create.when')}</SectionTitle>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  <Text variant="headline" style={{ marginTop: tokens.space.sm }}>
+                    {t('create.when')}
+                  </Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm }}>
                     {(['today', 'yesterday', 'week'] as LfWindow[]).map((w) => (
                       <Chip
                         key={w}
@@ -250,50 +280,102 @@ export default function CreateScreen() {
                   </View>
                 </View>
               ) : null}
-              <Field label={t('create.titleLabel')} value={draft.title} onChangeText={(v) => update({ title: v })} placeholder={t('create.titlePlaceholder')} max={TITLE_MAX} />
-              <Field
+              <TextField label={t('create.titleLabel')} value={draft.title} onChangeText={(v) => update({ title: v })} placeholder={t('create.titlePlaceholder')} max={TITLE_MAX} returnKeyType="next" />
+              <TextField
                 label={t('create.descriptionLabel')}
                 value={draft.content}
                 onChangeText={(v) => update({ content: v })}
                 placeholder={t('create.descriptionPlaceholder')}
                 multiline
                 max={CONTENT_MAX}
-                style={{ minHeight: 120, textAlignVertical: 'top' }}
               />
-              <SectionTitle>{t('create.photo')}</SectionTitle>
+              <Text variant="headline">{t('create.photo')}</Text>
               {image ? (
-                <View>
-                  <Image source={{ uri: image.uri }} style={{ width: '100%', height: 200, borderRadius: 12 }} accessibilityIgnoresInvertColors />
-                  <Button title={t('create.removePhoto')} variant="ghost" icon="trash-outline" onPress={() => setImage(null)} />
+                <View style={{ flexDirection: 'row' }}>
+                  <View>
+                    <Image source={{ uri: image.uri }} contentFit="cover" accessibilityIgnoresInvertColors style={{ width: 120, height: 120, borderRadius: tokens.radius.md, ...continuous }} />
+                    <View style={{ position: 'absolute', top: -10, right: -10 }}>
+                      <IconButton icon="close-circle" label={t('create.removePhoto')} variant="filled" size={24} onPress={() => setImage(null)} />
+                    </View>
+                  </View>
                 </View>
               ) : (
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <Button title={t('create.camera')} icon="camera-outline" variant="secondary" onPress={() => pick('camera')} style={{ flex: 1 }} />
-                  <Button title={t('create.gallery')} icon="images-outline" variant="secondary" onPress={() => pick('gallery')} style={{ flex: 1 }} />
+                <View style={{ flexDirection: 'row', gap: tokens.space.sm }}>
+                  <Button title={t('create.camera')} icon="camera-outline" variant="tinted" onPress={() => pick('camera')} style={{ flex: 1 }} />
+                  <Button title={t('create.gallery')} icon="images-outline" variant="tinted" onPress={() => pick('gallery')} style={{ flex: 1 }} />
                 </View>
               )}
-              <Text style={{ color: c.warning, fontSize: 13, marginTop: 8 }}>{t('create.privacyWarning')}</Text>
+              <Banner tone="warning" icon="shield-checkmark-outline" message={t('create.privacyWarning')} />
             </>
           ) : null}
 
           {step === 4 && draft.category ? (
             <>
-              <SectionTitle>{t('create.reviewTitle')}</SectionTitle>
-              <View style={{ backgroundColor: c.card, borderRadius: 14, borderWidth: 1, borderColor: c.border, padding: 16, gap: 8 }}>
-                <Text style={{ color: CATEGORY_META[draft.category].color, fontWeight: '700' }}>{t(CATEGORY_META[draft.category].label)}</Text>
-                <Text style={{ color: c.text, fontSize: 17, fontWeight: '700' }}>{draft.title.trim()}</Text>
-                {draft.content.trim() ? <Text style={{ color: c.muted }}>{draft.content.trim()}</Text> : null}
-                {image ? <Image source={{ uri: image.uri }} style={{ width: '100%', height: 160, borderRadius: 10 }} accessibilityIgnoresInvertColors /> : null}
-                <Text style={{ color: c.text }}>
-                  {t('create.publicLocation')}: <Text style={{ fontWeight: '700' }}>{draft.approximate ? t('create.approxShort') : t('create.exact')}</Text>
-                </Text>
-              </View>
-              <Text style={{ color: c.warning, fontSize: 13 }}>{t('create.privacyWarning')}</Text>
+              <Text variant="title3" weight="700">
+                {t('create.reviewTitle')}
+              </Text>
+              <Card style={{ gap: tokens.space.sm }}>
+                <CategoryBadge post={{ category: draft.category }} />
+                <Text variant="headline">{draft.title.trim()}</Text>
+                {draft.content.trim() ? (
+                  <Text variant="subheadline" tone="secondary">
+                    {draft.content.trim()}
+                  </Text>
+                ) : null}
+                {image ? (
+                  <Image
+                    source={{ uri: image.uri }}
+                    contentFit="cover"
+                    accessibilityIgnoresInvertColors
+                    style={{ width: '100%', aspectRatio: 16 / 10, borderRadius: tokens.radius.md, ...continuous }}
+                  />
+                ) : null}
+              </Card>
+              <ListSection style={{ marginBottom: 0 }}>
+                <ListRow title={t('create.publicLocation')} value={draft.approximate ? t('create.approxShort') : t('create.exact')} icon={draft.approximate ? 'eye-off' : 'location'} iconColor="#34C759" onPress={() => setStep(2)} />
+              </ListSection>
+              <Banner tone="warning" icon="shield-checkmark-outline" message={t('create.privacyWarning')} />
             </>
           ) : null}
         </ScrollView>
         {footer}
       </KeyboardAvoidingView>
     </SafeAreaView>
+  );
+}
+
+/** Two-column category tile: symbol in the category colour, label, checkmark when chosen. */
+function CategoryTile({ id, selected, onPress }: { id: Exclude<Category, 'DANGER'>; selected: boolean; onPress: () => void }) {
+  const { t } = useI18n();
+  const tokens = useTokens();
+  const meta = CATEGORY_META[id];
+  return (
+    <PressableScale
+      accessibilityRole="radio"
+      accessibilityState={{ checked: selected }}
+      accessibilityLabel={t(meta.label)}
+      onPress={onPress}
+      haptic
+      style={{
+        width: '47.5%',
+        flexGrow: 1,
+        minHeight: 104,
+        padding: tokens.space.md,
+        gap: tokens.space.sm,
+        borderRadius: tokens.radius.lg,
+        backgroundColor: tokens.colors.surface,
+        borderWidth: 2,
+        borderColor: selected ? tokens.colors.accent : 'transparent',
+        ...continuous,
+      }}
+    >
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: `${meta.color}22`, alignItems: 'center', justifyContent: 'center', ...continuous }}>
+          <Icon name={meta.icon} size={22} color={meta.color} />
+        </View>
+        {selected ? <Icon name="checkmark-circle" size={22} color={tokens.colors.accent} /> : null}
+      </View>
+      <Text variant="headline">{t(meta.label)}</Text>
+    </PressableScale>
   );
 }

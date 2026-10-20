@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import api from '@/services/api';
@@ -7,12 +7,12 @@ import { useAuth } from '@/context/AuthContext';
 import { useI18n } from '@/lib/i18n';
 import { describeError } from '@/lib/errors';
 import { isEmail } from '@/lib/validation';
-import { Button, Field, useColors } from '@/components/ui';
+import { Banner, Button, Icon, Text, TextField, continuous, useTokens } from '@/design';
 import { OtpStep, PasswordField } from '@/components/AuthForms';
 
 export default function Login() {
   const { t } = useI18n();
-  const c = useColors();
+  const tokens = useTokens();
   const router = useRouter();
   const { notice, clearNotice } = useAuth();
   const [email, setEmail] = useState('');
@@ -45,28 +45,35 @@ export default function Login() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: tokens.colors.background }}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }} keyboardShouldPersistTaps="handled">
-          <View style={{ alignItems: 'center', marginBottom: 32 }}>
-            <Text style={{ color: c.primary, fontSize: 32, fontWeight: '800' }}>NearNow</Text>
-            <Text style={{ color: c.muted, marginTop: 6, textAlign: 'center' }}>{t('auth.tagline')}</Text>
+        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: tokens.space.xl }} keyboardShouldPersistTaps="handled">
+          <View style={{ alignItems: 'center', marginBottom: tokens.space.xxl, gap: tokens.space.md }}>
+            <View style={{ width: 72, height: 72, borderRadius: 20, backgroundColor: tokens.colors.accent, alignItems: 'center', justifyContent: 'center', ...continuous }}>
+              <Icon name="location" size={36} color={tokens.colors.onAccent} />
+            </View>
+            <Text variant="largeTitle" weight="700" align="center">
+              NearNow
+            </Text>
+            <Text variant="subheadline" tone="secondary" align="center">
+              {t('auth.tagline')}
+            </Text>
           </View>
 
           {notice ? (
-            <Text accessibilityLiveRegion="polite" style={{ color: c.warning, marginBottom: 16, textAlign: 'center' }}>
-              {t('auth.sessionExpired')}
-            </Text>
+            <View style={{ marginBottom: tokens.space.lg }}>
+              <Banner tone="warning" icon="time-outline" message={t('auth.sessionExpired')} />
+            </View>
           ) : null}
 
           {otpFor ? (
             <OtpStep email={otpFor} onResend={requestCode} onBack={() => setOtpFor(null)} />
           ) : (
             <View>
-              <Text accessibilityRole="header" style={{ color: c.text, fontSize: 22, fontWeight: '700', marginBottom: 20 }}>
+              <Text variant="title2" weight="700" style={{ marginBottom: tokens.space.xl }}>
                 {t('auth.welcome')}
               </Text>
-              <Field
+              <TextField
                 label={t('auth.email')}
                 value={email}
                 onChangeText={setEmail}
@@ -76,18 +83,21 @@ export default function Login() {
                 autoComplete="email"
                 textContentType="emailAddress"
                 autoCorrect={false}
+                returnKeyType="next"
               />
               <PasswordField label={t('auth.password')} value={password} onChangeText={setPassword} error={errors.password} onSubmitEditing={submit} />
               {errors.form ? (
-                <Text accessibilityLiveRegion="polite" style={{ color: c.danger, marginBottom: 12 }}>
-                  {errors.form}
-                </Text>
+                <View style={{ marginBottom: tokens.space.lg }}>
+                  <Banner tone="danger" icon="alert-circle" message={errors.form} />
+                </View>
               ) : null}
-              <Button title={t('auth.signIn')} onPress={submit} loading={busy} />
-              <Button title={t('auth.forgot')} variant="ghost" onPress={() => router.push('/forgot-password')} style={{ marginTop: 8 }} />
-              <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 16 }}>
-                <Text style={{ color: c.muted }}>{t('auth.noAccount')}</Text>
-                <Button title={t('auth.signUp')} variant="ghost" onPress={() => router.push('/signup')} />
+              <Button title={t('auth.signIn')} size="large" block onPress={submit} loading={busy} />
+              <Button title={t('auth.forgot')} variant="plain" block onPress={() => router.push('/forgot-password')} style={{ marginTop: tokens.space.sm }} />
+              <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: tokens.space.lg }}>
+                <Text variant="subheadline" tone="secondary">
+                  {t('auth.noAccount')}
+                </Text>
+                <Button title={t('auth.signUp')} variant="plain" onPress={() => router.push('/signup')} />
               </View>
             </View>
           )}

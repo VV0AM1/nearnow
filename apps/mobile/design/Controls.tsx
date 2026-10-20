@@ -55,7 +55,8 @@ export function SegmentedControl<T extends string>({ options, value, onChange, a
 /** Filter chip. Selection is shown by fill and a check mark, never colour alone. */
 export function Chip({ label, selected, onPress, color, icon }: { label: string; selected: boolean; onPress: () => void; color?: string; icon?: IoniconName }) {
   const t = useTokens();
-  const tint = color ?? t.colors.accent;
+  // Selected chips always use the accent (contrast-tested); a custom colour only tints the icon.
+  const iconTint = color ?? t.colors.accent;
   return (
     <PressableScale
       onPress={onPress}
@@ -68,12 +69,12 @@ export function Chip({ label, selected, onPress, color, icon }: { label: string;
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
-        backgroundColor: selected ? tint : t.colors.surface,
+        backgroundColor: selected ? t.colors.accent : t.colors.surface,
         borderWidth: selected ? 0 : 1,
         borderColor: t.colors.separator,
       }}
     >
-      {selected ? <Icon name="checkmark" size={14} color={t.colors.onAccent} weight="bold" /> : icon ? <Icon name={icon} size={14} color={tint} /> : null}
+      {selected ? <Icon name="checkmark" size={14} color={t.colors.onAccent} weight="bold" /> : icon ? <Icon name={icon} size={14} color={iconTint} /> : null}
       <Text variant="subheadline" weight="600" style={{ color: selected ? t.colors.onAccent : t.colors.label }}>
         {label}
       </Text>

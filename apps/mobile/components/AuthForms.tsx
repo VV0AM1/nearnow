@@ -1,13 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View } from 'react-native';
 import api from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { useI18n } from '@/lib/i18n';
 import { describeError } from '@/lib/errors';
 import { isOtp } from '@/lib/validation';
 import type { AuthResponse } from '@/lib/types';
-import { Button, Field, useColors } from './ui';
+import { Banner, Button, IconButton, Text, TextField, useTokens } from '@/design';
 
 export function PasswordField({
   label,
@@ -25,10 +24,9 @@ export function PasswordField({
   onSubmitEditing?: () => void;
 }) {
   const { t } = useI18n();
-  const c = useColors();
   const [visible, setVisible] = useState(false);
   return (
-    <Field
+    <TextField
       label={label}
       value={value}
       onChangeText={onChangeText}
@@ -40,14 +38,7 @@ export function PasswordField({
       autoComplete={newPassword ? 'new-password' : 'current-password'}
       onSubmitEditing={onSubmitEditing}
       right={
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={visible ? t('auth.hidePassword') : t('auth.showPassword')}
-          onPress={() => setVisible((v) => !v)}
-          style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}
-        >
-          <Ionicons name={visible ? 'eye-off-outline' : 'eye-outline'} size={22} color={c.muted} />
-        </Pressable>
+        <IconButton icon={visible ? 'eye-off-outline' : 'eye-outline'} label={visible ? t('auth.hidePassword') : t('auth.showPassword')} size={20} onPress={() => setVisible((v) => !v)} />
       }
     />
   );
@@ -58,7 +49,7 @@ const RESEND_SECONDS = 60;
 /** Second step of sign-in/sign-up: verify the emailed code and start the session. */
 export function OtpStep({ email, onResend, onBack }: { email: string; onResend: () => Promise<void>; onBack: () => void }) {
   const { t } = useI18n();
-  const c = useColors();
+  const tokens = useTokens();
   const { signIn } = useAuth();
   const [otp, setOtp] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -108,11 +99,13 @@ export function OtpStep({ email, onResend, onBack }: { email: string; onResend: 
 
   return (
     <View>
-      <Text accessibilityRole="header" style={{ color: c.text, fontSize: 22, fontWeight: '700', marginBottom: 8 }}>
+      <Text variant="title2" weight="700" style={{ marginBottom: tokens.space.sm }}>
         {t('auth.codeTitle')}
       </Text>
-      <Text style={{ color: c.muted, marginBottom: 20 }}>{t('auth.codeSent', { email })}</Text>
-      <Field
+      <Text variant="subheadline" tone="secondary" style={{ marginBottom: tokens.space.xl }}>
+        {t('auth.codeSent', { email })}
+      </Text>
+      <TextField
         label={t('auth.code')}
         value={otp}
         onChangeText={(v) => setOtp(v.replace(/\D/g, '').slice(0, 6))}
@@ -121,22 +114,19 @@ export function OtpStep({ email, onResend, onBack }: { email: string; onResend: 
         autoComplete="one-time-code"
         error={error}
         onSubmitEditing={verify}
-        style={{ fontSize: 24, letterSpacing: 8, textAlign: 'center' }}
+        autoFocus
+        style={{ fontSize: 28, fontWeight: '600', letterSpacing: 10, textAlign: 'center', fontVariant: ['tabular-nums'] }}
       />
       {info ? (
-        <Text accessibilityLiveRegion="polite" style={{ color: c.success, marginBottom: 12 }}>
-          {info}
-        </Text>
+        <View style={{ marginBottom: tokens.space.md }}>
+          <Banner tone="success" icon="checkmark-circle" message={info} />
+        </View>
       ) : null}
-      <Button title={t('auth.verify')} onPress={verify} loading={busy} />
-      <Button
-        title={wait > 0 ? t('auth.resendIn', { s: wait }) : t('auth.resend')}
-        variant="ghost"
-        onPress={resend}
-        disabled={wait > 0}
-        style={{ marginTop: 8 }}
-      />
-      <Button title={t('common.back')} variant="ghost" onPress={onBack} />
+      <Button title={t('auth.verify')} size="large" block onPress={verify} loading={busy} disabled={otp.length !== 6} />
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: tokens.space.sm }}>
+        <Button title={t('common.back')} variant="plain" icon="chevron-back" onPress={onBack} />
+        <Button title={wait > 0 ? t('auth.resendIn', { s: wait }) : t('auth.resend')} variant="plain" onPress={resend} disabled={wait > 0} />
+      </View>
     </View>
   );
 }

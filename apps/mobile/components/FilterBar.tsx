@@ -4,7 +4,8 @@ import { CATEGORY_META, CATEGORY_ORDER } from '@/constants/categories';
 import { RADIUS_OPTIONS_KM } from '@/constants/places';
 import { useI18n } from '@/lib/i18n';
 import type { Category, TimeWindow } from '@/lib/types';
-import { Chip, useColors } from './ui';
+import { Chip } from '@/design';
+import { useColors } from './ui';
 
 export interface Filters {
   category: Category | null;
@@ -29,6 +30,7 @@ export function FilterBar({ value, onChange, showCategories = true }: { value: F
               key={id}
               label={t(CATEGORY_META[id].label)}
               color={CATEGORY_META[id].color}
+              icon={CATEGORY_META[id].icon}
               selected={value.category === id}
               onPress={() => onChange({ ...value, category: value.category === id ? null : id })}
             />

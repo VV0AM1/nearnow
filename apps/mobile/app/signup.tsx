@@ -1,16 +1,16 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import api from '@/services/api';
 import { useI18n } from '@/lib/i18n';
 import { describeError } from '@/lib/errors';
 import { isEmail, PASSWORD_MIN } from '@/lib/validation';
-import { Button, Field, useColors } from '@/components/ui';
+import { Banner, Button, Text, TextField, useTokens } from '@/design';
 import { OtpStep, PasswordField } from '@/components/AuthForms';
 
 export default function Signup() {
   const { t } = useI18n();
-  const c = useColors();
+  const tokens = useTokens();
   const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -44,15 +44,17 @@ export default function Signup() {
   };
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: c.bg }}>
-      <ScrollView contentContainerStyle={{ padding: 24 }} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: tokens.colors.background }}>
+      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: tokens.space.xl }} keyboardShouldPersistTaps="handled">
         {otpFor ? (
           <OtpStep email={otpFor} onResend={resend} onBack={() => setOtpFor(null)} />
         ) : (
           <View>
-            <Text style={{ color: c.muted, marginBottom: 20 }}>{t('auth.tagline')}</Text>
-            <Field label={t('auth.name')} value={name} onChangeText={setName} error={errors.name} autoComplete="name" textContentType="name" max={60} />
-            <Field
+            <Text variant="subheadline" tone="secondary" style={{ marginBottom: tokens.space.xl }}>
+              {t('auth.tagline')}
+            </Text>
+            <TextField label={t('auth.name')} value={name} onChangeText={setName} error={errors.name} autoComplete="name" textContentType="name" max={60} />
+            <TextField
               label={t('auth.email')}
               value={email}
               onChangeText={setEmail}
@@ -64,14 +66,16 @@ export default function Signup() {
             />
             <PasswordField label={t('auth.password')} value={password} onChangeText={setPassword} error={errors.password} newPassword onSubmitEditing={submit} />
             {errors.form ? (
-              <Text accessibilityLiveRegion="polite" style={{ color: c.danger, marginBottom: 12 }}>
-                {errors.form}
-              </Text>
+              <View style={{ marginBottom: tokens.space.lg }}>
+                <Banner tone="danger" icon="alert-circle" message={errors.form} />
+              </View>
             ) : null}
-            <Button title={t('auth.signUp')} onPress={submit} loading={busy} />
-            <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 16 }}>
-              <Text style={{ color: c.muted }}>{t('auth.haveAccount')}</Text>
-              <Button title={t('auth.signIn')} variant="ghost" onPress={() => router.back()} />
+            <Button title={t('auth.signUp')} size="large" block onPress={submit} loading={busy} />
+            <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: tokens.space.lg }}>
+              <Text variant="subheadline" tone="secondary">
+                {t('auth.haveAccount')}
+              </Text>
+              <Button title={t('auth.signIn')} variant="plain" onPress={() => router.back()} />
             </View>
           </View>
         )}
