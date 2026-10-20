@@ -299,6 +299,9 @@ const ca: Dictionary = {
     emptyBody: "Activa les alertes a Perfil › Alertes per saber què passa a la teva zona.",
     markAll: 'Marca-ho tot com a llegit',
     unread: 'Sense llegir',
+    today: 'Avui',
+    yesterday: 'Ahir',
+    markRead: 'Marca com a llegida',
   },
   profile: {
     title: 'Perfil',

@@ -299,6 +299,9 @@ const es: Dictionary = {
     emptyBody: 'Activa las alertas en Perfil › Alertas para enterarte de lo que pasa en tu zona.',
     markAll: 'Marcar todo como leído',
     unread: 'Sin leer',
+    today: 'Hoy',
+    yesterday: 'Ayer',
+    markRead: 'Marcar como leída',
   },
   profile: {
     title: 'Perfil',

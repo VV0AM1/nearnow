@@ -296,6 +296,9 @@ const en = {
     emptyBody: 'Turn on alerts in Profile › Alerts to hear about posts in your area.',
     markAll: 'Mark all read',
     unread: 'Unread',
+    today: 'Today',
+    yesterday: 'Yesterday',
+    markRead: 'Mark as read',
   },
   profile: {
     title: 'Profile',

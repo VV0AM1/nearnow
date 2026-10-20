@@ -101,6 +101,13 @@ const SF: Partial<Record<IoniconName, SFSymbol>> = {
   'calendar-outline': 'calendar',
   'arrow-up-circle': 'arrow.up.circle.fill',
   trash: 'trash.fill',
+  key: 'key.fill',
+  wallet: 'creditcard.fill',
+  'phone-portrait': 'iphone',
+  card: 'person.text.rectangle.fill',
+  paw: 'pawprint.fill',
+  shirt: 'tshirt.fill',
+  cube: 'shippingbox.fill',
 };
 
 export interface IconProps {

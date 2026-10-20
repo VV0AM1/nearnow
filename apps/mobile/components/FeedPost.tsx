@@ -7,6 +7,7 @@ import { mediaUrl } from '@/lib/config';
 import { formatKm } from '@/lib/format';
 import type { Post } from '@/lib/types';
 import { usePostActions } from '@/hooks/usePostActions';
+import { ITEM_TYPE_ICON } from '@/constants/categories';
 import { Card, Icon, PressableScale, Skeleton, Text, continuous, useTokens, type IoniconName } from '@/design';
 import { CategoryBadge, TrustLine } from './PostStatus';
 import { ReportSheet } from './ReportSheet';
@@ -52,9 +53,12 @@ function FeedPostInner({ item }: { item: Post }) {
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space.sm }}>
           <CategoryBadge post={item} />
           {item.lostFound ? (
-            <Text variant="footnote" weight="600" tone="secondary">
-              {item.lostFound.direction === 'LOST' ? t('post.lost') : t('post.found')} · {t(`itemType.${item.lostFound.itemType}`)}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Icon name={ITEM_TYPE_ICON[item.lostFound.itemType]} size={14} color={tokens.colors.labelSecondary} />
+              <Text variant="footnote" weight="600" tone="secondary">
+                {item.lostFound.direction === 'LOST' ? t('post.lost') : t('post.found')} · {t(`itemType.${item.lostFound.itemType}`)}
+              </Text>
+            </View>
           ) : null}
         </View>
         <Text variant="headline" numberOfLines={2}>

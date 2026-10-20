@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Linking, Modal, Pressable, ScrollView, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { AccessibilityInfo, Linking, Modal, ScrollView, View } from 'react-native';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
@@ -8,7 +9,7 @@ import api from '@/services/api';
 import { config } from '@/lib/config';
 import { useI18n } from '@/lib/i18n';
 import type { CreatedPost } from '@/lib/types';
-import { Button, useColors } from './ui';
+import { Banner, Button, Icon, IconButton, Text, continuous, useTokens } from '@/design';
 
 type Phase = 'closed' | 'info' | 'locating' | 'countdown' | 'sending' | 'result' | 'error';
 const COUNTDOWN_SECONDS = 5;
@@ -21,7 +22,8 @@ const COUNTDOWN_SECONDS = 5;
  */
 export function UrgentHelpButton() {
   const { t } = useI18n();
-  const c = useColors();
+  const tokens = useTokens();
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>('closed');
   const [seconds, setSeconds] = useState(COUNTDOWN_SECONDS);
@@ -61,6 +63,7 @@ export function UrgentHelpButton() {
       return;
     }
     AccessibilityInfo.announceForAccessibility(t('urgent.countdown', { s: seconds }));
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
     const id = setTimeout(() => setSeconds((s) => s - 1), 1000);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -93,78 +96,138 @@ export function UrgentHelpButton() {
 
   return (
     <>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t('urgent.button')}
-        onPress={() => setPhase('info')}
-        style={{ minHeight: 44, paddingHorizontal: 10, borderRadius: 22, borderWidth: 1, borderColor: c.danger, flexDirection: 'row', alignItems: 'center', gap: 4 }}
-      >
-        <Ionicons name="alert-circle-outline" size={18} color={c.danger} />
-        <Text style={{ color: c.danger, fontWeight: '700', fontSize: 13 }}>{t('urgent.button')}</Text>
-      </Pressable>
+      <Button title={t('urgent.button')} icon="alert-circle" variant="destructiveTinted" size="small" onPress={() => setPhase('info')} />
 
       <Modal visible={phase !== 'closed'} animationType="slide" transparent onRequestClose={phase === 'sending' ? undefined : close}>
-        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <ScrollView style={{ backgroundColor: c.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '90%' }} contentContainerStyle={{ padding: 20, gap: 14 }}>
-            <Text accessibilityRole="header" style={{ color: c.text, fontSize: 20, fontWeight: '800' }}>
-              {phase === 'result' ? t('urgent.resultTitle') : t('urgent.title')}
-            </Text>
-
-            <View style={{ backgroundColor: c.dark ? '#3b0d0d' : '#fef2f2', borderRadius: 12, padding: 12, gap: 6 }}>
-              <Text style={{ color: c.danger, fontWeight: '700' }}>{t('urgent.callFirst', { number })}</Text>
-              <Text style={{ color: c.text }}>{t('urgent.notEmergency')}</Text>
-            </View>
-            <Button title={t('urgent.call', { number })} icon="call" variant="danger" onPress={call} />
-
-            {phase === 'info' ? (
-              <>
-                <Text style={{ color: c.muted, lineHeight: 20 }}>{t('urgent.explain')}</Text>
-                <Button title={t('urgent.post')} variant="secondary" icon="megaphone-outline" onPress={start} />
-                <Button title={t('common.cancel')} variant="ghost" onPress={close} />
-              </>
-            ) : null}
-
-            {phase === 'locating' ? <Button title={t('onboarding.locating')} loading variant="secondary" onPress={() => undefined} /> : null}
-
-            {phase === 'countdown' ? (
-              <>
-                <Text accessibilityLiveRegion="assertive" style={{ color: c.text, fontSize: 18, fontWeight: '700', textAlign: 'center' }}>
-                  {t('urgent.countdown', { s: seconds })}
+        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: tokens.colors.scrim }}>
+          <View style={{ backgroundColor: tokens.colors.surface, borderTopLeftRadius: tokens.radius.xl, borderTopRightRadius: tokens.radius.xl, maxHeight: '92%', ...continuous }}>
+            <View style={{ alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: tokens.colors.separator, marginTop: tokens.space.sm }} />
+            <ScrollView contentContainerStyle={{ padding: tokens.space.xl, paddingBottom: tokens.space.xl + insets.bottom, gap: tokens.space.lg }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Text variant="title2" weight="700" style={{ flex: 1 }}>
+                  {phase === 'result' ? t('urgent.resultTitle') : t('urgent.title')}
                 </Text>
-                <Button title={t('urgent.cancel')} variant="secondary" icon="close" onPress={close} />
-              </>
-            ) : null}
+                {phase !== 'sending' ? <IconButton icon="close" label={t('common.close')} variant="filled" size={18} onPress={close} /> : null}
+              </View>
 
-            {phase === 'sending' ? <Button title={t('urgent.sending')} loading variant="secondary" onPress={() => undefined} /> : null}
+              <View style={{ backgroundColor: tokens.colors.dangerSoft, borderRadius: tokens.radius.lg, padding: tokens.space.lg, gap: tokens.space.md, ...continuous }}>
+                <View style={{ flexDirection: 'row', gap: tokens.space.sm, alignItems: 'flex-start' }}>
+                  <Icon name="call" size={20} color={tokens.colors.danger} />
+                  <View style={{ flex: 1, gap: tokens.space.xs }}>
+                    <Text variant="headline" tone="danger">
+                      {t('urgent.callFirst', { number })}
+                    </Text>
+                    <Text variant="subheadline">{t('urgent.notEmergency')}</Text>
+                  </View>
+                </View>
+                <Button title={t('urgent.call', { number })} icon="call" variant="destructive" size="large" block haptic onPress={call} />
+              </View>
 
-            {phase === 'result' && result ? (
-              <>
-                <Text style={{ color: c.text, lineHeight: 22 }}>{notified > 0 ? t('urgent.resultNotified', { n: notified }) : t('urgent.resultNone')}</Text>
-                <Text style={{ color: c.danger, fontWeight: '700' }}>{t('urgent.resultReminder', { number })}</Text>
-                <Button
-                  title={t('map.viewDetails')}
-                  variant="secondary"
-                  onPress={() => {
-                    close();
-                    router.push({ pathname: '/post/[id]', params: { id: result.id } });
-                  }}
-                />
-                <Button title={t('common.close')} variant="ghost" onPress={close} />
-              </>
-            ) : null}
+              {phase === 'info' ? (
+                <>
+                  <Text variant="subheadline" tone="secondary">
+                    {t('urgent.explain')}
+                  </Text>
+                  <Button title={t('urgent.post')} variant="tinted" icon="megaphone-outline" block onPress={start} />
+                  <Button title={t('common.cancel')} variant="plain" block onPress={close} />
+                </>
+              ) : null}
 
-            {phase === 'error' ? (
-              <>
-                <Text accessibilityLiveRegion="assertive" style={{ color: c.danger, fontWeight: '600' }}>
-                  {errorText}
-                </Text>
-                <Button title={t('common.retry')} variant="secondary" onPress={start} />
-                <Button title={t('common.close')} variant="ghost" onPress={close} />
-              </>
-            ) : null}
-          </ScrollView>
+              {phase === 'locating' ? <Button title={t('onboarding.locating')} loading variant="tinted" block onPress={() => undefined} /> : null}
+
+              {phase === 'countdown' ? (
+                <>
+                  <CountdownRing seconds={seconds} total={COUNTDOWN_SECONDS} label={t('urgent.countdown', { s: seconds })} />
+                  <Button title={t('urgent.cancel')} variant="tinted" icon="close" size="large" block onPress={close} />
+                </>
+              ) : null}
+
+              {phase === 'sending' ? <Button title={t('urgent.sending')} loading variant="tinted" block onPress={() => undefined} /> : null}
+
+              {phase === 'result' && result ? (
+                <>
+                  <View style={{ flexDirection: 'row', gap: tokens.space.md, alignItems: 'flex-start' }}>
+                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: tokens.colors.successSoft, alignItems: 'center', justifyContent: 'center' }}>
+                      <Icon name="checkmark" size={22} color={tokens.colors.success} weight="bold" />
+                    </View>
+                    <Text variant="body" style={{ flex: 1 }}>
+                      {notified > 0 ? t('urgent.resultNotified', { n: notified }) : t('urgent.resultNone')}
+                    </Text>
+                  </View>
+                  <Text variant="headline" tone="danger">
+                    {t('urgent.resultReminder', { number })}
+                  </Text>
+                  <Button
+                    title={t('map.viewDetails')}
+                    variant="tinted"
+                    block
+                    onPress={() => {
+                      close();
+                      router.push({ pathname: '/post/[id]', params: { id: result.id } });
+                    }}
+                  />
+                  <Button title={t('common.close')} variant="plain" block onPress={close} />
+                </>
+              ) : null}
+
+              {phase === 'error' ? (
+                <>
+                  <Banner tone="danger" icon="alert-circle" message={errorText ?? ''} />
+                  <Button title={t('common.retry')} variant="tinted" block onPress={start} />
+                  <Button title={t('common.close')} variant="plain" block onPress={close} />
+                </>
+              ) : null}
+            </ScrollView>
+          </View>
         </View>
       </Modal>
     </>
+  );
+}
+
+const RING = 132;
+
+/** Seconds left inside a ring that pulses once per tick; static under Reduce Motion. */
+function CountdownRing({ seconds, total, label }: { seconds: number; total: number; label: string }) {
+  const tokens = useTokens();
+  const pulse = useSharedValue(0);
+
+  useEffect(() => {
+    if (tokens.reduceMotion) return;
+    pulse.value = 0;
+    pulse.value = withRepeat(withTiming(1, { duration: 1000, easing: Easing.out(Easing.quad) }), -1, false);
+  }, [pulse, tokens.reduceMotion]);
+
+  const halo = useAnimatedStyle(() => ({ opacity: 0.45 * (1 - pulse.value), transform: [{ scale: 1 + pulse.value * 0.25 }] }));
+  const progress = Math.max(0, Math.min(1, seconds / total));
+
+  return (
+    <View accessible accessibilityRole="timer" accessibilityLabel={label} accessibilityLiveRegion="assertive" style={{ alignItems: 'center', gap: tokens.space.md, paddingVertical: tokens.space.sm }}>
+      <View style={{ width: RING, height: RING, alignItems: 'center', justifyContent: 'center' }}>
+        {!tokens.reduceMotion ? <Animated.View style={[{ position: 'absolute', width: RING, height: RING, borderRadius: RING / 2, backgroundColor: tokens.colors.danger }, halo]} /> : null}
+        <View
+          style={{
+            width: RING,
+            height: RING,
+            borderRadius: RING / 2,
+            borderWidth: 8,
+            borderColor: tokens.colors.danger,
+            backgroundColor: tokens.colors.surface,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Text variant="largeTitle" weight="700" tone="danger" maxFontSizeMultiplier={1.4} style={{ fontSize: 52, lineHeight: 60 }}>
+            {String(seconds)}
+          </Text>
+        </View>
+      </View>
+      <View style={{ width: '100%', height: 6, borderRadius: 3, backgroundColor: tokens.colors.dangerSoft, overflow: 'hidden' }}>
+        <View style={{ width: `${progress * 100}%`, height: 6, backgroundColor: tokens.colors.danger }} />
+      </View>
+      <Text variant="headline" align="center">
+        {label}
+      </Text>
+    </View>
   );
 }

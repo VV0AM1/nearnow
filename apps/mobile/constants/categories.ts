@@ -1,5 +1,5 @@
 import type { Ionicons } from '@expo/vector-icons';
-import type { Category } from '@/lib/types';
+import type { Category, LostFoundItemType } from '@/lib/types';
 import { CATEGORY_IDS } from '@/lib/types';
 
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -29,3 +29,14 @@ export const CATEGORY_META: Record<Category, CategoryMeta> = {
 export const CATEGORY_ORDER: Category[] = ['GENERAL', 'EVENT', 'LOST_FOUND', 'RECOMMENDATION', 'SAFETY', 'CRIME', 'DANGER'];
 
 export const isCategory = (v: unknown): v is Category => typeof v === 'string' && (CATEGORY_IDS as readonly string[]).includes(v);
+
+/** Symbol for each Lost & Found item type (shown next to its text label). */
+export const ITEM_TYPE_ICON: Record<LostFoundItemType, IconName> = {
+  KEYS: 'key',
+  WALLET_BAG: 'wallet',
+  ELECTRONICS: 'phone-portrait',
+  DOCUMENT: 'card',
+  PET: 'paw',
+  CLOTHING: 'shirt',
+  OTHER: 'cube',
+};

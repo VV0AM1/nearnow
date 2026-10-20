@@ -8,6 +8,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import '../global.css';
 
@@ -36,23 +37,25 @@ export default function RootLayout() {
   if (!loaded && !error) return null;
 
   return (
-    <SafeAreaProvider>
-      <I18nProvider>
-        <ThemeProvider>
-          {config.configError ? (
-            <ConfigError />
-          ) : (
-            <AuthProvider>
-              <LocationProvider>
-                <ToastProvider>
-                  <Navigation />
-                </ToastProvider>
-              </LocationProvider>
-            </AuthProvider>
-          )}
-        </ThemeProvider>
-      </I18nProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <I18nProvider>
+          <ThemeProvider>
+            {config.configError ? (
+              <ConfigError />
+            ) : (
+              <AuthProvider>
+                <LocationProvider>
+                  <ToastProvider>
+                    <Navigation />
+                  </ToastProvider>
+                </LocationProvider>
+              </AuthProvider>
+            )}
+          </ThemeProvider>
+        </I18nProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 

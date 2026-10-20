@@ -8,6 +8,8 @@ import { isExpired, tokenExpiry } from '../jwt';
 import { parseMapMessage, toMapScript } from '../map-bridge';
 import { buildPostFormData, emptyDraft, lostFoundRange } from '../post-form';
 import { buildFeedParams, mergePages } from '../../hooks/useFeed';
+import { enGB } from 'date-fns/locale';
+import { groupByDay } from '../format';
 import { mediaUrl } from '../config';
 
 jest.mock('expo-localization', () => ({ getLocales: () => [{ languageCode: 'es' }] }));
@@ -152,5 +154,24 @@ describe('media urls', () => {
     expect(mediaUrl('/uploads/a.jpg')).toMatch(/\/uploads\/a\.jpg$/);
     expect(mediaUrl('/etc/passwd')).toBeNull();
     expect(mediaUrl(null)).toBeNull();
+  });
+});
+
+describe('groupByDay', () => {
+  const labels = { today: 'Today', yesterday: 'Yesterday' };
+  const now = new Date(2026, 9, 20, 15, 0);
+  const at = (d: number, h: number) => ({ createdAt: new Date(2026, 9, d, h).toISOString() });
+
+  it('splits newest-first items into Today, Yesterday and dated sections', () => {
+    const sections = groupByDay([at(20, 14), at(20, 1), at(19, 22), at(17, 9), at(17, 8)], labels, enGB, now);
+    expect(sections.map((s) => [s.title, s.data.length])).toEqual([
+      ['Today', 2],
+      ['Yesterday', 1],
+      ['Saturday 17 October', 2],
+    ]);
+  });
+
+  it('adds the year for items from an earlier year', () => {
+    expect(groupByDay([{ createdAt: new Date(2025, 11, 31, 12).toISOString() }], labels, enGB, now)[0].title).toBe('31 December 2025');
   });
 });
