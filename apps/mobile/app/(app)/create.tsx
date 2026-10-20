@@ -194,7 +194,7 @@ export default function CreateScreen() {
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         {header}
-        <ScrollView contentContainerStyle={{ padding: 16, gap: 8 }} keyboardShouldPersistTaps="handled">
+        <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: 16, gap: 8 }} keyboardShouldPersistTaps="handled">
           {step === 1 ? (
             <>
               <SectionTitle>{t('create.chooseCategory')}</SectionTitle>

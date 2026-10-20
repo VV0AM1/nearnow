@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { ActivityIndicator, FlatList, RefreshControl, View } from 'react-native';
+import { Stack, useRouter } from 'expo-router';
 import { useArea } from '@/context/LocationContext';
 import { useI18n } from '@/lib/i18n';
 import { describeError } from '@/lib/errors';
@@ -26,14 +25,23 @@ export default function LostFound() {
   const feed = useFeed(query);
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
+    <>
+      <Stack.Screen
+        options={{
+          title: t('lostFound.title'),
+          headerRight: () => <Button title={t('lostFound.requests')} variant="ghost" onPress={() => router.push('/contact-requests')} />,
+        }}
+      />
+      <FlatList
+        data={feed.posts}
+        keyExtractor={(p) => p.id}
+        renderItem={({ item }) => <FeedPost item={item} />}
+        contentInsetAdjustmentBehavior="automatic"
+        style={{ backgroundColor: c.bg }}
+        onEndReached={feed.loadMore}
+        refreshControl={<RefreshControl refreshing={feed.refreshing} onRefresh={feed.refresh} tintColor={c.primary} colors={[c.primary]} />}
+        ListHeaderComponent={
       <View style={{ padding: 16, gap: 12 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Text accessibilityRole="header" style={{ color: c.text, fontSize: 24, fontWeight: '800' }}>
-            {t('lostFound.title')}
-          </Text>
-          <Button title={t('lostFound.requests')} variant="ghost" onPress={() => router.push('/contact-requests')} />
-        </View>
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
           <Chip label={t('lostFound.all')} selected={!direction} onPress={() => setDirection(null)} />
           <Chip label={t('lostFound.lost')} selected={direction === 'LOST'} onPress={() => setDirection('LOST')} />
@@ -44,12 +52,7 @@ export default function LostFound() {
         </View>
         <Button title={t('lostFound.report')} icon="add" onPress={() => router.push('/(app)/create')} />
       </View>
-      <FlatList
-        data={feed.posts}
-        keyExtractor={(p) => p.id}
-        renderItem={({ item }) => <FeedPost item={item} />}
-        onEndReached={feed.loadMore}
-        refreshControl={<RefreshControl refreshing={feed.refreshing} onRefresh={feed.refresh} tintColor={c.primary} />}
+        }
         ListEmptyComponent={
           feed.error ? (
             <StateView kind="error" title={describeError(feed.error, t)} actionLabel={t('common.retry')} onAction={feed.retry} />
@@ -59,9 +62,9 @@ export default function LostFound() {
             <StateView kind="empty" icon="search-outline" title={t('lostFound.emptyTitle')} body={t('lostFound.emptyBody')} />
           )
         }
-        ListFooterComponent={feed.loadingMore ? <ActivityIndicator style={{ padding: 16 }} /> : null}
+        ListFooterComponent={feed.loadingMore ? <ActivityIndicator style={{ padding: 16 }} color={c.primary} /> : null}
         contentContainerStyle={{ paddingBottom: 24, flexGrow: 1 }}
       />
-    </SafeAreaView>
+    </>
   );
 }

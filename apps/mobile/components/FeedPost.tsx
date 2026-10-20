@@ -1,18 +1,18 @@
 import React, { memo, useState } from 'react';
-import { Image, Pressable, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Platform, Pressable, View } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useI18n } from '@/lib/i18n';
 import { mediaUrl } from '@/lib/config';
 import { formatKm } from '@/lib/format';
 import type { Post } from '@/lib/types';
 import { usePostActions } from '@/hooks/usePostActions';
+import { Card, Icon, PressableScale, Skeleton, Text, continuous, useTokens, type IoniconName } from '@/design';
 import { CategoryBadge, TrustLine } from './PostStatus';
 import { ReportSheet } from './ReportSheet';
-import { useColors } from './ui';
 
-function Action({ icon, label, text, onPress, active, color }: { icon: keyof typeof Ionicons.glyphMap; label: string; text?: string; onPress: () => void; active?: boolean; color?: string }) {
-  const c = useColors();
+function Action({ icon, label, text, onPress, active, color }: { icon: IoniconName; label: string; text?: string; onPress: () => void; active?: boolean; color?: string }) {
+  const t = useTokens();
   return (
     <Pressable
       accessibilityRole="button"
@@ -20,17 +20,21 @@ function Action({ icon, label, text, onPress, active, color }: { icon: keyof typ
       accessibilityState={{ selected: !!active }}
       onPress={onPress}
       hitSlop={4}
-      style={{ minWidth: 44, minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 6 }}
+      style={{ minWidth: t.minTouch, minHeight: t.minTouch, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 6 }}
     >
-      <Ionicons name={icon} size={21} color={active ? (color ?? c.primary) : c.muted} />
-      {text ? <Text style={{ color: c.muted, fontWeight: '600' }}>{text}</Text> : null}
+      <Icon name={icon} size={20} color={active ? (color ?? t.colors.accent) : t.colors.labelSecondary} />
+      {text ? (
+        <Text variant="subheadline" weight="600" tone="secondary">
+          {text}
+        </Text>
+      ) : null}
     </Pressable>
   );
 }
 
 function FeedPostInner({ item }: { item: Post }) {
   const { t } = useI18n();
-  const c = useColors();
+  const tokens = useTokens();
   const router = useRouter();
   const { liked, likes, saved, toggleLike, toggleSave, share } = usePostActions(item);
   const [reporting, setReporting] = useState(false);
@@ -43,38 +47,54 @@ function FeedPostInner({ item }: { item: Post }) {
     .join(' · ');
 
   return (
-    <View style={{ marginHorizontal: 16, marginBottom: 12, backgroundColor: c.card, borderRadius: 16, borderWidth: 1, borderColor: c.border, opacity: inactive ? 0.8 : 1 }}>
-      <Pressable accessibilityRole="button" accessibilityHint={t('post.comments')} onPress={open} style={{ padding: 16, paddingBottom: 8, gap: 8 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+    <Card padded={false} style={{ marginHorizontal: tokens.space.lg, marginBottom: tokens.space.md, opacity: inactive ? 0.75 : 1, overflow: Platform.OS === 'android' ? 'hidden' : 'visible' }}>
+      <PressableScale accessibilityHint={t('post.comments')} onPress={open} style={{ padding: tokens.space.lg, paddingBottom: tokens.space.sm, gap: tokens.space.sm }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space.sm }}>
           <CategoryBadge post={item} />
           {item.lostFound ? (
-            <Text style={{ color: c.muted, fontSize: 12, fontWeight: '700' }}>
+            <Text variant="footnote" weight="600" tone="secondary">
               {item.lostFound.direction === 'LOST' ? t('post.lost') : t('post.found')} · {t(`itemType.${item.lostFound.itemType}`)}
             </Text>
           ) : null}
         </View>
-        <Text style={{ color: c.text, fontSize: 17, fontWeight: '700', lineHeight: 22 }} numberOfLines={2}>
+        <Text variant="headline" numberOfLines={2}>
           {item.title}
         </Text>
         {item.content ? (
-          <Text style={{ color: c.muted, lineHeight: 20 }} numberOfLines={3}>
+          <Text variant="subheadline" tone="secondary" numberOfLines={3}>
             {item.content}
           </Text>
         ) : null}
         {image ? (
-          <Image source={{ uri: image }} accessibilityIgnoresInvertColors style={{ width: '100%', height: 190, borderRadius: 12, backgroundColor: c.border }} resizeMode="cover" />
+          <Image
+            source={{ uri: image }}
+            accessibilityIgnoresInvertColors
+            contentFit="cover"
+            transition={tokens.reduceMotion ? 0 : 200}
+            recyclingKey={item.id}
+            style={{ width: '100%', aspectRatio: 16 / 10, borderRadius: tokens.radius.md, backgroundColor: tokens.colors.surfaceSecondary, ...continuous }}
+          />
         ) : null}
         <TrustLine post={item} />
         {place || item.author ? (
-          <Text style={{ color: c.muted, fontSize: 12 }} numberOfLines={1}>
+          <Text variant="footnote" tone="secondary" numberOfLines={1}>
             {place}
             {item.isApproximateLocation ? ` · ${t('post.approxLocation')}` : ''}
             {item.author ? ` · ${t('post.by', { name: item.author.name })}` : ''}
           </Text>
         ) : null}
-      </Pressable>
+      </PressableScale>
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8, paddingBottom: 4, borderTopWidth: 1, borderTopColor: c.border }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginHorizontal: tokens.space.sm,
+          borderTopWidth: 0.5,
+          borderTopColor: tokens.colors.separator,
+        }}
+      >
         <View style={{ flexDirection: 'row' }}>
           <Action icon={liked ? 'thumbs-up' : 'thumbs-up-outline'} label={t('post.like')} text={String(likes)} onPress={toggleLike} active={liked} />
           <Action icon="chatbubble-outline" label={t('post.comments')} text={String(item.commentCount)} onPress={open} />
@@ -87,8 +107,21 @@ function FeedPostInner({ item }: { item: Post }) {
         </View>
       </View>
       {reporting ? <ReportSheet postId={item.id} visible={reporting} onClose={() => setReporting(false)} /> : null}
-    </View>
+    </Card>
   );
 }
 
 export const FeedPost = memo(FeedPostInner);
+
+/** Placeholder card shown while the first page loads. */
+export function FeedPostSkeleton() {
+  const t = useTokens();
+  return (
+    <Card style={{ marginHorizontal: t.space.lg, marginBottom: t.space.md, gap: t.space.sm }}>
+      <Skeleton width={90} height={20} radius={t.radius.pill} />
+      <Skeleton width="85%" height={18} />
+      <Skeleton width="60%" />
+      <Skeleton width="40%" height={12} />
+    </Card>
+  );
+}

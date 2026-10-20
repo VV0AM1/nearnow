@@ -8,3 +8,4 @@ export { Button, IconButton, type ButtonVariant, type ButtonSize } from './Butto
 export { ListSection, ListRow, ListSwitchRow } from './List';
 export { SegmentedControl, Chip, SearchField, TextField, type TextFieldProps } from './Controls';
 export { Card, GlassSurface, Badge, Banner, StateView, Skeleton, Avatar, type BadgeTone } from './Surface';
+export { useLargeTitleOptions } from './navigation';

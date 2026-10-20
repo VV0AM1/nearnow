@@ -338,8 +338,8 @@ Step-by-step for the account-dependent steps: `docs/RELEASE_SETUP.md`.
 
 **Technology (check compatibility with Expo SDK 54 before adopting each one)**
 - Navigation:
-  - native tab bar via `expo-router` native tabs, which uses the system tab bar and gets iOS 26 Liquid Glass automatically
-  - native stack headers with large titles and the built-in search bar
+  - [x] native tab bar via `expo-router` native tabs, which uses the system tab bar and gets iOS 26 Liquid Glass automatically (done: `app/(app)/_layout.tsx`, with SF Symbols on iOS, Ionicons on Android and the bar minimising on scroll; not yet checked on a device)
+  - [x] native stack headers with large titles and the built-in search bar (done for Feed, Lost & Found and Profile: each tab is now a folder with its own stack, using `useLargeTitleOptions()` in `design/navigation.ts`; Map and Post keep their own layouts)
   - native form sheets (`presentation: 'formSheet'` with detents) for report, filters, urgent help and the map callout
 - Motion: `react-native-reanimated` 4 (already installed) for layout and entering/exiting animations, spring-based press feedback, and transitions from a card into its detail screen; `react-native-gesture-handler` for swipe actions and sheet gestures.
 - Images: `expo-image` with caching, blur-hash placeholders and cross-fade.
@@ -350,11 +350,11 @@ Step-by-step for the account-dependent steps: `docs/RELEASE_SETUP.md`.
 **Screen-by-screen redesign**
 - [ ] Onboarding: a short paged intro with simple illustrations, the area choice as large tappable tiles, and the permission explanation shown before the system prompt.
 - [ ] Sign-in: a clean form, one-time-code autofill (`textContentType=oneTimeCode`), inline validation, and Sign in with Apple once it is configured (App Store rule if Google sign-in is offered).
-- [ ] Feed:
+- [~] Feed (done: large title showing the area name, native search bar in the header, urgent-help and notification buttons in the header, a row to change area / open the area overview, filter chips, cards rebuilt on the kit with `expo-image`, skeleton loading, pull-to-refresh with haptic; still to do: swipe actions, context menu and the "New posts" pill):
   - large title showing the area name, which collapses on scroll
   - pinned search, horizontal filter chips, cards with clear hierarchy
-  - swipe actions (save / hide), long-press context menu, pull-to-refresh with haptic
-  - "New posts" pill driven by real-time updates
+  - swipe actions (save / hide), long-press context menu, pull-to-refresh with haptic — still to do: the context menu needs a native menu library (e.g. `zeego`) added in a development build
+  - "New posts" pill driven by real-time updates — still to do: it depends on the mobile socket client (see the Phase C real-time item)
 - [ ] Map: full-bleed map with floating glass controls, a bottom sheet with detents (a post list at the low detent, details at the high one), and a filter sheet.
 - [ ] Create: a sheet-based flow with a progress indicator, a category grid with symbols, a draggable pin with a precision ring showing the approximate radius, photo attachment as a thumbnail strip, and a review step showing exactly what becomes public.
 - [ ] Post detail: hero image with a stretchy header, a clear status and trust strip, sticky actions, an iMessage-style comment composer, and Lost & Found matches as a horizontal card rail.

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Platform, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -114,7 +114,8 @@ export default function MapScreen() {
   if (!area || !center) return null; // route guard sends users without an area to onboarding
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
+    // iOS native tabs draw over content, so the floating callout keeps clear of the tab bar.
+    <SafeAreaView edges={Platform.OS === 'ios' ? ['top', 'bottom'] : ['top']} style={{ flex: 1, backgroundColor: c.bg }}>
       <View style={{ paddingTop: 8 }}>
         <FilterBar value={filters} onChange={setFilters} />
       </View>

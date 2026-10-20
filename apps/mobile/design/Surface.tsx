@@ -55,10 +55,12 @@ export function Badge({ label, tone = 'neutral', icon, color }: { label: string;
     danger: [t.colors.danger, t.colors.dangerSoft],
   } as const;
   const [fg, bg] = color ? [color, `${color}1F`] : map[tone];
+  // Arbitrary brand colours (categories) are not contrast-checked: they tint the icon only.
+  const textColor = color ? t.colors.label : fg;
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: t.radius.pill, backgroundColor: bg, alignSelf: 'flex-start' }}>
       {icon ? <Icon name={icon} size={12} color={fg} weight="semibold" /> : null}
-      <Text variant="caption1" weight="600" style={{ color: fg }}>
+      <Text variant="caption1" weight="600" style={{ color: textColor }}>
         {label}
       </Text>
     </View>

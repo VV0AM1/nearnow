@@ -3,7 +3,7 @@ import { Alert, Image, Linking, Modal, Pressable, RefreshControl, ScrollView, Te
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import api from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { useArea } from '@/context/LocationContext';
@@ -125,8 +125,9 @@ export default function ProfileScreen() {
   const languages: LocalePreference[] = ['system', 'en', 'es', 'ca'];
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={c.primary} />}>
+    <>
+      <Stack.Screen options={{ title: t('tabs.profile') }} />
+      <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: 16, gap: 16 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={c.primary} />}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
           <Pressable accessibilityRole="button" accessibilityLabel={t('profile.changePhoto')} onPress={changePhoto}>
             {avatar ? (
@@ -138,7 +139,7 @@ export default function ProfileScreen() {
             )}
           </Pressable>
           <View style={{ flex: 1 }}>
-            <Text accessibilityRole="header" style={{ color: c.text, fontSize: 22, fontWeight: '800' }}>
+            <Text style={{ color: c.text, fontSize: 22, fontWeight: '800' }}>
               {user.name ?? '—'}
             </Text>
             <Text style={{ color: c.muted }}>{user.email}</Text>
@@ -229,6 +230,6 @@ export default function ProfileScreen() {
           </Card>
         </View>
       </Modal>
-    </SafeAreaView>
+    </>
   );
 }
