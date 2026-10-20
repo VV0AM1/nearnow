@@ -64,7 +64,7 @@ export default function AdminReportsPage() {
     };
 
     const deletePost = async (postId: string, reportId: string) => {
-        if (!confirm("Are you sure you want to delete this post? This cannot be undone.")) return;
+        if (!confirm("Remove this post from public view? It is kept for the moderation audit log.")) return;
 
         try {
             const token = getToken();
@@ -77,7 +77,7 @@ export default function AdminReportsPage() {
             // Automatically resolve report as RESOLVED
             await resolveReport(reportId, 'RESOLVED');
 
-            toast({ title: "Post Deleted", description: "Content removed and report resolved." });
+            toast({ title: "Post removed", description: "Hidden from the public and report resolved." });
         } catch (error) {
             toast({ title: "Error", description: "Delete failed", variant: "destructive" });
         }

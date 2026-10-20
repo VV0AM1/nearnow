@@ -1,18 +1,39 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { ExecutionContext } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { Role } from '@prisma/client';
+import { RolesGuard } from '../auth/guards/roles.guard';
 import { AdminController } from './admin.controller';
 
-describe('AdminController', () => {
-  let controller: AdminController;
+const ctx = (handler: (...a: any[]) => any, role?: Role) =>
+  ({
+    getHandler: () => handler,
+    getClass: () => AdminController,
+    switchToHttp: () => ({
+      getRequest: () => ({ user: role ? { role } : undefined }),
+    }),
+  }) as unknown as ExecutionContext;
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      controllers: [AdminController],
-    }).compile();
+describe('Admin role checks', () => {
+  const guard = new RolesGuard(new Reflector());
+  const proto = AdminController.prototype;
 
-    controller = module.get<AdminController>(AdminController);
+  it('regular users cannot reach moderation endpoints', () => {
+    expect(guard.canActivate(ctx(proto.getReports, Role.USER))).toBe(false);
+    expect(guard.canActivate(ctx(proto.getReports))).toBe(false);
   });
 
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
+  it('moderators can review content but not manage accounts', () => {
+    expect(guard.canActivate(ctx(proto.getReports, Role.MODERATOR))).toBe(true);
+    expect(guard.canActivate(ctx(proto.deletePost, Role.MODERATOR))).toBe(true);
+    expect(guard.canActivate(ctx(proto.toggleBlockUser, Role.MODERATOR))).toBe(
+      false,
+    );
+    expect(guard.canActivate(ctx(proto.getUsers, Role.MODERATOR))).toBe(false);
+  });
+
+  it('admins can do everything', () => {
+    expect(guard.canActivate(ctx(proto.toggleBlockUser, Role.ADMIN))).toBe(
+      true,
+    );
   });
 });

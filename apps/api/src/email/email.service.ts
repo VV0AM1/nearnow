@@ -1,27 +1,54 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class EmailService {
-    private transporter: nodemailer.Transporter;
+  private readonly logger = new Logger(EmailService.name);
+  private transporter: nodemailer.Transporter;
+  private readonly configured = Boolean(
+    process.env.EMAIL_USER && process.env.EMAIL_PASS,
+  );
+  private readonly webAppUrl =
+    process.env.WEB_APP_URL || 'http://localhost:3000';
 
-    constructor() {
-        this.transporter = nodemailer.createTransport({
-            service: 'gmail', // Or use host/port from env
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS,
-            },
-        });
+  constructor() {
+    this.transporter = nodemailer.createTransport({
+      service: process.env.EMAIL_SERVICE || 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+  }
+
+  /**
+   * Sends a one-time code. Throws ServiceUnavailableException when delivery fails so the
+   * caller never tells the user "code sent" when it was not. Outside production, when no
+   * mail credentials are configured, the code is written to the server log instead.
+   */
+  async sendOtp(email: string, otp: string) {
+    if (!this.configured) {
+      if (process.env.NODE_ENV === 'production') {
+        this.logger.error(
+          'Email delivery is not configured (EMAIL_USER/EMAIL_PASS); cannot send verification code',
+        );
+        throw new ServiceUnavailableException(
+          'Email delivery is temporarily unavailable. Please try again later.',
+        );
+      }
+      this.logger.warn(`[DEV ONLY] Verification code for ${email}: ${otp}`);
+      return;
     }
-
-    async sendOtp(email: string, otp: string) {
-        const mailOptions = {
-            from: '"NearNow Security" <no-reply@nearnow.app>',
-            to: email,
-            subject: 'Your Verification Code',
-            text: `Your validation code is ${otp}. It expires in 10 minutes.`,
-            html: `
+    const mailOptions = {
+      from: '"NearNow Security" <no-reply@nearnow.app>',
+      to: email,
+      subject: 'Your Verification Code',
+      text: `Your validation code is ${otp}. It expires in 10 minutes.`,
+      html: `
         <!DOCTYPE html>
         <html>
         <head>
@@ -68,18 +95,28 @@ export class EmailService {
         </body>
         </html>
       `,
-        };
+    };
 
-        await this.sendMail(mailOptions);
+    try {
+      await this.transporter.sendMail(mailOptions);
+    } catch (error) {
+      this.logger.error(
+        `Verification email delivery failed: ${(error as Error).message}`,
+      );
+      throw new ServiceUnavailableException(
+        'We could not send the verification email. Please try again.',
+      );
     }
+  }
 
-    async sendWelcome(email: string, name: string) {
-        const mailOptions = {
-            from: '"NearNow Community" <no-reply@nearnow.app>',
-            to: email,
-            subject: 'Welcome to the Neighborhood! 🏡',
-            text: `Welcome to NearNow, ${name}! We're excited to have you join your local community.`,
-            html: `
+  async sendWelcome(email: string, rawName: string) {
+    const name = escapeHtml(rawName);
+    const mailOptions = {
+      from: '"NearNow Community" <no-reply@nearnow.app>',
+      to: email,
+      subject: 'Welcome to the Neighborhood! 🏡',
+      text: `Welcome to NearNow, ${name}! We're excited to have you join your local community.`,
+      html: `
         <!DOCTYPE html>
         <html>
         <head>
@@ -108,7 +145,7 @@ export class EmailService {
                     </p>
                     
                     <div style="text-align: center; margin-bottom: 32px;">
-                      <a href="http://localhost:3000" style="background-color: #2563eb; color: #ffffff; padding: 16px 32px; border-radius: 9999px; text-decoration: none; font-weight: 600; display: inline-block; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);">
+                      <a href="${escapeHtml(this.webAppUrl)}" style="background-color: #2563eb; color: #ffffff; padding: 16px 32px; border-radius: 9999px; text-decoration: none; font-weight: 600; display: inline-block; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);">
                         Explore Your Neighborhood
                       </a>
                     </div>
@@ -127,23 +164,30 @@ export class EmailService {
         </body>
         </html>
       `,
-        };
+    };
 
-        await this.sendMail(mailOptions);
-    }
+    await this.sendMail(mailOptions);
+  }
 
-    private async sendMail(mailOptions: any) {
-        try {
-            if (!process.env.EMAIL_USER) {
-                console.log(`[DEV MODE] Email skipped (no creds). Details:`, mailOptions.to, mailOptions.subject);
-                return;
-            }
-            await this.transporter.sendMail(mailOptions);
-            console.log(`Email sent to ${mailOptions.to}`);
-        } catch (error) {
-            console.error('Error sending email:', error);
-            // Don't throw for welcome emails, but for OTP maybe we should.
-            // For now log it.
-        }
+  /** Best-effort delivery for non-critical mail (welcome). Never throws. */
+  private async sendMail(mailOptions: nodemailer.SendMailOptions) {
+    if (!this.configured) return;
+    try {
+      await this.transporter.sendMail(mailOptions);
+    } catch (error) {
+      this.logger.warn(
+        `Optional email delivery failed: ${(error as Error).message}`,
+      );
     }
+  }
+}
+
+function escapeHtml(value: string): string {
+  return value.replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[
+        c
+      ]!,
+  );
 }

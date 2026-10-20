@@ -15,7 +15,7 @@ export default function NotificationSettings() {
         if (settings) {
             setRadius(settings.radiusKm);
             setCategories(settings.categories);
-            setEnabled(settings.pushEnabled);
+            setEnabled(!settings.paused);
         }
     }, [settings]);
 
@@ -28,13 +28,13 @@ export default function NotificationSettings() {
                 await updateSettings({
                     radiusKm: radius,
                     categories,
-                    pushEnabled: enabled,
+                    paused: !enabled,
                     latitude: position.coords.latitude,
                     longitude: position.coords.longitude
                 });
 
                 toast({
-                    title: "Preferences Saved! ✅",
+                    title: "Preferences saved",
                     description: "We've updated your alert radius to your current location.",
                     duration: 3000,
                 });
@@ -66,7 +66,8 @@ export default function NotificationSettings() {
         }
     };
 
-    const ALL_CATEGORIES = ["CRIME", "SAFETY", "LOST_FOUND", "EVENT", "RECOMMENDATION", "GENERAL"];
+    const ALL_CATEGORIES = ["GENERAL", "EVENT", "LOST_FOUND", "RECOMMENDATION", "SAFETY", "CRIME", "DANGER"];
+    const LABELS: Record<string, string> = { GENERAL: "Local update", EVENT: "Event", LOST_FOUND: "Lost & found", RECOMMENDATION: "Recommendation", SAFETY: "Safety notice", CRIME: "Incident", DANGER: "Urgent help (within 3 km)" };
 
     return (
         <div className="glass-card p-6 mb-8 animate-in fade-in slide-in-from-bottom-4">
@@ -121,7 +122,7 @@ export default function NotificationSettings() {
                                     : 'bg-transparent border-border text-muted-foreground hover:border-primary/50'
                                     }`}
                             >
-                                {cat}
+                                {LABELS[cat] ?? cat}
                             </button>
                         ))}
                     </div>

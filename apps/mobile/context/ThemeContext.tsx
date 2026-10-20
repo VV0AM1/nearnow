@@ -50,8 +50,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         // Sync NativeWind
         setColorScheme(activeTheme);
         // Persist
-        SecureStore.setItemAsync('user_theme_preference', themeMode).catch(console.error);
-    }, [themeMode, activeTheme, loaded]);
+        SecureStore.setItemAsync('user_theme_preference', themeMode).catch(() => undefined);
+    }, [themeMode, activeTheme, loaded, setColorScheme]);
 
     const setThemeMode = (mode: ThemeMode) => {
         setThemeModeState(mode);

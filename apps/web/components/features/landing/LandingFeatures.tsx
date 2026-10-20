@@ -25,8 +25,8 @@ export default function LandingFeatures() {
                 <div className="grid md:grid-cols-3 gap-8">
                     {[
                         { icon: Map, title: "Hyper-Local Radar", desc: "Set your radius. Only see alerts that matter to your street, not the whole city." },
-                        { icon: Bell, title: "Instant Alerts", desc: "Get notified the second someone posts about safety issues nearby." },
-                        { icon: Shield, title: "Verified Community", desc: "Real neighbors, verified accounts. No bots, no spam." }
+                        { icon: Bell, title: "Alerts you choose", desc: "Pick categories and an area; nothing is sent until you opt in." },
+                        { icon: Shield, title: "Moderated community", desc: "Anyone can report a post; moderators review every report." }
                     ].map((feature, i) => (
                         <FeatureCard
                             key={i}

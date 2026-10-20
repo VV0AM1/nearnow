@@ -1,169 +1,38 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '@/context/ThemeContext';
-import { View, TouchableOpacity, Platform } from 'react-native';
-import { SOSButton } from '@/components/SOSButton';
-import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
-import * as Haptics from 'expo-haptics';
-import '@/services/location-task';
+import { useI18n } from '@/lib/i18n';
+import { useColors } from '@/components/ui';
 
-function CreateTabBarButton({ children, onPress }: { children: React.ReactNode, onPress?: (e: any) => void }) {
-    return (
-        <TouchableOpacity
-            style={{
-                top: -20,
-                justifyContent: 'center',
-                alignItems: 'center',
-            }}
-            onPress={(e) => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                onPress?.(e);
-            }}
-        >
-            <LinearGradient
-                colors={['#2563eb', '#06b6d4']}
-                style={{
-                    width: 60,
-                    height: 60,
-                    borderRadius: 30,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    shadowColor: '#f43f5e',
-                    shadowOffset: { width: 0, height: 8 },
-                    shadowOpacity: 0.4,
-                    shadowRadius: 10,
-                    elevation: 10,
-                    borderWidth: 4,
-                    borderColor: '#000', // Match bg color usually, slightly hardcoded but effective
-                }}
-            >
-                {children}
-            </LinearGradient>
-        </TouchableOpacity>
-    );
+type IconName = keyof typeof Ionicons.glyphMap;
+
+function tabIcon(active: IconName, inactive: IconName) {
+  function TabIcon({ color, focused }: { color: string; focused: boolean }) {
+    return <Ionicons name={focused ? active : inactive} size={24} color={color} />;
+  }
+  return TabIcon;
 }
 
-export default function AppLayout() {
-    const { activeTheme } = useTheme();
+export default function AppTabs() {
+  const { t } = useI18n();
+  const c = useColors();
 
-    return (
-        <Tabs
-            screenOptions={{
-                headerShown: true,
-                headerTransparent: true,
-                headerBackground: () => (
-                    <BlurView
-                        tint={activeTheme === 'dark' ? 'dark' : 'light'}
-                        intensity={80}
-                        style={{ flex: 1 }}
-                    />
-                ),
-                headerTitleStyle: {
-                    color: activeTheme === 'dark' ? '#fff' : '#000',
-                    fontSize: 18,
-                    fontWeight: 'bold',
-                },
-                tabBarShowLabel: false,
-                tabBarStyle: {
-                    position: 'absolute',
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    elevation: 0,
-                    borderTopWidth: 0,
-                    height: Platform.OS === 'ios' ? 85 : 65,
-                    backgroundColor: 'transparent',
-                },
-                tabBarBackground: () => (
-                    <BlurView
-                        tint={activeTheme === 'dark' ? 'dark' : 'light'}
-                        intensity={95}
-                        style={{ flex: 1, backgroundColor: activeTheme === 'dark' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}
-                    />
-                ),
-                tabBarActiveTintColor: '#3b82f6',
-                tabBarInactiveTintColor: '#6b7280',
-                headerRight: () => (
-                    <View className="mr-4">
-                        <SOSButton />
-                    </View>
-                ),
-            }}
-        >
-            <Tabs.Screen
-                name="home"
-                options={{
-                    title: 'Feed',
-                    tabBarIcon: ({ color, focused }) => (
-                        <Ionicons name={focused ? "home" : "home-outline"} size={26} color={color} />
-                    ),
-                }}
-            />
-            <Tabs.Screen
-                name="map"
-                options={{
-                    title: 'Map',
-                    headerShown: false,
-                    tabBarIcon: ({ color, focused }) => (
-                        <Ionicons name={focused ? "map" : "map-outline"} size={26} color={color} />
-                    ),
-                }}
-            />
-
-            <Tabs.Screen
-                name="create"
-                options={{
-                    title: '',
-                    tabBarIcon: ({ focused }) => (
-                        <Ionicons name="add" size={32} color="#fff" />
-                    ),
-                    tabBarButton: (props) => (
-                        <CreateTabBarButton {...props} />
-                    ),
-                    headerShown: false,
-                    // Hide tab bar when creating a post (optional, user might want it visible but standard is hide)
-                    // But if we want the FAB to be the launcher, it stays in the bar.
-                    // The 'create' route might be a modal, but standard screen is fine.
-                }}
-            />
-
-            <Tabs.Screen
-                name="safety"
-                options={{
-                    title: 'Safety',
-                    headerShown: false,
-                    tabBarIcon: ({ color, focused }) => (
-                        <Ionicons name={focused ? "shield-checkmark" : "shield-checkmark-outline"} size={26} color={color} />
-                    ),
-                }}
-            />
-            <Tabs.Screen
-                name="profile"
-                options={{
-                    title: 'Profile',
-                    headerShown: false,
-                    tabBarIcon: ({ color, focused }) => (
-                        <Ionicons name={focused ? "person" : "person-outline"} size={26} color={color} />
-                    ),
-                }}
-            />
-
-            {/* Hidden Routes */}
-            <Tabs.Screen
-                name="saved"
-                options={{
-                    href: null,
-                }}
-            />
-            <Tabs.Screen
-                name="post/[id]"
-                options={{
-                    href: null,
-                    headerShown: false,
-                    tabBarStyle: { display: 'none' }, // Hide tabs on details
-                }}
-            />
-        </Tabs>
-    );
+  return (
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarShowLabel: true,
+        tabBarActiveTintColor: c.primary,
+        tabBarInactiveTintColor: c.muted,
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        // Not absolute: the bar never covers scroll content.
+        tabBarStyle: { backgroundColor: c.card, borderTopColor: c.border },
+      }}
+    >
+      <Tabs.Screen name="home" options={{ title: t('tabs.feed'), tabBarIcon: tabIcon('newspaper', 'newspaper-outline') }} />
+      <Tabs.Screen name="map" options={{ title: t('tabs.map'), tabBarIcon: tabIcon('map', 'map-outline') }} />
+      <Tabs.Screen name="create" options={{ title: t('tabs.post'), tabBarIcon: tabIcon('add-circle', 'add-circle-outline') }} />
+      <Tabs.Screen name="lost-found" options={{ title: t('tabs.lostFound'), tabBarIcon: tabIcon('search-circle', 'search-circle-outline') }} />
+      <Tabs.Screen name="profile" options={{ title: t('tabs.profile'), tabBarIcon: tabIcon('person-circle', 'person-circle-outline') }} />
+    </Tabs>
+  );
 }

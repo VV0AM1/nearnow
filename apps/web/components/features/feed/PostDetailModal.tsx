@@ -31,7 +31,7 @@ export default function PostDetailModal({ post, onClose, onCommentAdded }: PostD
             if (!userId || !token) return;
 
             try {
-                const res = await fetch(`${API_URL}/users/${userId}/saved/${post.id}/check`, {
+                const res = await fetch(`${API_URL}/users/me/saved/${post.id}/check`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 if (res.ok) {
@@ -60,7 +60,7 @@ export default function PostDetailModal({ post, onClose, onCommentAdded }: PostD
         setSaved(prev => !prev);
 
         try {
-            const res = await fetch(`${API_URL}/users/${userId}/saved/${post.id}`, {
+            const res = await fetch(`${API_URL}/users/me/saved/${post.id}`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${token}` }
             });

@@ -2,7 +2,6 @@
 import Sidebar from "./dashboard/Sidebar";
 import DashboardHeader from "./DashboardHeader";
 import { User } from "../../types/user";
-import { DashboardProvider } from "../../context/DashboardContext";
 // Removed usePathname
 
 interface DashboardLayoutProps {
@@ -12,7 +11,7 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children, initialUser }: DashboardLayoutProps) {
     return (
-        <DashboardProvider>
+        <>
             <div className="flex min-h-screen lg:h-screen bg-background lg:overflow-hidden relative">
                 <Sidebar initialUser={initialUser} />
 
@@ -28,6 +27,6 @@ export default function DashboardLayout({ children, initialUser }: DashboardLayo
                     </div>
                 </main>
             </div>
-        </DashboardProvider>
+        </>
     );
 }

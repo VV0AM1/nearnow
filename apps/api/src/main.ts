@@ -1,35 +1,75 @@
+import 'dotenv/config';
+import { Logger, ValidationPipe, type INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { join } from 'path';
+import { resolve } from 'path';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { appConfig, type AppConfig } from './common/env';
+import type { ServerResponse } from 'http';
+import { PrismaExceptionFilter } from './common/prisma-exception.filter';
 
-async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    transform: true,
-    forbidNonWhitelisted: true,
-    transformOptions: {
-      enableImplicitConversion: true,
-    },
-  }));
+/** Shared app setup, also used by the e2e tests so they exercise the real pipeline. */
+export function configureApp(app: INestApplication) {
+  const config = appConfig();
+  const express = app as NestExpressApplication;
+
+  express.set('trust proxy', 1); // behind Render/nginx: use the client IP for rate limits
+  express.disable('x-powered-by');
+  express.useBodyParser('json', { limit: '100kb' });
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      // Explicit @Type/@Transform decorators only: implicit conversion turns "false" into true.
+      transformOptions: { enableImplicitConversion: false },
+    }),
+  );
+  app.useGlobalFilters(new PrismaExceptionFilter());
+
+  // CORS restricts which browser origins may call the API; it is not authentication.
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      process.env.FRONTEND_URL || 'http://localhost:3000'
-    ],
+    origin: config.corsOrigins,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
 
-  // Serve uploaded files statically
-  app.useStaticAssets(join(process.cwd(), 'uploads'), {
+  express.useStaticAssets(resolve(config.uploadDir), {
     prefix: '/uploads/',
+    index: false,
+    dotfiles: 'deny',
+    setHeaders: (res: ServerResponse) => {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Content-Security-Policy', "default-src 'none'");
+    },
   });
-
-  await app.listen(process.env.PORT ?? 3002, '0.0.0.0');
-  console.log(`Application is running on: ${await app.getUrl()}`);
+  app.enableShutdownHooks();
+  return app;
 }
-bootstrap();
+
+async function bootstrap() {
+  const logger = new Logger('Bootstrap');
+  let config: AppConfig;
+  try {
+    config = appConfig();
+  } catch (e) {
+    logger.error((e as Error).message);
+    process.exit(1);
+  }
+  if (!config.isProduction && !process.env.JWT_SECRET)
+    logger.warn('JWT_SECRET not set — using an insecure development secret');
+  if (!config.emailConfigured)
+    logger.warn(
+      'Email delivery not configured — verification codes are logged (development only)',
+    );
+
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bodyParser: false,
+  });
+  configureApp(app);
+  await app.listen(config.port, '0.0.0.0');
+  logger.log(`API listening on port ${config.port}`);
+}
+
+if (require.main === module) void bootstrap();

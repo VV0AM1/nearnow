@@ -18,11 +18,12 @@ export default function SavedView() {
             const token = getToken();
 
             if (!userId || !token) {
+                setLoading(false);
                 return;
             }
 
             try {
-                const res = await fetch(`${API_URL}/users/${userId}/saved`, {
+                const res = await fetch(`${API_URL}/users/me/saved`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
 

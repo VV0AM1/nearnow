@@ -1,167 +1,111 @@
-import { View, Text, FlatList, TouchableOpacity, RefreshControl, Platform } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { useState, useEffect, useCallback } from "react";
-import api from "@/services/api";
-import { formatDistanceToNow } from "date-fns";
-import { useTheme } from "@/context/ThemeContext";
-import { GlassView } from "@/components/GlassView";
-import { Skeleton } from "@/components/Skeleton";
-import { useToast } from "@/context/ToastContext";
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Stack, useRouter } from 'expo-router';
+import api from '@/services/api';
+import { useI18n } from '@/lib/i18n';
+import { describeError } from '@/lib/errors';
+import { timeAgo } from '@/lib/format';
+import type { AppNotification, NotificationPage, NotificationType } from '@/lib/types';
+import { Button, StateView, useColors } from '@/components/ui';
 
-type Notification = {
-    id: string;
-    type: 'LIKE' | 'COMMENT' | 'ALERT' | 'SYSTEM' | 'LEVEL_UP';
-    title: string;
-    message: string;
-    isRead: boolean;
-    createdAt: string;
-    data?: any;
+const ICONS: Record<NotificationType, keyof typeof Ionicons.glyphMap> = {
+  POST_NEARBY: 'location-outline',
+  ALERT: 'alert-circle-outline',
+  COMMENT: 'chatbubble-outline',
+  POST_UPDATE: 'refresh-outline',
+  MATCH_SUGGESTION: 'git-compare-outline',
+  CONTACT_REQUEST: 'mail-outline',
+  WELCOME: 'happy-outline',
+  INFO: 'information-circle-outline',
 };
 
 export default function NotificationsScreen() {
-    const router = useRouter();
-    const { activeTheme } = useTheme();
-    const isDark = activeTheme === 'dark';
-    const { showToast } = useToast();
+  const { t, dateLocale } = useI18n();
+  const c = useColors();
+  const router = useRouter();
+  const [items, setItems] = useState<AppNotification[]>([]);
+  const [unread, setUnread] = useState(0);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<unknown>(null);
 
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
+  const load = useCallback(async (p: number, mode: 'initial' | 'refresh' | 'more') => {
+    if (mode === 'refresh') setRefreshing(true);
+    setError(null);
+    try {
+      const res = await api.get<NotificationPage>('/notifications/me', { params: { page: p, limit: 20 } });
+      setItems((prev) => (p === 1 ? res.data.items : [...prev, ...res.data.items.filter((n) => !prev.some((x) => x.id === n.id))]));
+      setUnread(res.data.unreadCount);
+      setHasMore(res.data.hasMore);
+      setPage(p);
+    } catch (e) {
+      setError(e);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+  useEffect(() => {
+    void load(1, 'initial');
+  }, [load]);
 
-    const fetchNotifications = async (isRefresh = false) => {
-        if (!isRefresh) setLoading(true);
-        try {
-            const res = await api.get('/notifications/me');
-            setNotifications(res.data);
-        } catch (error) {
-            console.error("Failed to load notifications", error);
-            showToast("Failed to load notifications", "error");
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
-        }
-    };
+  const open = async (n: AppNotification) => {
+    if (!n.read) {
+      setItems((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
+      setUnread((u) => Math.max(0, u - 1));
+      api.post(`/notifications/me/read/${n.id}`).catch(() => undefined);
+    }
+    if (n.type === 'CONTACT_REQUEST') router.push('/contact-requests');
+    else if (n.postId) router.push({ pathname: '/post/[id]', params: { id: n.postId } });
+  };
 
-    const markAsRead = async (id: string, isRead: boolean) => {
-        if (isRead) return;
-        try {
-            setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
-            await api.post(`/notifications/me/read/${id}`);
-        } catch (e) { console.error(e); }
-    };
+  const markAll = async () => {
+    const prev = items;
+    setItems((list) => list.map((x) => ({ ...x, read: true })));
+    setUnread(0);
+    try {
+      await api.post('/notifications/me/read-all');
+    } catch (e) {
+      setItems(prev);
+      setError(e);
+    }
+  };
 
-    const handlePress = (item: Notification) => {
-        markAsRead(item.id, item.isRead);
-        // Navigate based on type if needed
-        // router.push(`/posts/${item.postId}`);
-    };
+  if (loading) return <StateView kind="loading" />;
 
-    const onRefresh = useCallback(() => {
-        setRefreshing(true);
-        fetchNotifications(true);
-    }, []);
-
-    useEffect(() => {
-        fetchNotifications();
-    }, []);
-
-    const getIcon = (type: string) => {
-        switch (type) {
-            case 'LIKE': return { name: 'heart', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)' };
-            case 'COMMENT': return { name: 'chatbubble', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.15)' };
-            case 'ALERT': return { name: 'warning', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)' };
-            case 'LEVEL_UP': return { name: 'trophy', color: '#eab308', bg: 'rgba(234, 179, 8, 0.15)' };
-            default: return { name: 'notifications', color: '#6b7280', bg: 'rgba(107, 114, 128, 0.15)' };
-        }
-    };
-
-    const renderSkeleton = () => (
-        <View className="px-4">
-            {[1, 2, 3, 4].map(i => (
-                <GlassView key={i} style={{ marginBottom: 12, padding: 16, height: 100 }}>
-                    <View className="flex-row items-center">
-                        <Skeleton width={48} height={48} borderRadius={24} />
-                        <View className="ml-4 flex-1">
-                            <Skeleton width="60%" height={16} style={{ marginBottom: 8 }} />
-                            <Skeleton width="90%" height={12} style={{ marginBottom: 8 }} />
-                            <Skeleton width="30%" height={10} />
-                        </View>
-                    </View>
-                </GlassView>
-            ))}
-        </View>
-    );
-
-    return (
-        <View className="flex-1 bg-[#f9fafb] dark:bg-[#020817]">
-            <SafeAreaView className="flex-1" edges={['top']}>
-                {/* Header Removed - Using System Header */}
-
-                {loading && !refreshing ? (
-                    renderSkeleton()
-                ) : (
-                    <FlatList
-                        data={notifications}
-                        keyExtractor={(item) => item.id}
-                        contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
-                        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={isDark ? 'white' : 'black'} />}
-                        renderItem={({ item }) => {
-                            const icon = getIcon(item.type);
-                            return (
-                                <GlassView
-                                    style={{
-                                        marginBottom: 12,
-                                        borderRadius: 16,
-                                        opacity: item.isRead ? 0.7 : 1
-                                    }}
-                                    intensity={item.isRead ? 10 : 25} // Subtler for read items
-                                >
-                                    <TouchableOpacity
-                                        onPress={() => handlePress(item)}
-                                        className="flex-row p-4 items-start"
-                                    >
-                                        {/* Icon Badge */}
-                                        <View style={{ backgroundColor: icon.bg }} className="w-12 h-12 rounded-full items-center justify-center mr-4">
-                                            <Ionicons name={icon.name as any} size={22} color={icon.color} />
-                                        </View>
-
-                                        {/* Content */}
-                                        <View className="flex-1">
-                                            <View className="flex-row justify-between items-start">
-                                                <Text className={`text-base flex-1 mr-2 ${item.isRead ? 'font-medium text-gray-700 dark:text-gray-300' : 'font-bold text-gray-900 dark:text-white'}`} numberOfLines={1}>
-                                                    {item.title}
-                                                </Text>
-                                                {!item.isRead && (
-                                                    <View className="w-2.5 h-2.5 bg-blue-500 rounded-full mt-1.5 shadow-sm shadow-blue-500" />
-                                                )}
-                                            </View>
-
-                                            <Text className="text-gray-500 dark:text-gray-400 text-sm mt-1 leading-5" numberOfLines={2}>
-                                                {item.message}
-                                            </Text>
-
-                                            <Text className="text-xs text-gray-400 mt-2 font-medium">
-                                                {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
-                                            </Text>
-                                        </View>
-                                    </TouchableOpacity>
-                                </GlassView>
-                            );
-                        }}
-                        ListEmptyComponent={
-                            <View className="items-center justify-center py-20 opacity-50">
-                                <GlassView style={{ padding: 40, borderRadius: 100, marginBottom: 20 }}>
-                                    <Ionicons name="notifications-off-outline" size={60} color={isDark ? "#9ca3af" : "#9ca3af"} />
-                                </GlassView>
-                                <Text className="text-gray-500 dark:text-gray-400 mt-4 text-lg font-bold">No notifications yet</Text>
-                                <Text className="text-gray-400 text-sm mt-2">We'll alert you when something happens.</Text>
-                            </View>
-                        }
-                    />
-                )}
-            </SafeAreaView>
-        </View>
-    );
+  return (
+    <View style={{ flex: 1, backgroundColor: c.bg }}>
+      <Stack.Screen options={{ headerRight: () => (unread ? <Button title={t('notifications.markAll')} variant="ghost" onPress={markAll} /> : null) }} />
+      <FlatList
+        data={items}
+        keyExtractor={(n) => n.id}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(1, 'refresh')} tintColor={c.primary} />}
+        onEndReached={() => hasMore && !error && void load(page + 1, 'more')}
+        ListHeaderComponent={error ? <StateView kind="error" title={describeError(error, t)} actionLabel={t('common.retry')} onAction={() => load(1, 'initial')} /> : null}
+        ListEmptyComponent={!error ? <StateView kind="empty" icon="notifications-off-outline" title={t('notifications.empty')} body={t('notifications.emptyBody')} /> : null}
+        ListFooterComponent={hasMore ? <ActivityIndicator style={{ padding: 16 }} /> : null}
+        renderItem={({ item }) => (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${item.read ? '' : t('notifications.unread') + '. '}${item.title ?? ''}. ${item.message}`}
+            onPress={() => open(item)}
+            style={{ flexDirection: 'row', gap: 12, padding: 16, borderBottomWidth: 1, borderBottomColor: c.border, backgroundColor: item.read ? c.bg : c.card }}
+          >
+            <Ionicons name={ICONS[item.type] ?? 'notifications-outline'} size={22} color={item.read ? c.muted : c.primary} />
+            <View style={{ flex: 1, gap: 2 }}>
+              {item.title ? <Text style={{ color: c.text, fontWeight: item.read ? '500' : '700' }}>{item.title}</Text> : null}
+              <Text style={{ color: c.muted }} numberOfLines={3}>
+                {item.message}
+              </Text>
+              <Text style={{ color: c.muted, fontSize: 12 }}>{timeAgo(item.createdAt, dateLocale)}</Text>
+            </View>
+            {!item.read ? <View accessibilityElementsHidden style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: c.primary, marginTop: 6 }} /> : null}
+          </Pressable>
+        )}
+      />
+    </View>
+  );
 }

@@ -11,7 +11,7 @@ import MobileMapFilter from "../MobileMapFilter";
 import MapControls from "../MapControls";
 import MapFilterControl from "../MapFilterControl";
 
-export default function Map({ posts, center = [37.7749, -122.4194], zoom = 16, radius, onMapClick, interactiveOnly = false, highlightedPostId }: MapProps) {
+export default function Map({ posts, center, zoom = 16, radius, onMapClick, interactiveOnly = false, highlightedPostId }: MapProps) {
     const {
         selectedCategory,
         setSelectedCategory,
@@ -19,6 +19,11 @@ export default function Map({ posts, center = [37.7749, -122.4194], zoom = 16, r
         setTimeRange,
         filteredPosts
     } = useMapFilters(posts);
+
+    // No silent default location: callers must pass the chosen area.
+    if (!center) {
+        return <div className="h-full w-full flex items-center justify-center text-muted-foreground text-sm">Choose an area to see the map.</div>;
+    }
 
     return (
         <div className="h-full w-full rounded-3xl overflow-hidden shadow-2xl border border-white/10 relative group bg-[#0a0a0a]">

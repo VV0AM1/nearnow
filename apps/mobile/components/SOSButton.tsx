@@ -1,185 +1,170 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet, Animated } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { AccessibilityInfo, Linking, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
-import api from '@/services/api';
+import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
+import api from '@/services/api';
+import { config } from '@/lib/config';
+import { useI18n } from '@/lib/i18n';
+import type { CreatedPost } from '@/lib/types';
+import { Button, useColors } from './ui';
 
-export function SOSButton() {
-    const [isCountingDown, setIsCountingDown] = useState(false);
-    const [count, setCount] = useState(3);
-    const [sending, setSending] = useState(false);
-    const [scaleAnim] = useState(new Animated.Value(1));
-    const router = useRouter();
+type Phase = 'closed' | 'info' | 'locating' | 'countdown' | 'sending' | 'result' | 'error';
+const COUNTDOWN_SECONDS = 5;
 
-    // Reset countdown when closed
-    useEffect(() => {
-        if (!isCountingDown) {
-            setCount(3);
-            setSending(false);
-        }
-    }, [isCountingDown]);
+/**
+ * Urgent help request. It only creates a community alert; it never claims that
+ * emergency services or anyone else was dispatched, and it always offers 112.
+ * Success is shown only after the server confirms, with the real number of people
+ * who were notified.
+ */
+export function UrgentHelpButton() {
+  const { t } = useI18n();
+  const c = useColors();
+  const router = useRouter();
+  const [phase, setPhase] = useState<Phase>('closed');
+  const [seconds, setSeconds] = useState(COUNTDOWN_SECONDS);
+  const [result, setResult] = useState<CreatedPost | null>(null);
+  const [errorText, setErrorText] = useState<string | null>(null);
+  const coords = useRef<{ latitude: number; longitude: number } | null>(null);
+  const sending = useRef(false);
+  const number = config.emergencyNumber;
 
-    useEffect(() => {
-        let timer: any;
-        if (isCountingDown && count > 0) {
-            timer = setTimeout(() => {
-                setCount((c) => c - 1);
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            }, 1000);
-        } else if (isCountingDown && count === 0) {
-            handleSOS();
-        }
-        return () => clearTimeout(timer);
-    }, [isCountingDown, count]);
+  const close = () => {
+    setPhase('closed');
+    setSeconds(COUNTDOWN_SECONDS);
+    setErrorText(null);
+  };
 
-    // Animation for the button
-    useEffect(() => {
-        if (isCountingDown) {
-            Animated.loop(
-                Animated.sequence([
-                    Animated.timing(scaleAnim, {
-                        toValue: 1.2,
-                        duration: 500,
-                        useNativeDriver: true,
-                    }),
-                    Animated.timing(scaleAnim, {
-                        toValue: 1,
-                        duration: 500,
-                        useNativeDriver: true,
-                    }),
-                ])
-            ).start();
-        } else {
-            scaleAnim.setValue(1);
-        }
-    }, [isCountingDown]);
+  const call = () => void Linking.openURL(`tel:${number}`);
 
-    const handleTrigger = () => {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        setIsCountingDown(true);
-    };
+  const start = async () => {
+    setPhase('locating');
+    try {
+      const perm = await Location.requestForegroundPermissionsAsync();
+      if (!perm.granted) throw new Error('permission');
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      coords.current = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+      setSeconds(COUNTDOWN_SECONDS);
+      setPhase('countdown');
+    } catch {
+      setErrorText(t('urgent.locationNeeded'));
+      setPhase('error');
+    }
+  };
 
-    const handleSOS = async () => {
-        setSending(true);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  useEffect(() => {
+    if (phase !== 'countdown') return;
+    if (seconds === 0) {
+      void send();
+      return;
+    }
+    AccessibilityInfo.announceForAccessibility(t('urgent.countdown', { s: seconds }));
+    const id = setTimeout(() => setSeconds((s) => s - 1), 1000);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, seconds]);
 
-        try {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') {
-                alert('Permission to access location was denied');
-                setIsCountingDown(false);
-                return;
-            }
+  const send = async () => {
+    if (sending.current || !coords.current) return;
+    sending.current = true;
+    setPhase('sending');
+    try {
+      const res = await api.post<CreatedPost>('/posts', {
+        title: t('urgent.defaultTitle'),
+        category: 'DANGER',
+        latitude: coords.current.latitude,
+        longitude: coords.current.longitude,
+      });
+      setResult(res.data);
+      setPhase('result');
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+    } catch {
+      setErrorText(t('urgent.failed', { number }));
+      setPhase('error');
+    } finally {
+      sending.current = false;
+      coords.current = null;
+    }
+  };
 
-            const location = await Location.getCurrentPositionAsync({});
+  const notified = result?.alertSummary?.notified ?? 0;
 
-            await api.post('/posts', {
-                title: "SOS Signal",
-                content: "EMERGENCY: I need immediate assistance at this location.",
-                category: "DANGER",
-                latitude: location.coords.latitude,
-                longitude: location.coords.longitude,
-            });
+  return (
+    <>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t('urgent.button')}
+        onPress={() => setPhase('info')}
+        style={{ minHeight: 44, paddingHorizontal: 10, borderRadius: 22, borderWidth: 1, borderColor: c.danger, flexDirection: 'row', alignItems: 'center', gap: 4 }}
+      >
+        <Ionicons name="alert-circle-outline" size={18} color={c.danger} />
+        <Text style={{ color: c.danger, fontWeight: '700', fontSize: 13 }}>{t('urgent.button')}</Text>
+      </Pressable>
 
-            alert('SOS SENT! Help is on the way.');
-        } catch (error) {
-            console.error(error);
-            alert('Failed to send SOS. Please call emergency services directly.');
-        } finally {
-            setIsCountingDown(false);
-        }
-    };
+      <Modal visible={phase !== 'closed'} animationType="slide" transparent onRequestClose={phase === 'sending' ? undefined : close}>
+        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <ScrollView style={{ backgroundColor: c.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '90%' }} contentContainerStyle={{ padding: 20, gap: 14 }}>
+            <Text accessibilityRole="header" style={{ color: c.text, fontSize: 20, fontWeight: '800' }}>
+              {phase === 'result' ? t('urgent.resultTitle') : t('urgent.title')}
+            </Text>
 
-    return (
-        <>
-            <TouchableOpacity
-                onPress={handleTrigger}
-                className="bg-red-100 p-2 rounded-full border border-red-200"
-            >
-                <Ionicons name="warning" size={24} color="#dc2626" />
-            </TouchableOpacity>
+            <View style={{ backgroundColor: c.dark ? '#3b0d0d' : '#fef2f2', borderRadius: 12, padding: 12, gap: 6 }}>
+              <Text style={{ color: c.danger, fontWeight: '700' }}>{t('urgent.callFirst', { number })}</Text>
+              <Text style={{ color: c.text }}>{t('urgent.notEmergency')}</Text>
+            </View>
+            <Button title={t('urgent.call', { number })} icon="call" variant="danger" onPress={call} />
 
-            <Modal visible={isCountingDown} transparent animationType="fade">
-                <View style={styles.overlay}>
-                    <View style={styles.container}>
-                        <Text style={styles.title}>SENDING SOS</Text>
+            {phase === 'info' ? (
+              <>
+                <Text style={{ color: c.muted, lineHeight: 20 }}>{t('urgent.explain')}</Text>
+                <Button title={t('urgent.post')} variant="secondary" icon="megaphone-outline" onPress={start} />
+                <Button title={t('common.cancel')} variant="ghost" onPress={close} />
+              </>
+            ) : null}
 
-                        <Animated.View style={[styles.circle, { transform: [{ scale: scaleAnim }] }]}>
-                            <Text style={styles.count}>{count}</Text>
-                        </Animated.View>
+            {phase === 'locating' ? <Button title={t('onboarding.locating')} loading variant="secondary" onPress={() => undefined} /> : null}
 
-                        <Text style={styles.subtitle}>Broadcasting emergency alert...</Text>
+            {phase === 'countdown' ? (
+              <>
+                <Text accessibilityLiveRegion="assertive" style={{ color: c.text, fontSize: 18, fontWeight: '700', textAlign: 'center' }}>
+                  {t('urgent.countdown', { s: seconds })}
+                </Text>
+                <Button title={t('urgent.cancel')} variant="secondary" icon="close" onPress={close} />
+              </>
+            ) : null}
 
-                        <TouchableOpacity
-                            onPress={() => setIsCountingDown(false)}
-                            style={styles.cancelButton}
-                        >
-                            <Ionicons name="close" size={24} color="white" />
-                            <Text style={styles.cancelText}>CANCEL</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
-        </>
-    );
+            {phase === 'sending' ? <Button title={t('urgent.sending')} loading variant="secondary" onPress={() => undefined} /> : null}
+
+            {phase === 'result' && result ? (
+              <>
+                <Text style={{ color: c.text, lineHeight: 22 }}>{notified > 0 ? t('urgent.resultNotified', { n: notified }) : t('urgent.resultNone')}</Text>
+                <Text style={{ color: c.danger, fontWeight: '700' }}>{t('urgent.resultReminder', { number })}</Text>
+                <Button
+                  title={t('map.viewDetails')}
+                  variant="secondary"
+                  onPress={() => {
+                    close();
+                    router.push({ pathname: '/post/[id]', params: { id: result.id } });
+                  }}
+                />
+                <Button title={t('common.close')} variant="ghost" onPress={close} />
+              </>
+            ) : null}
+
+            {phase === 'error' ? (
+              <>
+                <Text accessibilityLiveRegion="assertive" style={{ color: c.danger, fontWeight: '600' }}>
+                  {errorText}
+                </Text>
+                <Button title={t('common.retry')} variant="secondary" onPress={start} />
+                <Button title={t('common.close')} variant="ghost" onPress={close} />
+              </>
+            ) : null}
+          </ScrollView>
+        </View>
+      </Modal>
+    </>
+  );
 }
-
-const styles = StyleSheet.create({
-    overlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.9)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    container: {
-        alignItems: 'center',
-        width: '100%',
-    },
-    title: {
-        color: '#ef4444',
-        fontSize: 32,
-        fontWeight: '900',
-        letterSpacing: 4,
-        marginBottom: 40,
-    },
-    circle: {
-        width: 200,
-        height: 200,
-        borderRadius: 100,
-        backgroundColor: '#dc2626',
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: '#dc2626',
-        shadowOpacity: 0.8,
-        shadowRadius: 30,
-        shadowOffset: { width: 0, height: 0 },
-        elevation: 20,
-        marginBottom: 40,
-    },
-    count: {
-        color: 'white',
-        fontSize: 80,
-        fontWeight: 'bold',
-    },
-    subtitle: {
-        color: '#a1a1aa',
-        fontSize: 18,
-        marginBottom: 40,
-    },
-    cancelButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.2)',
-        paddingVertical: 16,
-        paddingHorizontal: 32,
-        borderRadius: 50,
-    },
-    cancelText: {
-        color: 'white',
-        fontWeight: 'bold',
-        fontSize: 18,
-        marginLeft: 10,
-    },
-});

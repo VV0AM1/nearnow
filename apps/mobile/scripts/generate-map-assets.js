@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ASSETS_DIR = path.join(__dirname, '../assets');
-const OUTPUT_FILE = path.join(__dirname, '../app/(app)/map-assets.ts');
+const OUTPUT_FILE = path.join(__dirname, '../lib/map-assets.ts');
 
 const files = {
     js: 'leaflet.js',

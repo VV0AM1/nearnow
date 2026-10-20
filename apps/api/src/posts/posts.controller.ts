@@ -1,114 +1,127 @@
-import { Controller, Get, Post, Body, Query, UseGuards, UseInterceptors, UploadedFile, Param, Req, OnModuleInit, Logger } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
-import { existsSync, mkdirSync } from 'fs';
+import { Role, type User } from '@prisma/client';
 import { PostsService } from './posts.service';
-import { CreatePostInput } from './dto/create-post.input';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import {
+  AuthorPostsQueryDto,
+  ConfirmPostDto,
+  CreatePostDto,
+  FeedQueryDto,
+  RemovePostDto,
+  ResolvePostDto,
+  VoteDto,
+} from './dto/post.dto';
+import { JwtAuthGuard, OptionalJwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../common/current-user.decorator';
+import { imageUploadOptions } from '../uploads/uploads.service';
 
 @Controller('posts')
-export class PostsController implements OnModuleInit {
-    private readonly logger = new Logger(PostsController.name);
+export class PostsController {
+  constructor(private readonly postsService: PostsService) {}
 
-    constructor(private readonly postsService: PostsService) { }
+  /** Posts by one author (profile view). Requires an author id; never returns everything. */
+  @Get()
+  @UseGuards(OptionalJwtAuthGuard)
+  byAuthor(@Query() q: AuthorPostsQueryDto, @CurrentUser() viewer?: User) {
+    return this.postsService.findByAuthor(q.authorId, q.page, q.limit, viewer);
+  }
 
-    onModuleInit() {
-        const uploadDir = './uploads';
-        if (!existsSync(uploadDir)) {
-            this.logger.log(`Creating upload directory: ${uploadDir}`);
-            mkdirSync(uploadDir, { recursive: true });
-        }
-    }
+  /** Location-bounded, paginated feed used by both the list and the map. */
+  @Get('feed')
+  @UseGuards(OptionalJwtAuthGuard)
+  feed(@Query() q: FeedQueryDto, @CurrentUser() viewer?: User) {
+    return this.postsService.getFeed(q, viewer);
+  }
 
-    @Get()
-    findAll(@Query('authorId') authorId?: string) {
-        return this.postsService.findAll(authorId);
-    }
+  @Get(':id')
+  @UseGuards(OptionalJwtAuthGuard)
+  findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() viewer?: User,
+  ) {
+    return this.postsService.findOne(id, viewer);
+  }
 
-    @Get('feed')
-    getFeed(
-        @Query('latitude') lat: string,
-        @Query('longitude') long: string,
-        @Query('radius') radius: string,
-        @Query('category') category: string,
-        @Query('search') search: string,
-        @Query('page') page: string,
-        @Query('limit') limit: string,
-    ) {
-        const r = radius ? parseFloat(radius) : 10;
-        const l1 = lat ? parseFloat(lat) : 0;
-        const l2 = long ? parseFloat(long) : 0;
-        const p = page ? parseInt(page) : 1;
-        const l = limit ? parseInt(limit) : 20;
-        return this.postsService.getFeed(l1, l2, r, category, search, p, l);
-    }
+  /** Accepts JSON or multipart/form-data with an optional image in field `file`. */
+  @Post()
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('file', imageUploadOptions))
+  create(
+    @Body() body: CreatePostDto,
+    @CurrentUser() user: User,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.postsService.create(body, user, file);
+  }
 
-    @Get(':id')
-    findOne(@Param('id') id: string) {
-        return this.postsService.findOne(id);
-    }
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  deleteOwn(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
+    return this.postsService.deleteOwn(id, user);
+  }
 
-    @Post()
-    @UseGuards(JwtAuthGuard)
-    @UseInterceptors(FileInterceptor('file', {
-        storage: diskStorage({
-            destination: './uploads',
-            filename: (req, file, cb) => {
-                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                const ext = extname(file.originalname);
-                cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
-            }
-        })
-    }))
-    create(
-        @Body() body: any,
-        @UploadedFile() file: Express.Multer.File,
-        @Req() req: any
-    ) {
-        try {
-            // Force Update Debug
-            const createPostInput: CreatePostInput = {
-                ...body,
-                latitude: parseFloat(body.latitude),
-                longitude: parseFloat(body.longitude),
-            };
-            const authorId = req.user.id; // Corrected: JwtStrategy returns full User object, so use .id
-            const imageUrl = file ? `/uploads/${file.filename}` : undefined;
+  @Post(':id/vote')
+  @HttpCode(200)
+  @UseGuards(JwtAuthGuard)
+  vote(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() _body: VoteDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.postsService.toggleVote(id, user);
+  }
 
-            this.logger.log(`Creating post for user ${authorId} with image: ${imageUrl}`);
+  @Get(':id/vote/check')
+  @UseGuards(JwtAuthGuard)
+  checkVote(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
+    return this.postsService.voteStatus(id, user);
+  }
 
-            return this.postsService.create(createPostInput, authorId, imageUrl);
-        } catch (error) {
-            this.logger.error(`Failed to create post: ${error.message}`, error.stack);
-            throw error; // Let NestJS handle the 500, but now we have logs.
-        }
-    }
-    @Post(':id/vote')
-    @UseGuards(JwtAuthGuard)
-    async vote(
-        @Param('id') id: string,
-        @Body() body: { type: 'UP' | 'DOWN' },
-        @Req() req: any
-    ) {
-        this.logger.log(`[Vote] User ${req.user.id} voting on post ${id} with type ${body.type}`);
-        try {
-            return await this.postsService.vote(id, req.user.id, body.type || 'UP');
-        } catch (error) {
-            this.logger.error(`[Vote] Failed: ${error.message}`, error.stack);
-            throw error;
-        }
-    }
+  @Post(':id/confirm')
+  @HttpCode(200)
+  @UseGuards(JwtAuthGuard)
+  confirm(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: ConfirmPostDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.postsService.confirm(id, user, body.state);
+  }
 
-    @Get(':id/vote/check')
-    @UseGuards(JwtAuthGuard)
-    async checkVote(@Param('id') id: string, @Req() req: any) {
-        this.logger.log(`[CheckVote] Checking vote for user ${req.user.id} on post ${id}`);
-        try {
-            return await this.postsService.checkVoteStatus(id, req.user.id);
-        } catch (error) {
-            this.logger.error(`[CheckVote] Failed: ${error.message}`, error.stack);
-            throw error;
-        }
-    }
+  @Patch(':id/resolve')
+  @UseGuards(JwtAuthGuard)
+  resolve(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: ResolvePostDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.postsService.resolve(id, user, body.note);
+  }
+
+  @Patch(':id/remove')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.MODERATOR)
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: RemovePostDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.postsService.remove(id, user, body.reason);
+  }
 }

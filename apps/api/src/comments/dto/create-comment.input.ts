@@ -1,15 +1,14 @@
-import { InputType, Field } from '@nestjs/graphql';
-import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsString, IsUUID, Length } from 'class-validator';
 
-@InputType()
 export class CreateCommentInput {
-    @Field()
-    @IsNotEmpty()
-    @IsString()
-    content: string;
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
+  @IsString()
+  @Length(1, 1000, { message: 'Comments must be 1–1000 characters' })
+  content: string;
 
-    @Field()
-    @IsNotEmpty()
-    @IsUUID()
-    postId: string;
+  @IsUUID()
+  postId: string;
 }

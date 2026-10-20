@@ -34,7 +34,6 @@ export default function MapStatsOverlay({ posts, radius, onReportClick }: MapSta
         return counts;
     }, [posts]);
 
-    // Calculate "Safety Score" or "Activity Density"
     // Heuristic: More posts / smaller radius = High Density (Potentially Riskier if Crime, Safer if Safety?)
     // Simplified: Just "Activity Level"
     const density = useMemo(() => {
@@ -44,10 +43,11 @@ export default function MapStatsOverlay({ posts, radius, onReportClick }: MapSta
         return Math.min(rawDensity * 10, 100); // Cap at 100
     }, [posts.length, radius]);
 
+    // Activity level only describes how many posts are shown — never risk or safety.
     const getRiskLabel = (score: number) => {
-        if (score < 30) return { label: "Low Activity", color: "text-emerald-400", bar: "bg-emerald-500" };
-        if (score < 70) return { label: "Moderate", color: "text-yellow-400", bar: "bg-yellow-500" };
-        return { label: "High Activity", color: "text-red-400", bar: "bg-red-500" };
+        if (score < 30) return { label: "Few posts", color: "text-zinc-300", bar: "bg-blue-500" };
+        if (score < 70) return { label: "Some posts", color: "text-zinc-300", bar: "bg-blue-500" };
+        return { label: "Many posts", color: "text-zinc-300", bar: "bg-blue-500" };
     };
 
     const risk = getRiskLabel(density);
@@ -62,7 +62,7 @@ export default function MapStatsOverlay({ posts, radius, onReportClick }: MapSta
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                     </span>
-                    <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">System Online</span>
+                    <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-wider">This area</span>
                 </div>
                 <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/5">
                     <span className="text-[10px] font-bold text-zinc-400">ACTIVE</span>
@@ -73,7 +73,7 @@ export default function MapStatsOverlay({ posts, radius, onReportClick }: MapSta
             {/* Total Alerts & Density */}
             <div className="flex items-end justify-between">
                 <div>
-                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">Total Alerts</h3>
+                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">Posts shown</h3>
                     <div className="text-3xl font-black text-white leading-none">
                         {posts.length}
                         <span className="text-xs font-bold text-zinc-500 ml-1">/{radius}km</span>
@@ -112,7 +112,7 @@ export default function MapStatsOverlay({ posts, radius, onReportClick }: MapSta
                 onClick={onReportClick}
                 className="w-full bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white py-2.5 rounded-xl font-bold shadow-lg shadow-red-900/20 active:scale-95 transition-all text-xs flex items-center justify-center gap-2"
             >
-                <span>+</span> REPORT INCIDENT
+                <span>+</span> NEW POST
             </button>
         </div>
     );

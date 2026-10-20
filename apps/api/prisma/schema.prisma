@@ -6,7 +6,7 @@ datasource db {
 
 generator client {
   provider      = "prisma-client-js"
-  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x"]
 }
 
 enum Role {
@@ -25,6 +25,7 @@ enum Category {
   DANGER
 }
 
+// Legacy: no longer written or displayed (raw report counts cannot establish safety).
 enum SafetyLevel {
   SAFE
   MODERATE
@@ -50,9 +51,18 @@ model User {
   notifications        Notification[]
   notificationSettings NotificationSettings?
   savedPosts           SavedPost[]
+  confirmations        PostConfirmation[]
+  deviceTokens         DeviceToken[]
+  moderationActions    ModerationAction[]
+  contactRequestsSent  ContactRequest[]   @relation("ContactRequester")
+  contactRequestsRecv  ContactRequest[]   @relation("ContactRecipient")
+  blocking             UserBlock[]        @relation("Blocker")
+  blockedBy            UserBlock[]        @relation("Blocked")
 
-  isBlocked Boolean @default(false)
-  reports   Report[] @relation("ReportedBy")
+  isBlocked Boolean   @default(false)
+  // Set when the account was deleted/anonymised at the user's request.
+  deletedAt DateTime?
+  reports   Report[]  @relation("ReportedBy")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -63,6 +73,8 @@ model User {
 
 model Auth {
   id              String  @id @default(uuid())
+  // bcrypt hash. Rows created before 2026-10 may still hold legacy plaintext; they are
+  // re-hashed on the next successful login (see AuthService.verifyPassword).
   passwordHash    String?
   googleId        String? @unique
   facebookId      String? @unique
@@ -71,8 +83,10 @@ model Auth {
   user   User   @relation(fields: [userId], references: [id])
   userId String @unique
 
-  emailOtp   String?
-  otpExpires DateTime?
+  // SHA-256 of the one-time code, never the code itself.
+  emailOtp    String?
+  otpExpires  DateTime?
+  otpAttempts Int       @default(0)
 }
 
 enum NotificationType {
@@ -80,6 +94,10 @@ enum NotificationType {
   ALERT
   WELCOME
   POST_NEARBY
+  COMMENT
+  POST_UPDATE
+  MATCH_SUGGESTION
+  CONTACT_REQUEST
 }
 
 model Notification {
@@ -92,13 +110,14 @@ model Notification {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
 
-  post   Post?   @relation(fields: [postId], references: [id])
+  post   Post?   @relation(fields: [postId], references: [id], onDelete: SetNull)
   postId String?
 
   createdAt DateTime @default(now())
-  
+
   @@index([userId]) // For fetching user notifications
-  @@index([read])   // For filtering unread
+  @@index([read]) // For filtering unread
+  @@index([userId, postId, type]) // Deduplication lookups
 }
 
 model NotificationSettings {
@@ -107,27 +126,52 @@ model NotificationSettings {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String @unique
 
-  emailAlerts Boolean @default(true)
-  pushAlerts  Boolean @default(true)
-  pushEnabled Boolean @default(true) // Alias for pushAlerts for consistency? Keep pushAlerts as primary.
+  emailAlerts Boolean @default(false)
+  // Legacy mirror of pushEnabled, kept in sync for older clients.
+  pushAlerts  Boolean @default(false)
+  pushEnabled Boolean @default(false)
+  // Pauses every nearby alert without losing the configuration.
+  paused      Boolean @default(false)
 
-  radiusKm   Float      @default(5.0)
-  latitude   Float      @default(0.0)
-  longitude  Float      @default(0.0)
+  radiusKm   Float      @default(2.0)
+  // Explicitly chosen alert area; null means "not set" (no nearby alerts are sent).
+  latitude   Float?
+  longitude  Float?
+  areaLabel  String?
   categories Category[]
 
+  // Minutes after local midnight; push is suppressed between start and end.
+  quietHoursStart Int?
+  quietHoursEnd   Int?
+  timezone        String?
+
   updatedAt DateTime @updatedAt
+
+  @@index([latitude, longitude])
+}
+
+model DeviceToken {
+  id         String    @id @default(uuid())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  token      String    @unique
+  platform   String
+  createdAt  DateTime  @default(now())
+  lastSeenAt DateTime  @default(now())
+  revokedAt  DateTime?
+
+  @@index([userId])
 }
 
 model City {
-  id        String   @id @default(uuid())
-  name      String   @unique
+  id        String @id @default(uuid())
+  name      String @unique
   country   String
   latitude  Float
   longitude Float
-  
+
   neighborhoods Neighborhood[]
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -135,18 +179,17 @@ model City {
 }
 
 model Neighborhood {
-  id          String      @id @default(uuid())
-  name        String
-  
-  city        City        @relation(fields: [cityId], references: [id])
-  cityId      String
+  id   String @id @default(uuid())
+  name String
+
+  city   City   @relation(fields: [cityId], references: [id])
+  cityId String
 
   latitude    Float
   longitude   Float
   radiusKm    Float       @default(1.0)
+  // Legacy columns (no longer updated): counts of user posts are not a safety measure.
   safetyLevel SafetyLevel @default(SAFE)
-
-  // Scoring
   crimeCount  Int         @default(0)
   safetyCount Int         @default(0)
   totalCount  Int         @default(0)
@@ -156,10 +199,30 @@ model Neighborhood {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@unique([name, cityId])
   @@index([latitude, longitude]) // For finding nearby neighborhoods
   @@index([cityId])
+}
+
+enum PostStatus {
+  ACTIVE
+  RESOLVED
+  // Expiry is evaluated at query time from expiresAt; this value exists for API parity.
+  EXPIRED
+  REMOVED
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  COMMUNITY_CONFIRMED
+  // Only assigned by a configured official-data provider with provenance.
+  OFFICIAL_SOURCE
+}
+
+enum SourceType {
+  COMMUNITY
+  OFFICIAL
 }
 
 model Post {
@@ -169,8 +232,10 @@ model Post {
   imageUrl String?
   category Category @default(GENERAL)
 
-  latitude  Float
-  longitude Float
+  latitude              Float
+  longitude             Float
+  // True when the author chose to publish a rounded (~300 m) location.
+  isApproximateLocation Boolean @default(false)
 
   author   User   @relation(fields: [authorId], references: [id])
   authorId String
@@ -178,21 +243,74 @@ model Post {
   neighborhood   Neighborhood? @relation(fields: [neighborhoodId], references: [id])
   neighborhoodId String?
 
+  status             PostStatus         @default(ACTIVE)
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  sourceType         SourceType         @default(COMMUNITY)
+  sourceName         String?
+  sourceUrl          String?
+  sourceExternalId   String?
+  expiresAt          DateTime?
+  lastConfirmedAt    DateTime?
+  resolvedAt         DateTime?
+  resolvedById       String?
+  resolutionNote     String?
+
   comments      Comment[]
   votes         PostVote[]
   notifications Notification[]
   reports       Report[]
   savedBy       SavedPost[]
+  confirmations PostConfirmation[]
+  lostFound     LostFoundItem?
 
   likes Int @default(0) // Cache for performance
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([sourceName, sourceExternalId])
   @@index([latitude, longitude]) // For geospatial feed queries
-  @@index([neighborhoodId])      // For neighborhood feed queries
-  @@index([createdAt])           // For feed sorting
-  @@index([authorId])            // For profile queries
+  @@index([neighborhoodId]) // For neighborhood feed queries
+  @@index([createdAt]) // For feed sorting
+  @@index([authorId]) // For profile queries
+  @@index([status, expiresAt])
+  @@index([category, createdAt])
+}
+
+enum ConfirmationState {
+  STILL_HAPPENING
+  NO_LONGER_PRESENT
+}
+
+// "Is this still happening?" answers. Separate from Report, which is for abuse/moderation.
+model PostConfirmation {
+  id     String            @id @default(uuid())
+  state  ConfirmationState
+  post   Post              @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId String
+  user   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([postId, userId])
+  @@index([postId, state])
+}
+
+// Audit trail for moderation-sensitive actions (resolve, remove, report review, block).
+model ModerationAction {
+  id         String   @id @default(uuid())
+  actor      User     @relation(fields: [actorId], references: [id])
+  actorId    String
+  action     String
+  targetType String
+  targetId   String
+  reason     String?
+  createdAt  DateTime @default(now())
+
+  @@index([targetType, targetId])
+  @@index([actorId])
 }
 
 model Comment {
@@ -227,13 +345,13 @@ model PostVote {
 }
 
 model SavedPost {
-  id        String   @id @default(uuid())
-  
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
+  id String @id @default(uuid())
 
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  postId    String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId String
 
   createdAt DateTime @default(now())
 
@@ -247,10 +365,12 @@ enum ReportStatus {
   DISMISSED
 }
 
+// Abuse/moderation reports about a post.
 model Report {
-  id     String       @id @default(uuid())
-  reason String
-  status ReportStatus @default(PENDING)
+  id      String       @id @default(uuid())
+  reason  String
+  details String?
+  status  ReportStatus @default(PENDING)
 
   reporter   User   @relation("ReportedBy", fields: [reporterId], references: [id])
   reporterId String
@@ -258,8 +378,99 @@ model Report {
   post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
   postId String
 
+  reviewedById String?
+  reviewedAt   DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([status]) // For admin dashboard filtering
+  @@index([postId, reporterId])
+}
+
+enum LostFoundDirection {
+  LOST
+  FOUND
+}
+
+enum LostFoundItemType {
+  KEYS
+  WALLET_BAG
+  ELECTRONICS
+  DOCUMENT
+  PET
+  CLOTHING
+  OTHER
+}
+
+enum LostFoundStatus {
+  OPEN
+  RETURNED
+  CLOSED
+}
+
+model LostFoundItem {
+  id           String             @id @default(uuid())
+  post         Post               @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId       String             @unique
+  direction    LostFoundDirection
+  itemType     LostFoundItemType
+  occurredFrom DateTime
+  occurredTo   DateTime
+  status       LostFoundStatus    @default(OPEN)
+  resolvedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([direction, itemType, status])
+}
+
+model LostFoundMatchDismissal {
+  id              String   @id @default(uuid())
+  userId          String
+  sourcePostId    String
+  candidatePostId String
+  createdAt       DateTime @default(now())
+
+  @@unique([userId, sourcePostId, candidatePostId])
+}
+
+enum ContactRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  BLOCKED
+}
+
+// Privacy-preserving contact: no email/phone is exchanged unless the recipient
+// chooses to include it in their reply.
+model ContactRequest {
+  id              String               @id @default(uuid())
+  postId          String
+  relatedPostId   String?
+  requester       User                 @relation("ContactRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  requesterId     String
+  recipient       User                 @relation("ContactRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  recipientId     String
+  message         String
+  status          ContactRequestStatus @default(PENDING)
+  responseMessage String?
+  createdAt       DateTime             @default(now())
+  respondedAt     DateTime?
+
+  @@index([recipientId, status])
+  @@index([requesterId])
+  @@index([postId])
+}
+
+model UserBlock {
+  id        String   @id @default(uuid())
+  blocker   User     @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockerId String
+  blocked   User     @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  blockedId String
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
 }

@@ -23,7 +23,7 @@ export default function PostContent({ content, imageUrl, createdAt, neighborhood
             <div className="mt-1 text-[10px] text-muted-foreground flex gap-2 items-center">
                 <span>{formatDistanceToNow(new Date(createdAt), { addSuffix: true })}</span>
                 <span className="w-1 h-1 rounded-full bg-muted-foreground/30"></span>
-                <span className="truncate max-w-[120px]">{neighborhoodName || "Unknown Area"}</span>
+                <span className="truncate max-w-[120px]">{neighborhoodName || "Nearby"}</span>
             </div>
         </>
     );

@@ -4,10 +4,9 @@ import { useEffect, useState, useRef } from "react";
 import { Search, MapPin, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFeed } from "../../../hooks/useFeed";
-import { useGeoLocation } from "../../../hooks/useGeoLocation";
+import { useDashboard } from "../../../context/DashboardContext";
 import { useRouter } from "next/navigation";
 import Skeleton from "../../ui/loading/Skeleton";
-import Cookies from "js-cookie";
 
 interface SearchModalProps {
     isOpen: boolean;
@@ -20,33 +19,18 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
     const router = useRouter();
 
 
-    // Get posts for searching (client-side for now, can move to server later)
-    // Priority: Live geolocation -> Cookie location -> Default SF
-    const { location: geoLoc } = useGeoLocation();
+    // Search the chosen area on the server (no default city).
+    const { location: feedLoc } = useDashboard();
 
-    // Helper to get initial location safely
-    const getSearchLocation = () => {
-        if (geoLoc.latitude && geoLoc.longitude) return { lat: geoLoc.latitude, long: geoLoc.longitude };
+    const [debounced, setDebounced] = useState("");
+    useEffect(() => {
+        const id = setTimeout(() => setDebounced(query.trim()), 300);
+        return () => clearTimeout(id);
+    }, [query]);
+    // 50 km is the largest radius the API accepts.
+    const { posts, loading } = useFeed(debounced ? feedLoc : null, 50, ["ALL"], [], 5, debounced);
 
-        const cookieLoc = Cookies.get("nearnow_location");
-        if (cookieLoc) {
-            try {
-                return JSON.parse(cookieLoc);
-            } catch (e) {
-                console.error("Failed to parse location cookie", e);
-            }
-        }
-        return { lat: 37.7749, long: -122.4194 };
-    };
-
-    const feedLoc = getSearchLocation();
-
-    // Use a very large radius (500km) for search to ensure we find potential interests
-    const { posts, loading } = useFeed(feedLoc, 500);
-
-    const filteredPosts = posts.filter(post =>
-        post.title.toLowerCase().includes(query.toLowerCase())
-    ).slice(0, 5); // Limit to top 5
+    const filteredPosts = debounced ? posts.slice(0, 5) : [];
 
     useEffect(() => {
         if (isOpen && inputRef.current) {

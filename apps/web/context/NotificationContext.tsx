@@ -1,28 +1,35 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { API_URL } from "../lib/config";
-import { getToken, getUserId } from "../lib/auth";
+import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from "react";
+import { getToken } from "../lib/auth";
+import { apiFetch } from "../lib/api";
 import { useSocket } from "../lib/socket-provider";
 
+/** Mirrors GET /notifications/me/settings. */
 export interface NotificationSettings {
-    id: string;
     radiusKm: number;
-    latitude: number;
-    longitude: number;
+    latitude: number | null;
+    longitude: number | null;
+    areaLabel: string | null;
+    hasAlertArea: boolean;
     categories: string[];
     pushEnabled: boolean;
+    paused: boolean;
+    pushAvailable: boolean;
 }
 
+export type SettingsUpdate = Partial<Pick<NotificationSettings, "radiusKm" | "latitude" | "longitude" | "areaLabel" | "categories" | "pushEnabled" | "paused">>;
+
+/** Mirrors the API notification contract. */
 export interface NotificationItem {
     id: string;
-    type: 'POST_NEARBY' | 'COMMENT_REPLY';
+    type: string;
+    title: string | null;
+    message: string;
     read: boolean;
     createdAt: string;
-    post?: {
-        id: string;
-        title: string;
-    };
+    postId: string | null;
+    post?: { id: string; title: string } | null;
 }
 
 interface NotificationContextType {
@@ -30,7 +37,7 @@ interface NotificationContextType {
     notifications: NotificationItem[];
     unreadCount: number;
     loading: boolean;
-    updateSettings: (settings: Partial<NotificationSettings>) => Promise<void>;
+    updateSettings: (settings: SettingsUpdate) => Promise<void>;
     markAsRead: (id: string) => Promise<void>;
     refresh: () => Promise<void>;
 }
@@ -42,135 +49,68 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [loading, setLoading] = useState(false);
-
-    // We can use the socket to listen for real-time notifications
     const socket = useSocket();
-    const userId = getUserId();
     const token = getToken();
 
-    const fetchSettings = async () => {
-        if (!userId || !token) return;
+    const fetchNotifications = useCallback(async () => {
+        if (!getToken()) return;
         try {
-            const res = await fetch(`${API_URL}/notifications/settings/${userId}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setSettings(data);
-            }
+            const data = await apiFetch<{ items: NotificationItem[]; unreadCount: number }>("/notifications/me?limit=20");
+            setNotifications(data.items);
+            setUnreadCount(data.unreadCount);
         } catch (err) {
             console.error(err);
         }
-    };
+    }, []);
 
-    const playNotificationSound = () => {
+    const fetchSettings = useCallback(async () => {
+        if (!getToken()) return;
         try {
-            const audio = new Audio("/sounds/notification.mp3");
-            audio.play().catch(() => { });
-        } catch (e) {
-            console.error("Sound error", e);
-        }
-    };
-
-    const fetchNotifications = async () => {
-        if (!userId || !token) return;
-        try {
-            const res = await fetch(`${API_URL}/notifications/${userId}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                const newUnread = data.filter((n: any) => !n.read).length;
-
-                // Only sound if count INCREASED
-                if (newUnread > unreadCount && newUnread > 0) {
-                    playNotificationSound();
-                }
-
-                setNotifications(data);
-                setUnreadCount(newUnread);
-            }
+            setSettings(await apiFetch<NotificationSettings>("/notifications/me/settings"));
         } catch (err) {
             console.error(err);
         }
-    };
+    }, []);
 
-    const updateSettings = async (newSettings: Partial<NotificationSettings>) => {
-        if (!userId || !token) return;
+    const updateSettings = async (update: SettingsUpdate) => {
         setLoading(true);
         try {
-            const merged = { ...settings, ...newSettings };
-            const res = await fetch(`${API_URL}/notifications/settings/${userId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify(merged)
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                setSettings(data);
-            }
-        } catch (err) {
-            console.error(err);
+            setSettings(await apiFetch<NotificationSettings>("/notifications/me/settings", { method: "PATCH", json: update }));
         } finally {
             setLoading(false);
         }
     };
 
     const markAsRead = async (id: string) => {
-        if (!token) return;
-
-        // Optimistic update
-        setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-        setUnreadCount(prev => Math.max(0, prev - 1));
-
+        setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+        setUnreadCount((prev) => Math.max(0, prev - 1));
         try {
-            await fetch(`${API_URL}/notifications/${id}/read`, {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await apiFetch(`/notifications/me/read/${id}`, { method: "POST" });
         } catch (err) {
             console.error(err);
-            // Revert on failure? For now, ignore.
+            void fetchNotifications();
         }
     };
 
-    // Initial Load
     useEffect(() => {
-        if (userId) {
-            fetchSettings();
-            fetchNotifications();
+        if (token) {
+            void fetchSettings();
+            void fetchNotifications();
         }
-    }, [userId]);
+    }, [token, fetchSettings, fetchNotifications]);
 
-    // Socket Listener
+    // The server only delivers this user's events to an authenticated socket.
     useEffect(() => {
         if (!socket) return;
-
-        socket.on('notification', () => {
-            console.log("New notification received via socket");
-            fetchNotifications();
-            playNotificationSound();
-        });
-
+        const onNotification = () => void fetchNotifications();
+        socket.on("notification", onNotification);
         return () => {
-            socket.off('notification');
+            socket.off("notification", onNotification);
         };
-    }, [socket]);
+    }, [socket, fetchNotifications]);
 
     return (
-        <NotificationContext.Provider value={{
-            settings,
-            notifications,
-            unreadCount,
-            loading,
-            updateSettings,
-            markAsRead,
-            refresh: fetchNotifications
-        }}>
+        <NotificationContext.Provider value={{ settings, notifications, unreadCount, loading, updateSettings, markAsRead, refresh: fetchNotifications }}>
             {children}
         </NotificationContext.Provider>
     );
@@ -178,8 +118,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
 export function useNotifications() {
     const context = useContext(NotificationContext);
-    if (!context) {
-        throw new Error("useNotifications must be used within a NotificationProvider");
-    }
+    if (!context) throw new Error("useNotifications must be used within a NotificationProvider");
     return context;
 }

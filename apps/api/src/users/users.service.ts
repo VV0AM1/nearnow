@@ -1,114 +1,187 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { PostStatus } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
-import { CreateUserInput } from './dto/create-user.input';
-import { UpdateUserInput } from './dto/update-user.input';
+import { UploadsService } from '../uploads/uploads.service';
+import { postInclude, toPostDto } from '../posts/post-mapper';
+import { toSelfUser } from '../auth/auth.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly uploads: UploadsService,
+  ) {}
 
-  create(createUserInput: CreateUserInput) {
-    return this.prisma.user.create({
-      data: createUserInput,
-    });
-  }
-
-  findAll() {
-    return this.prisma.user.findMany();
-  }
-
-  findOne(id: string) {
-    return this.prisma.user.findUnique({
-      where: { id },
-    });
-  }
-
+  /** The caller's own profile with activity counts and level. */
   async findProfile(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
       include: {
-        _count: {
-          select: { posts: true, votes: true, comments: true }
-        }
-      }
+        _count: { select: { posts: true, votes: true, comments: true } },
+      },
     });
+    if (!user || user.deletedAt) throw new NotFoundException('User not found');
 
-    if (!user) return null;
-
-    // Gamification Logic (Ported from Web)
     const points = user.reputation || 0;
     const POINTS_PER_LEVEL = 5;
     const level = Math.floor(points / POINTS_PER_LEVEL) + 1;
-
     let rank = 'Novice';
     if (level >= 50) rank = 'Platinum';
     else if (level >= 30) rank = 'Gold';
     else if (level >= 15) rank = 'Silver';
     else if (level >= 5) rank = 'Bronze';
-
-    const nextLevelPoints = level * POINTS_PER_LEVEL;
-    const currentLevelStartPoints = (level - 1) * POINTS_PER_LEVEL;
-    const pointsInCurrentLevel = points - currentLevelStartPoints;
-    const progress = (pointsInCurrentLevel / POINTS_PER_LEVEL) * 100;
+    const progress =
+      ((points - (level - 1) * POINTS_PER_LEVEL) / POINTS_PER_LEVEL) * 100;
 
     return {
-      ...user,
+      ...toSelfUser(user),
+      reputation: user.reputation,
+      _count: user._count,
       gamification: {
         level,
         rank,
         points,
-        nextLevelPoints,
-        progress
-      }
+        nextLevelPoints: level * POINTS_PER_LEVEL,
+        progress,
+      },
     };
   }
 
-  update(id: string, updateUserInput: UpdateUserInput) {
-    const { id: _, ...data } = updateUserInput;
-    return this.prisma.user.update({
-      where: { id },
-      data: data,
-    });
+  async updateProfile(
+    id: string,
+    data: { name?: string; bio?: string | null },
+  ) {
+    await this.prisma.user.update({ where: { id }, data });
+    return this.findProfile(id);
   }
 
-  remove(id: string) {
-    return this.prisma.user.delete({
+  async updateAvatar(id: string, file: Express.Multer.File | undefined) {
+    if (!file) throw new BadRequestException('Choose an image to upload');
+    const previous = await this.prisma.user.findUnique({
       where: { id },
+      select: { avatar: true },
     });
+    const avatar = await this.uploads.storeImage(file);
+    await this.prisma.user.update({ where: { id }, data: { avatar } });
+    if (previous?.avatar?.startsWith('/uploads/'))
+      await this.uploads.remove(previous.avatar);
+    return this.findProfile(id);
   }
 
   async getSavedPosts(userId: string) {
-    return this.prisma.savedPost.findMany({
-      where: { userId },
-      include: { post: true }, // Include full post details
-      orderBy: { createdAt: 'desc' }
+    const saved = await this.prisma.savedPost.findMany({
+      where: { userId, post: { status: { not: PostStatus.REMOVED } } },
+      include: { post: { include: postInclude } },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
     });
+    return saved.map((s) => ({
+      id: s.id,
+      postId: s.postId,
+      savedAt: s.createdAt,
+      post: toPostDto(s.post, {
+        viewer: {
+          isAuthor: s.post.authorId === userId,
+          hasSaved: true,
+          hasVoted: false,
+          confirmation: null,
+        },
+      }),
+    }));
   }
 
-  async toggleSavedPost(userId: string, postId: string) {
-    const existing = await this.prisma.savedPost.findUnique({
-      where: {
-        userId_postId: { userId, postId }
-      }
+  /** Toggles a save for the caller. Idempotent with an explicit desired state. */
+  async setSaved(userId: string, postId: string, saved?: boolean) {
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+      select: { status: true },
     });
-
-    if (existing) {
-      await this.prisma.savedPost.delete({
-        where: { id: existing.id }
-      });
-      return { saved: false };
-    } else {
-      await this.prisma.savedPost.create({
-        data: { userId, postId }
-      });
-      return { saved: true };
-    }
+    if (!post || post.status === PostStatus.REMOVED)
+      throw new NotFoundException('Post not found');
+    const existing = await this.prisma.savedPost.findUnique({
+      where: { userId_postId: { userId, postId } },
+    });
+    const want = saved ?? !existing;
+    if (want && !existing)
+      await this.prisma.savedPost.create({ data: { userId, postId } });
+    if (!want && existing)
+      await this.prisma.savedPost.delete({ where: { id: existing.id } });
+    return { saved: want };
   }
 
   async isPostSaved(userId: string, postId: string) {
-    const count = await this.prisma.savedPost.count({
-      where: { userId, postId }
+    return (
+      (await this.prisma.savedPost.count({ where: { userId, postId } })) > 0
+    );
+  }
+
+  /**
+   * Deletes the caller's account (GDPR erasure). Policy:
+   * - posts (with their location, images, comments and votes) are deleted;
+   * - the user's comments on other people's posts stay, shown as "Deleted user";
+   * - credentials, sessions' backing record, device tokens, alert settings,
+   *   notifications, saved items, confirmations, contact requests and blocks are deleted;
+   * - the user row is kept only as an anonymised tombstone so foreign keys of
+   *   remaining comments/audit entries stay valid. Its email is replaced, so the
+   *   address can be registered again.
+   */
+  async deleteAccount(userId: string) {
+    const posts = await this.prisma.post.findMany({
+      where: { authorId: userId },
+      select: { id: true, imageUrl: true },
     });
-    return count > 0;
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { avatar: true },
+    });
+
+    await this.prisma.$transaction(async (tx) => {
+      // Undo this user's likes on others' posts so counters stay correct.
+      const votes = await tx.postVote.findMany({
+        where: { userId, post: { authorId: { not: userId } } },
+        select: { postId: true },
+      });
+      for (const v of votes)
+        await tx.post.update({
+          where: { id: v.postId },
+          data: { likes: { decrement: 1 } },
+        });
+      await tx.postVote.deleteMany({ where: { userId } });
+
+      await tx.post.deleteMany({ where: { authorId: userId } });
+      await tx.notification.deleteMany({ where: { userId } });
+      await tx.notificationSettings.deleteMany({ where: { userId } });
+      await tx.deviceToken.deleteMany({ where: { userId } });
+      await tx.savedPost.deleteMany({ where: { userId } });
+      await tx.postConfirmation.deleteMany({ where: { userId } });
+      await tx.contactRequest.deleteMany({
+        where: { OR: [{ requesterId: userId }, { recipientId: userId }] },
+      });
+      await tx.userBlock.deleteMany({
+        where: { OR: [{ blockerId: userId }, { blockedId: userId }] },
+      });
+      await tx.lostFoundMatchDismissal.deleteMany({ where: { userId } });
+      await tx.auth.deleteMany({ where: { userId } });
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          email: `deleted-${userId}@deleted.invalid`,
+          name: null,
+          avatar: null,
+          bio: null,
+          reputation: 0,
+          deletedAt: new Date(),
+        },
+      });
+    });
+
+    for (const p of posts) await this.uploads.remove(p.imageUrl);
+    if (user?.avatar?.startsWith('/uploads/'))
+      await this.uploads.remove(user.avatar);
+    return { deleted: true };
   }
 }

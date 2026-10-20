@@ -21,16 +21,9 @@ export default function Home() {
     return <LandingPage />;
   }
 
-  // Default location (SF) - HomeContent handles geo-updates
-  const defaultLocation = { lat: 37.7749, long: -122.4194 };
-
   return (
     <DashboardLayout initialUser={user}>
-      <HomeContent
-        initialUser={user}
-        initialPosts={[]}
-        initialLocation={defaultLocation}
-      />
+      <HomeContent initialUser={user} initialPosts={[]} />
     </DashboardLayout>
   );
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { API_URL } from "../lib/config";
 import { useSocket } from "../lib/socket-provider";
+import { getToken } from "../lib/auth";
 
 export interface Post {
     id: string;
@@ -18,7 +19,7 @@ export interface Post {
 
 
 
-export function useMapPosts(location: { lat: number; long: number }, radius: number = 50) {
+export function useMapPosts(location: { lat: number; long: number } | null, radius: number = 50) {
     const [posts, setPosts] = useState<Post[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -26,11 +27,11 @@ export function useMapPosts(location: { lat: number; long: number }, radius: num
 
     const fetchMapPosts = async () => {
         // Wait for valid location
-        if (!location.lat || !location.long) return;
+        if (!location) return;
 
         try {
-            // Hardcoded high limit for map view to see "all" alerts
-            const limit = 1000;
+            // The API caps a page at 100 posts.
+            const limit = 100;
 
             const query = new URLSearchParams({
                 latitude: location.lat.toString(),
@@ -41,7 +42,8 @@ export function useMapPosts(location: { lat: number; long: number }, radius: num
                 limit: limit.toString()
             });
 
-            const res = await fetch(`${API_URL}/posts/feed?${query}`);
+            const token = getToken();
+            const res = await fetch(`${API_URL}/posts/feed?${query}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
             if (!res.ok) throw new Error("Failed to fetch map data");
 
             const data = await res.json();
@@ -57,23 +59,17 @@ export function useMapPosts(location: { lat: number; long: number }, radius: num
     useEffect(() => {
         setLoading(true);
         fetchMapPosts();
-    }, [location.lat, location.long, radius]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [location?.lat, location?.long, radius]);
 
     // Socket Listener for Real-time Updates
     useEffect(() => {
         if (!socket) return;
-        socket.on('new_post', (newPost: Post) => {
-            // Check if new post is within map view (roughly, or just append it safely)
-            // For now, simpler to just append it to the map list, maybe checking radius distance if we want to be strict
-            // But Map component filters/clusters anyway? No, map displays what it gets.
-            // Let's just refetch to be accurate with backend radius calc? 
-            // Better: Optimistic append if we trust the event data (it lacks distance info usually).
-            // Safest: Just refetch.
-            fetchMapPosts();
-        });
-
+        // The server emits 'postCreated' for every new post; refetch the bounded area.
+        const onPostCreated = () => void fetchMapPosts();
+        socket.on('postCreated', onPostCreated);
         return () => {
-            socket.off('new_post');
+            socket.off('postCreated', onPostCreated);
         };
     }, [socket, location, radius]);
 

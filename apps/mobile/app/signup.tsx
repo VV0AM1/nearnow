@@ -1,85 +1,81 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import api from '@/services/api';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { useI18n } from '@/lib/i18n';
+import { describeError } from '@/lib/errors';
+import { isEmail, PASSWORD_MIN } from '@/lib/validation';
+import { Button, Field, useColors } from '@/components/ui';
+import { OtpStep, PasswordField } from '@/components/AuthForms';
 
 export default function Signup() {
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [loading, setLoading] = useState(false);
-    const router = useRouter();
+  const { t } = useI18n();
+  const c = useColors();
+  const router = useRouter();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string; form?: string }>({});
+  const [busy, setBusy] = useState(false);
+  const [otpFor, setOtpFor] = useState<string | null>(null);
 
-    const handleSignup = async () => {
-        if (!name || !email || !password) {
-            Alert.alert('Error', 'Please fill in all fields');
-            return;
-        }
+  const submit = async () => {
+    if (busy) return;
+    const next: typeof errors = {};
+    if (!name.trim()) next.name = t('auth.nameRequired');
+    if (!isEmail(email)) next.email = t('auth.invalidEmail');
+    if (password.length < PASSWORD_MIN) next.password = t('auth.passwordTooShort');
+    setErrors(next);
+    if (Object.keys(next).length) return;
+    setBusy(true);
+    try {
+      await api.post('/auth/signup', { name: name.trim(), email: email.trim(), password });
+      setOtpFor(email.trim().toLowerCase());
+    } catch (e) {
+      setErrors({ form: describeError(e, t) });
+    } finally {
+      setBusy(false);
+    }
+  };
 
-        setLoading(true);
-        try {
-            await api.post('/auth/signup', { name, email, password });
-            Alert.alert('Success', 'Account created! Please login.');
-            router.back();
-        } catch (error: any) {
-            Alert.alert('Signup Failed', error.response?.data?.message || 'Something went wrong');
-        } finally {
-            setLoading(false);
-        }
-    };
+  // After sign-up the account exists, so a new code is requested through the normal sign-in step.
+  const resend = async () => {
+    await api.post('/auth/login', { email: email.trim(), password });
+  };
 
-    return (
-        <SafeAreaView className="flex-1 bg-white p-6 justify-center">
-            <TouchableOpacity onPress={() => router.back()} className="mb-6 flex-row items-center absolute top-12 left-6 z-10">
-                <Ionicons name="arrow-back" size={24} color="black" />
-            </TouchableOpacity>
-
-            <View className="items-center mb-10 mt-10">
-                <Text className="text-3xl font-bold text-blue-600">Create Account</Text>
-                <Text className="text-gray-500 mt-2">Join your neighborhood today.</Text>
+  return (
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: c.bg }}>
+      <ScrollView contentContainerStyle={{ padding: 24 }} keyboardShouldPersistTaps="handled">
+        {otpFor ? (
+          <OtpStep email={otpFor} onResend={resend} onBack={() => setOtpFor(null)} />
+        ) : (
+          <View>
+            <Text style={{ color: c.muted, marginBottom: 20 }}>{t('auth.tagline')}</Text>
+            <Field label={t('auth.name')} value={name} onChangeText={setName} error={errors.name} autoComplete="name" textContentType="name" max={60} />
+            <Field
+              label={t('auth.email')}
+              value={email}
+              onChangeText={setEmail}
+              error={errors.email}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+              autoCorrect={false}
+            />
+            <PasswordField label={t('auth.password')} value={password} onChangeText={setPassword} error={errors.password} newPassword onSubmitEditing={submit} />
+            {errors.form ? (
+              <Text accessibilityLiveRegion="polite" style={{ color: c.danger, marginBottom: 12 }}>
+                {errors.form}
+              </Text>
+            ) : null}
+            <Button title={t('auth.signUp')} onPress={submit} loading={busy} />
+            <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 16 }}>
+              <Text style={{ color: c.muted }}>{t('auth.haveAccount')}</Text>
+              <Button title={t('auth.signIn')} variant="ghost" onPress={() => router.back()} />
             </View>
-
-            <TextInput
-                placeholder="Full Name"
-                value={name}
-                onChangeText={setName}
-                className="w-full bg-gray-100 p-4 rounded-lg mb-4 border border-gray-200"
-            />
-            <TextInput
-                placeholder="Email"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                className="w-full bg-gray-100 p-4 rounded-lg mb-4 border border-gray-200"
-            />
-            <TextInput
-                placeholder="Password"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                className="w-full bg-gray-100 p-4 rounded-lg mb-6 border border-gray-200"
-            />
-
-            <TouchableOpacity
-                onPress={handleSignup}
-                disabled={loading}
-                className="w-full bg-blue-600 p-4 rounded-lg items-center"
-            >
-                {loading ? (
-                    <ActivityIndicator color="white" />
-                ) : (
-                    <Text className="text-white font-bold text-lg">Sign Up</Text>
-                )}
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => router.back()} className="mt-8 items-center">
-                <Text className="text-gray-600">
-                    Already have an account? <Text className="text-blue-600 font-bold">Login</Text>
-                </Text>
-            </TouchableOpacity>
-        </SafeAreaView>
-    );
+          </View>
+        )}
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
 }

@@ -1,18 +1,13 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { ReportsController } from './reports.controller';
 
 describe('ReportsController', () => {
-  let controller: ReportsController;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      controllers: [ReportsController],
-    }).compile();
-
-    controller = module.get<ReportsController>(ReportsController);
-  });
-
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
+  it('uses the authenticated user as reporter, never a client-supplied id', async () => {
+    const service: any = { create: jest.fn().mockResolvedValue({}) };
+    const controller = new ReportsController(service);
+    await controller.create(
+      { postId: 'p', reason: 'SPAM', reporterId: 'forged' } as any,
+      { id: 'me' } as any,
+    );
+    expect(service.create).toHaveBeenCalledWith(expect.anything(), 'me');
   });
 });

@@ -1,197 +1,94 @@
-import { API_URL } from "../services/api";
-import api from "../services/api";
-import { useState, useEffect } from "react";
-import { View, Text, Image, TouchableOpacity, Share } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { formatDistanceToNow } from "date-fns";
-import { Link, useRouter } from "expo-router";
-import { useAuth } from "@/context/AuthContext";
-import { GlassView } from "./GlassView"; // New Premium Component
-import { useToast } from "@/context/ToastContext"; // Custom Toasts
-import { LinearGradient } from "expo-linear-gradient";
+import React, { memo, useState } from 'react';
+import { Image, Pressable, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { useI18n } from '@/lib/i18n';
+import { mediaUrl } from '@/lib/config';
+import { formatKm } from '@/lib/format';
+import type { Post } from '@/lib/types';
+import { usePostActions } from '@/hooks/usePostActions';
+import { CategoryBadge, TrustLine } from './PostStatus';
+import { ReportSheet } from './ReportSheet';
+import { useColors } from './ui';
 
-export function FeedPost({ item }: { item: any }) {
-    const { user } = useAuth();
-    const router = useRouter();
-    const { showToast } = useToast(); // Use Toast
-
-    const [votes, setVotes] = useState(item.likes || 0);
-    const [liked, setLiked] = useState(false);
-    const [isSaved, setIsSaved] = useState(false);
-
-    // Initial Check
-    useEffect(() => {
-        if (user) {
-            // Check Vote
-            api.get(`/posts/${item.id}/vote/check`)
-                .then(res => {
-                    if (res.data.hasVoted && res.data.type === 'UP') {
-                        setLiked(true);
-                    }
-                })
-                .catch(err => console.log("Vote check failed", err));
-
-            // Check Saved
-            api.get(`/users/me/saved/${item.id}/check`)
-                .then(res => setIsSaved(res.data.isSaved))
-                .catch(err => console.log("Save check failed", err));
-        }
-    }, [user, item.id]);
-
-    // Fix Image URL
-    const ROOT_URL = API_URL.replace('/api', '');
-    const imageUrl = item.imageUrl
-        ? (item.imageUrl.startsWith('http') ? item.imageUrl : `${ROOT_URL}${item.imageUrl}`)
-        : null;
-
-    const handleVote = async () => {
-        try {
-            const newLikedState = !liked;
-            setLiked(newLikedState);
-            setVotes((prev: number) => {
-                const newVal = newLikedState ? prev + 1 : prev - 1;
-                return Math.max(0, newVal);
-            });
-
-            await api.post(`/posts/${item.id}/vote`, {
-                type: 'UP'
-            });
-        } catch (e) {
-            console.error(e);
-            // Revert
-            setLiked(!liked);
-            setVotes((prev: number) => liked ? prev + 1 : prev - 1);
-            showToast("Failed to vote", "error");
-        }
-    };
-
-    const handleShare = async () => {
-        try {
-            await Share.share({
-                message: `Check out this post on Nearnow: ${item.title}`,
-                url: `https://nearnow.app/post/${item.id}`,
-            });
-        } catch (error) {
-            console.log(error);
-        }
-    };
-
-    const handleSave = async () => {
-        try {
-            const newState = !isSaved;
-            setIsSaved(newState);
-            await api.post(`/users/me/saved/${item.id}`);
-            if (newState) showToast("Post Saved!", "success");
-        } catch (error) {
-            console.error("Save failed", error);
-            setIsSaved(!isSaved); // Revert
-            showToast("Failed to save", "error");
-        }
-    };
-
-    const handleMapPress = () => {
-        if (item.latitude && item.longitude) {
-            router.push({
-                pathname: '/(app)/map',
-                params: {
-                    latitude: item.latitude,
-                    longitude: item.longitude,
-                    highlightPostId: item.id
-                }
-            } as any);
-        } else {
-            showToast("No location data", "info");
-        }
-    };
-
-
-    return (
-        <GlassView style={{ marginBottom: 16, marginHorizontal: 16, borderRadius: 16 }}>
-            <View style={{ padding: 16 }}>
-                {/* Header */}
-                <View className="flex-row items-center mb-3">
-                    <View className="bg-blue-100 dark:bg-blue-900/40 h-10 w-10 rounded-full items-center justify-center border border-blue-200 dark:border-blue-800">
-                        <Text className="text-blue-700 dark:text-blue-300 font-bold">{item.author?.name?.[0] || 'U'}</Text>
-                    </View>
-                    <View className="ml-3 flex-1">
-                        <Text className="font-bold text-gray-800 dark:text-gray-100 text-base">{item.author?.name || 'Anonymous'}</Text>
-                        <View className="flex-row items-center mt-0.5">
-                            <Text className="text-xs text-gray-500 dark:text-gray-400">{item.neighborhood?.name || 'Nearby'}</Text>
-                            {item.latitude && (
-                                <TouchableOpacity onPress={handleMapPress} className="ml-2 flex-row items-center bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded-md">
-                                    <Ionicons name="location-sharp" size={10} color="#2563eb" />
-                                    <Text className="text-[10px] text-gray-600 dark:text-gray-300 ml-0.5 font-bold">Map</Text>
-                                </TouchableOpacity>
-                            )}
-                        </View>
-                    </View>
-                    <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} className="p-2 opacity-60">
-                        <Ionicons name="ellipsis-horizontal" size={20} color="gray" />
-                    </TouchableOpacity>
-                </View>
-
-                {/* Content */}
-                <Text className="text-lg font-bold text-gray-900 dark:text-white mb-2 leading-6">{item.title}</Text>
-
-                <LinearGradient
-                    colors={['rgba(37, 99, 235, 0.1)', 'rgba(6, 182, 212, 0.1)']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={{ paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999, alignSelf: 'flex-start', marginBottom: 12, borderWidth: 1, borderColor: 'rgba(59, 130, 246, 0.2)' }}
-                >
-                    <Text className="text-blue-600 dark:text-cyan-400 text-xs font-bold uppercase tracking-wider">{item.category}</Text>
-                </LinearGradient>
-
-                <Text className="text-gray-600 dark:text-gray-300 mb-4 leading-6 text-base">{item.content}</Text>
-
-                {imageUrl && (
-                    <Image
-                        source={{ uri: imageUrl }}
-                        className="w-full h-56 rounded-xl mb-4 bg-gray-100 dark:bg-neutral-800"
-                        resizeMode="cover"
-                    />
-                )}
-
-                {/* Footer */}
-                <View className="flex-row justify-between items-center border-t border-gray-100 dark:border-white/10 pt-4 mt-2">
-                    <View className="flex-row items-center space-x-6 gap-6">
-                        <TouchableOpacity
-                            className="flex-row items-center"
-                            onPress={handleVote}
-                        >
-                            <Ionicons name={liked ? "heart" : "heart-outline"} size={24} color={liked ? "#ef4444" : "#9ca3af"} />
-                            <Text className={`ml-2 font-medium ${liked ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`}>{votes}</Text>
-                        </TouchableOpacity>
-
-                        {/* @ts-ignore */}
-                        <Link href={`/(app)/post/${item.id}`} asChild>
-                            <TouchableOpacity className="flex-row items-center">
-                                <Ionicons name="chatbubble-outline" size={22} color="#9ca3af" />
-                                <Text className="ml-2 text-gray-500 dark:text-gray-400 font-medium">{item.comments?.length || item._count?.comments || 0}</Text>
-                            </TouchableOpacity>
-                        </Link>
-
-                        <TouchableOpacity onPress={handleShare}>
-                            <Ionicons name="share-social-outline" size={22} color="#9ca3af" />
-                        </TouchableOpacity>
-                    </View>
-
-                    <View className="flex-row items-center gap-4">
-                        <TouchableOpacity onPress={handleSave}>
-                            <Ionicons name={isSaved ? "bookmark" : "bookmark-outline"} size={22} color={isSaved ? "#3b82f6" : "#9ca3af"} />
-                        </TouchableOpacity>
-
-                        {/* @ts-ignore */}
-                        <Link href={`/(app)/post/${item.id}`} asChild>
-                            <TouchableOpacity>
-                                <Text className="text-xs text-gray-400 font-medium">
-                                    {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
-                                </Text>
-                            </TouchableOpacity>
-                        </Link>
-                    </View>
-                </View>
-            </View>
-        </GlassView>
-    );
+function Action({ icon, label, text, onPress, active, color }: { icon: keyof typeof Ionicons.glyphMap; label: string; text?: string; onPress: () => void; active?: boolean; color?: string }) {
+  const c = useColors();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={text ? `${label}, ${text}` : label}
+      accessibilityState={{ selected: !!active }}
+      onPress={onPress}
+      hitSlop={4}
+      style={{ minWidth: 44, minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 6 }}
+    >
+      <Ionicons name={icon} size={21} color={active ? (color ?? c.primary) : c.muted} />
+      {text ? <Text style={{ color: c.muted, fontWeight: '600' }}>{text}</Text> : null}
+    </Pressable>
+  );
 }
+
+function FeedPostInner({ item }: { item: Post }) {
+  const { t } = useI18n();
+  const c = useColors();
+  const router = useRouter();
+  const { liked, likes, saved, toggleLike, toggleSave, share } = usePostActions(item);
+  const [reporting, setReporting] = useState(false);
+  const image = mediaUrl(item.imageUrl);
+  const inactive = item.status !== 'ACTIVE';
+  const open = () => router.push({ pathname: '/post/[id]', params: { id: item.id } });
+
+  const place = [item.neighborhood?.name, item.distanceKm !== undefined ? t('post.distance', { km: formatKm(item.distanceKm) }) : null]
+    .filter(Boolean)
+    .join(' · ');
+
+  return (
+    <View style={{ marginHorizontal: 16, marginBottom: 12, backgroundColor: c.card, borderRadius: 16, borderWidth: 1, borderColor: c.border, opacity: inactive ? 0.8 : 1 }}>
+      <Pressable accessibilityRole="button" accessibilityHint={t('post.comments')} onPress={open} style={{ padding: 16, paddingBottom: 8, gap: 8 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <CategoryBadge post={item} />
+          {item.lostFound ? (
+            <Text style={{ color: c.muted, fontSize: 12, fontWeight: '700' }}>
+              {item.lostFound.direction === 'LOST' ? t('post.lost') : t('post.found')} · {t(`itemType.${item.lostFound.itemType}`)}
+            </Text>
+          ) : null}
+        </View>
+        <Text style={{ color: c.text, fontSize: 17, fontWeight: '700', lineHeight: 22 }} numberOfLines={2}>
+          {item.title}
+        </Text>
+        {item.content ? (
+          <Text style={{ color: c.muted, lineHeight: 20 }} numberOfLines={3}>
+            {item.content}
+          </Text>
+        ) : null}
+        {image ? (
+          <Image source={{ uri: image }} accessibilityIgnoresInvertColors style={{ width: '100%', height: 190, borderRadius: 12, backgroundColor: c.border }} resizeMode="cover" />
+        ) : null}
+        <TrustLine post={item} />
+        {place || item.author ? (
+          <Text style={{ color: c.muted, fontSize: 12 }} numberOfLines={1}>
+            {place}
+            {item.isApproximateLocation ? ` · ${t('post.approxLocation')}` : ''}
+            {item.author ? ` · ${t('post.by', { name: item.author.name })}` : ''}
+          </Text>
+        ) : null}
+      </Pressable>
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8, paddingBottom: 4, borderTopWidth: 1, borderTopColor: c.border }}>
+        <View style={{ flexDirection: 'row' }}>
+          <Action icon={liked ? 'thumbs-up' : 'thumbs-up-outline'} label={t('post.like')} text={String(likes)} onPress={toggleLike} active={liked} />
+          <Action icon="chatbubble-outline" label={t('post.comments')} text={String(item.commentCount)} onPress={open} />
+          <Action icon="map-outline" label={t('post.viewOnMap')} onPress={() => router.push({ pathname: '/(app)/map', params: { focus: item.id, lat: String(item.latitude), lng: String(item.longitude) } })} />
+        </View>
+        <View style={{ flexDirection: 'row' }}>
+          <Action icon={saved ? 'bookmark' : 'bookmark-outline'} label={saved ? t('post.unsave') : t('post.save')} onPress={toggleSave} active={saved} />
+          <Action icon="share-outline" label={t('post.share')} onPress={share} />
+          {!item.viewer?.isAuthor ? <Action icon="flag-outline" label={t('post.report')} onPress={() => setReporting(true)} /> : null}
+        </View>
+      </View>
+      {reporting ? <ReportSheet postId={item.id} visible={reporting} onClose={() => setReporting(false)} /> : null}
+    </View>
+  );
+}
+
+export const FeedPost = memo(FeedPostInner);

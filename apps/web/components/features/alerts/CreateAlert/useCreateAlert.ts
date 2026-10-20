@@ -42,23 +42,15 @@ export function useCreateAlert(initialLocation: { lat: number; long: number }, o
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            // Extract location context
-            const neighborhood = addressObject?.suburb || addressObject?.neighbourhood || addressObject?.quarter || addressObject?.residential;
-            const city = addressObject?.city || addressObject?.town || addressObject?.village || addressObject?.municipality || addressObject?.county;
-            const country = addressObject?.country;
+            // The server derives the neighbourhood from the coordinates.
 
             await createPost({
                 ...formData,
                 latitude: selectedLocation.lat,
                 longitude: selectedLocation.long,
                 imageFile: formData.imageFile || undefined,
-                neighborhood,
-                city,
-                country
             });
 
-            // Persist location
-            localStorage.setItem("userLocation", JSON.stringify(selectedLocation));
 
             onClose();
             window.location.reload();

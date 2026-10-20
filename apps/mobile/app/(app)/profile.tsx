@@ -1,351 +1,233 @@
-import { View, Text, TouchableOpacity, ScrollView, RefreshControl, Image, ActivityIndicator, Switch } from 'react-native';
-import { useTheme } from '@/context/ThemeContext';
+import { useState } from 'react';
+import { Alert, Image, Linking, Modal, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useFocusEffect } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
+import { useRouter } from 'expo-router';
+import api from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
-import { useEffect, useState, useCallback } from 'react';
-import * as Location from 'expo-location';
-import api, { API_URL } from '@/services/api';
-import { format } from 'date-fns';
-import { startBackgroundLocation, stopBackgroundLocation, COMPANION_LOCATION_TASK } from '@/services/location-task';
-import { GlassView } from '@/components/GlassView';
+import { useArea } from '@/context/LocationContext';
+import { useTheme } from '@/context/ThemeContext';
 import { useToast } from '@/context/ToastContext';
+import { useI18n, type LocalePreference } from '@/lib/i18n';
+import { describeError } from '@/lib/errors';
+import { config, mediaUrl } from '@/lib/config';
+import { IMAGE_TYPES, MAX_IMAGE_BYTES } from '@/lib/validation';
+import type { Profile } from '@/lib/types';
+import { Button, Card, Chip, Field, SectionTitle, StateView, useColors } from '@/components/ui';
+
+function Row({ icon, label, value, onPress, danger }: { icon: keyof typeof Ionicons.glyphMap; label: string; value?: string; onPress: () => void; danger?: boolean }) {
+  const c = useColors();
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52 }}>
+      <Ionicons name={icon} size={22} color={danger ? c.danger : c.text} />
+      <Text style={{ flex: 1, color: danger ? c.danger : c.text, fontSize: 16 }}>{label}</Text>
+      {value ? <Text style={{ color: c.muted }}>{value}</Text> : null}
+      <Ionicons name="chevron-forward" size={18} color={c.muted} />
+    </Pressable>
+  );
+}
 
 export default function ProfileScreen() {
-    const { themeMode, activeTheme, setThemeMode } = useTheme();
-    const { signOut } = useAuth();
-    const router = useRouter();
-    const { showToast } = useToast();
-    const isDark = activeTheme === 'dark';
+  const { t, preference, setPreference } = useI18n();
+  const c = useColors();
+  const router = useRouter();
+  const { showToast } = useToast();
+  const { user, refreshUser, signOut } = useAuth();
+  const { area } = useArea();
+  const { themeMode, setThemeMode } = useTheme();
+  const [refreshing, setRefreshing] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [name, setName] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [confirmText, setConfirmText] = useState('');
+  const [loadError, setLoadError] = useState<unknown>(null);
 
-    const [profile, setProfile] = useState<any>(null);
-    const [settings, setSettings] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
+  const refresh = async () => {
+    setRefreshing(true);
+    setLoadError(null);
+    try {
+      await refreshUser();
+    } catch (e) {
+      setLoadError(e);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
-    // Background tracking state
-    const [isTracking, setIsTracking] = useState(false);
-    const [togglingTrack, setTogglingTrack] = useState(false);
+  const saveName = async () => {
+    if (!name.trim() || busy) return;
+    setBusy(true);
+    try {
+      await api.patch<Profile>('/users/me', { name: name.trim() });
+      await refreshUser();
+      setEditingName(false);
+      showToast(t('profile.nameSaved'), 'success');
+    } catch (e) {
+      showToast(describeError(e, t), 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
 
-    const fetchProfile = async () => {
-        try {
-            const [resProfile, resSettings] = await Promise.all([
-                api.get('/users/me'),
-                api.get('/notifications/me/settings')
-            ]);
-            setProfile(resProfile.data);
-            setSettings(resSettings.data);
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
-        }
-    };
+  const changePhoto = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) return showToast(t('create.galleryDenied'), 'warning');
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.7, exif: false });
+    if (res.canceled || !res.assets[0]) return;
+    const a = res.assets[0];
+    const type = a.mimeType ?? 'image/jpeg';
+    if (!IMAGE_TYPES.includes(type)) return showToast(t('create.photoType'), 'error');
+    if (a.fileSize && a.fileSize > MAX_IMAGE_BYTES) return showToast(t('create.photoTooLarge'), 'error');
+    const form = new FormData();
+    form.append('file', { uri: a.uri, name: 'avatar.jpg', type } as unknown as Blob);
+    try {
+      await api.post('/users/avatar', form, { headers: { 'Content-Type': 'multipart/form-data' }, transformRequest: (d) => d });
+      await refreshUser();
+      showToast(t('profile.photoUpdated'), 'success');
+    } catch (e) {
+      showToast(describeError(e, t), 'error');
+    }
+  };
 
-    const checkTrackingStatus = async () => {
-        const hasStarted = await Location.hasStartedLocationUpdatesAsync(COMPANION_LOCATION_TASK);
-        setIsTracking(hasStarted);
-    };
+  const deleteAccount = async () => {
+    if (confirmText !== 'DELETE' || busy) return;
+    setBusy(true);
+    try {
+      await api.delete('/users/me', { data: { confirm: 'DELETE' } });
+      setDeleteOpen(false);
+      showToast(t('profile.deleted'), 'success');
+      await signOut('deleted');
+    } catch (e) {
+      showToast(describeError(e, t), 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
 
-    useFocusEffect(
-        useCallback(() => {
-            fetchProfile();
-            checkTrackingStatus();
-        }, [])
-    );
+  const confirmSignOut = () =>
+    Alert.alert(t('profile.signOut'), undefined, [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('profile.signOut'), style: 'destructive', onPress: () => void signOut('user') },
+    ]);
 
-    const onRefresh = useCallback(() => {
-        setRefreshing(true);
-        fetchProfile();
-        checkTrackingStatus();
-    }, []);
-
-    // Update Radius
-    const updateRadius = async (radius: number) => {
-        try {
-            // Optimistic update
-            setSettings({ ...settings, radiusKm: radius });
-            await api.put('/notifications/me/settings', {
-                ...settings,
-                radiusKm: radius
-            });
-        } catch (e) {
-            showToast("Failed to update radius", "error");
-        }
-    };
-
-    const toggleTracking = async (value: boolean) => {
-        setTogglingTrack(true);
-        try {
-            if (value) {
-                const success = await startBackgroundLocation();
-                setIsTracking(success);
-                if (!success) showToast("Permission required (Always Allow)", "warning");
-                else showToast("Background tracking active", "success");
-            } else {
-                await stopBackgroundLocation();
-                setIsTracking(false);
-                showToast("Tracking paused", "info");
-            }
-        } catch (e) {
-            console.error(e);
-            showToast("Could not toggle tracking", "error");
-            setIsTracking(false);
-        } finally {
-            setTogglingTrack(false);
-        }
-    };
-
-    const THEME_OPTIONS = [
-        { label: 'Light', value: 'light', icon: 'sunny' },
-        { label: 'Dark', value: 'dark', icon: 'moon' },
-        { label: 'System', value: 'system', icon: 'settings' },
-    ] as const;
-
-    const RADIUS_OPTIONS = [5, 10, 25, 50];
-
-    // Colors
-    const containerBg = isDark ? '#020817' : '#f9fafb';
-    const textMain = isDark ? '#ffffff' : '#111827';
-    const textSub = isDark ? '#9ca3af' : '#6b7280';
-    const themeRowBg = isDark ? '#1e293b' : '#f3f4f6';
-
-    const level = profile?.gamification?.level || 1;
-    const xp = profile?.gamification?.points || 0;
-    const nextLevelXp = profile?.gamification?.nextLevelPoints || 5;
-    const progress = profile?.gamification?.progress || 0;
-
+  if (!user) {
     return (
-        <ScrollView
-            style={{ flex: 1, backgroundColor: containerBg }}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={isDark ? 'white' : 'black'} />}
-        >
-            {/* Header / Avatar */}
-            <View className="px-6 pt-12 pb-6">
-                <View className="flex-row items-center justify-between">
-                    <View className="flex-row items-center gap-4">
-                        <View className="relative">
-                            {profile?.avatar ? (
-                                <Image
-                                    source={{ uri: `${API_URL.replace('/api', '')}${profile.avatar}` }}
-                                    className="w-20 h-20 rounded-full border-4 border-white dark:border-white/10"
-                                />
-                            ) : (
-                                <View className="w-20 h-20 bg-blue-600 rounded-full items-center justify-center border-4 border-white dark:border-white/10 shadow-lg shadow-blue-900/20">
-                                    <Text className="text-white text-3xl font-bold">{profile?.name?.[0] || 'U'}</Text>
-                                </View>
-                            )}
-                            <TouchableOpacity className="absolute bottom-0 right-0 bg-gray-900 dark:bg-white p-1.5 rounded-full border-2 border-white dark:border-gray-900">
-                                <Ionicons name="pencil" size={12} color={isDark ? 'black' : 'white'} />
-                            </TouchableOpacity>
-                        </View>
-                        <View>
-                            <Text className="text-2xl font-black dark:text-white">{profile?.name || 'User'}</Text>
-                            <Text className="text-gray-500 dark:text-gray-400 text-xs font-semibold uppercase tracking-wide">
-                                Level {level} • {profile?.gamification?.rank || 'Novice'}
-                            </Text>
-                            <View className="mt-2 h-1.5 w-32 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
-                                <View style={{ width: `${progress}%` }} className="h-full bg-blue-600 rounded-full" />
-                            </View>
-                        </View>
-                    </View>
-
-                    {/* Settings / Logout (Mini) */}
-                    <TouchableOpacity onPress={() => { signOut(); router.replace('/login'); }}>
-                        <Ionicons name="log-out-outline" size={24} color={isDark ? '#ef4444' : '#ef4444'} />
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            {/* 1. Stats Grid */}
-            <GlassView style={{ marginHorizontal: 16, marginBottom: 16, padding: 20, borderRadius: 24 }}>
-                <View className="flex-row justify-between items-center">
-                    <View className="items-center flex-1">
-                        <Text className="text-xl font-bold dark:text-white">{profile?._count?.posts || 0}</Text>
-                        <Text className="text-xs text-gray-500 uppercase tracking-wide mt-1 font-bold">Posts</Text>
-                    </View>
-                    <View className="w-[1px] h-8 bg-gray-200 dark:bg-white/10" />
-                    <View className="items-center flex-1">
-                        <Text className="text-xl font-bold dark:text-white">{profile?._count?.votes || 0}</Text>
-                        <Text className="text-xs text-gray-500 uppercase tracking-wide mt-1 font-bold">Votes</Text>
-                    </View>
-                    <View className="w-[1px] h-8 bg-gray-200 dark:bg-white/10" />
-                    <View className="items-center flex-1">
-                        <Text className="text-xl font-bold dark:text-white">{profile?._count?.comments || 0}</Text>
-                        <Text className="text-xs text-gray-500 uppercase tracking-wide mt-1 font-bold">Comments</Text>
-                    </View>
-                </View>
-            </GlassView>
-
-            {/* 2. Menu Links (Saved & Notifications) */}
-            <GlassView style={{ marginHorizontal: 16, marginBottom: 16, borderRadius: 24 }}>
-                <TouchableOpacity
-                    onPress={() => router.push('/(app)/saved' as any)}
-                    className="flex-row items-center p-4 border-b border-gray-100 dark:border-white/5"
-                >
-                    <View className="bg-blue-100 dark:bg-blue-900/40 p-2.5 rounded-xl mr-4">
-                        <Ionicons name="bookmark" size={20} color="#3b82f6" />
-                    </View>
-                    <Text className="flex-1 font-bold text-base dark:text-white">Saved Posts</Text>
-                    <Ionicons name="chevron-forward" size={20} color={isDark ? '#6b7280' : '#d1d5db'} />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    className="flex-row items-center p-4"
-                    onPress={() => router.push('/notifications' as any)}
-                >
-                    <View className="bg-purple-100 dark:bg-purple-900/40 p-2.5 rounded-xl mr-4">
-                        <Ionicons name="notifications" size={20} color="#a855f7" />
-                    </View>
-                    <Text className="flex-1 font-bold text-base dark:text-white">Notifications</Text>
-                    <Ionicons name="chevron-forward" size={20} color={isDark ? '#6b7280' : '#d1d5db'} />
-                </TouchableOpacity>
-            </GlassView>
-
-            {/* 3. Notification Logic (Location & Filters) */}
-            <GlassView style={{ marginHorizontal: 16, marginBottom: 16, borderRadius: 24, padding: 0 }}>
-                <View className="p-5">
-                    <View className="flex-row items-center justify-between mb-6">
-                        <View className="flex-1 mr-4">
-                            <Text style={{ fontSize: 13, fontWeight: '800', color: textSub, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                                Live Safety Tracking
-                            </Text>
-                            <Text className="text-xs text-gray-500 mt-1 dark:text-gray-400 leading-4">
-                                Auto-update location for alerts.
-                            </Text>
-                        </View>
-                        {togglingTrack ? (
-                            <ActivityIndicator />
-                        ) : (
-                            <Switch
-                                value={isTracking}
-                                onValueChange={toggleTracking}
-                                trackColor={{ false: '#767577', true: '#3b82f6' }}
-                                thumbColor={isTracking ? '#ffffff' : '#f4f3f4'}
-                            />
-                        )}
-                    </View>
-
-                    {/* Radius Selector */}
-                    <Text className="text-gray-500 dark:text-gray-400 text-xs mb-3 font-medium uppercase tracking-wide">
-                        Alert Radius: <Text className="font-bold dark:text-white text-blue-500">{settings?.radiusKm || 5} km</Text>
-                    </Text>
-
-                    <View className="flex-row justify-between mb-6 gap-2">
-                        {RADIUS_OPTIONS.map(km => {
-                            const isActive = settings?.radiusKm === km;
-                            return (
-                                <TouchableOpacity
-                                    key={km}
-                                    onPress={() => updateRadius(km)}
-                                    className={`flex-1 py-2.5 rounded-xl items-center border ${isActive ? 'bg-blue-600 border-blue-600' : 'bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10'}`}
-                                >
-                                    <Text className={`${isActive ? 'text-white' : 'text-gray-700 dark:text-gray-300'} font-bold`}>{km}km</Text>
-                                </TouchableOpacity>
-                            )
-                        })}
-                    </View>
-
-                    {/* Category Filters */}
-                    <Text className="text-gray-500 dark:text-gray-400 text-xs mb-3 font-medium uppercase tracking-wide">
-                        Filter Categories
-                    </Text>
-                    <View className="flex-row flex-wrap gap-2">
-                        {[
-                            { id: 'DANGER', label: 'SOS', color: '#ef4444' },
-                            { id: 'CRIME', label: 'Crime', color: '#dc2626' },
-                            { id: 'SAFETY', label: 'Safety', color: '#22c55e' },
-                            { id: 'LOST_FOUND', label: 'Lost', color: '#eab308' },
-                            { id: 'EVENT', label: 'Event', color: '#a855f7' },
-                            { id: 'RECOMMENDATION', label: 'Rec', color: '#ec4899' },
-                        ].map((cat) => {
-                            const isSelected = settings?.categories?.includes(cat.id);
-                            return (
-                                <TouchableOpacity
-                                    key={cat.id}
-                                    onPress={async () => {
-                                        const current = settings?.categories || [];
-                                        const newCats = isSelected
-                                            ? current.filter((c: string) => c !== cat.id)
-                                            : [...current, cat.id];
-
-                                        setSettings({ ...settings, categories: newCats });
-                                        await api.put('/notifications/me/settings', { ...settings, categories: newCats });
-                                    }}
-                                    style={{
-                                        backgroundColor: isSelected ? cat.color : (isDark ? '#1e293b' : '#f3f4f6'),
-                                        paddingHorizontal: 14,
-                                        paddingVertical: 8,
-                                        borderRadius: 20,
-                                        borderWidth: 1,
-                                        borderColor: isSelected ? cat.color : (isDark ? 'transparent' : '#e5e7eb')
-                                    }}
-                                >
-                                    <Text style={{
-                                        color: isSelected ? 'white' : (isDark ? '#cbd5e1' : '#4b5563'),
-                                        fontWeight: '600',
-                                        fontSize: 12
-                                    }}>
-                                        {cat.label}
-                                    </Text>
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </View>
-                </View>
-            </GlassView>
-
-            {/* 4. Theme Selector */}
-            <GlassView style={{ marginHorizontal: 16, marginBottom: 16, padding: 16, borderRadius: 24 }}>
-                <Text style={{ fontSize: 13, fontWeight: '800', color: textSub, textTransform: 'uppercase', marginBottom: 12, letterSpacing: 0.5 }}>
-                    Appearance
-                </Text>
-
-                <View style={{ flexDirection: 'row', backgroundColor: themeRowBg, padding: 4, borderRadius: 16 }}>
-                    {THEME_OPTIONS.map((opt) => {
-                        const isActive = themeMode === opt.value;
-                        return (
-                            <TouchableOpacity
-                                key={opt.value}
-                                onPress={() => setThemeMode(opt.value)}
-                                style={{
-                                    flex: 1,
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    paddingVertical: 10,
-                                    borderRadius: 12,
-                                    gap: 6,
-                                    backgroundColor: isActive ? (isDark ? '#334155' : '#ffffff') : 'transparent',
-                                    shadowColor: isActive ? "#000" : undefined,
-                                    shadowOffset: { width: 0, height: 1 },
-                                    shadowOpacity: isActive ? 0.1 : 0,
-                                    shadowRadius: 1,
-                                    elevation: isActive ? 1 : 0
-                                }}
-                            >
-                                <Ionicons
-                                    name={opt.icon as any}
-                                    size={16}
-                                    color={isActive ? (isDark ? '#fff' : '#000') : '#94a3b8'}
-                                />
-                                <Text style={{
-                                    fontWeight: '600',
-                                    fontSize: 13,
-                                    color: isActive ? textMain : '#94a3b8'
-                                }}>
-                                    {opt.label}
-                                </Text>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </View>
-            </GlassView>
-
-
-
-            <View className="h-10" />
-        </ScrollView>
+      <SafeAreaView style={{ flex: 1, backgroundColor: c.bg, justifyContent: 'center' }}>
+        {loadError ? <StateView kind="error" title={describeError(loadError, t)} actionLabel={t('common.retry')} onAction={refresh} /> : <StateView kind="loading" />}
+        <Button title={t('profile.signOut')} variant="ghost" onPress={confirmSignOut} />
+      </SafeAreaView>
     );
+  }
+
+  const avatar = mediaUrl(user.avatar);
+  const languages: LocalePreference[] = ['system', 'en', 'es', 'ca'];
+
+  return (
+    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={c.primary} />}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('profile.changePhoto')} onPress={changePhoto}>
+            {avatar ? (
+              <Image source={{ uri: avatar }} style={{ width: 72, height: 72, borderRadius: 36 }} />
+            ) : (
+              <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: c.primary, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: '#fff', fontSize: 28, fontWeight: '800' }}>{(user.name ?? '?').slice(0, 1).toUpperCase()}</Text>
+              </View>
+            )}
+          </Pressable>
+          <View style={{ flex: 1 }}>
+            <Text accessibilityRole="header" style={{ color: c.text, fontSize: 22, fontWeight: '800' }}>
+              {user.name ?? '—'}
+            </Text>
+            <Text style={{ color: c.muted }}>{user.email}</Text>
+            <Text style={{ color: c.muted, fontSize: 12 }}>{t('profile.level', { level: user.gamification.level, rank: user.gamification.rank })}</Text>
+          </View>
+        </View>
+
+        {editingName ? (
+          <Card>
+            <Field label={t('auth.name')} value={name} onChangeText={setName} max={60} autoFocus />
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Button title={t('common.cancel')} variant="secondary" onPress={() => setEditingName(false)} style={{ flex: 1 }} />
+              <Button title={t('common.save')} onPress={saveName} loading={busy} style={{ flex: 1 }} />
+            </View>
+          </Card>
+        ) : (
+          <Button
+            title={t('profile.editName')}
+            variant="secondary"
+            icon="create-outline"
+            onPress={() => {
+              setName(user.name ?? '');
+              setEditingName(true);
+            }}
+          />
+        )}
+
+        <Card style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
+          {[
+            [t('profile.posts'), user._count.posts],
+            [t('profile.votes'), user._count.votes],
+            [t('profile.comments'), user._count.comments],
+          ].map(([label, n]) => (
+            <View key={String(label)} style={{ alignItems: 'center' }} accessible accessibilityLabel={`${label}: ${n}`}>
+              <Text style={{ color: c.text, fontSize: 20, fontWeight: '800' }}>{n}</Text>
+              <Text style={{ color: c.muted, fontSize: 12 }}>{label}</Text>
+            </View>
+          ))}
+        </Card>
+
+        <Card>
+          <Row icon="location-outline" label={t('profile.area')} value={area?.label ?? undefined} onPress={() => router.push('/city-picker')} />
+          <Row icon="notifications-outline" label={t('profile.alerts')} onPress={() => router.push('/alerts')} />
+          <Row icon="bookmark-outline" label={t('profile.saved')} onPress={() => router.push('/saved')} />
+          <Row icon="mail-outline" label={t('profile.contacts')} onPress={() => router.push('/contact-requests')} />
+        </Card>
+
+        <SectionTitle>{t('profile.language')}</SectionTitle>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {languages.map((l) => (
+            <Chip key={l} label={t(`language.${l}`)} selected={preference === l} onPress={() => setPreference(l)} />
+          ))}
+        </View>
+
+        <SectionTitle>{t('profile.theme')}</SectionTitle>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {(['light', 'dark', 'system'] as const).map((m) => (
+            <Chip key={m} label={t(`profile.${m}`)} selected={themeMode === m} onPress={() => setThemeMode(m)} />
+          ))}
+        </View>
+
+        <Card>
+          {config.privacyUrl ? <Row icon="document-text-outline" label={t('profile.privacy')} onPress={() => void Linking.openURL(config.privacyUrl!)} /> : null}
+          {config.supportEmail ? <Row icon="help-circle-outline" label={t('profile.support')} onPress={() => void Linking.openURL(`mailto:${config.supportEmail}`)} /> : null}
+          <Row icon="log-out-outline" label={t('profile.signOut')} onPress={confirmSignOut} />
+          <Row icon="trash-outline" label={t('profile.deleteAccount')} onPress={() => setDeleteOpen(true)} danger />
+        </Card>
+      </ScrollView>
+
+      <Modal visible={deleteOpen} transparent animationType="fade" onRequestClose={() => setDeleteOpen(false)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 24 }}>
+          <Card style={{ gap: 12 }}>
+            <Text accessibilityRole="header" style={{ color: c.text, fontSize: 18, fontWeight: '800' }}>
+              {t('profile.deleteTitle')}
+            </Text>
+            <Text style={{ color: c.muted, lineHeight: 20 }}>{t('profile.deleteBody')}</Text>
+            <Field label={t('profile.deleteTypeHere')} value={confirmText} onChangeText={setConfirmText} autoCapitalize="characters" autoCorrect={false} />
+            <Button title={t('profile.deleteAccount')} variant="danger" onPress={deleteAccount} loading={busy} disabled={confirmText !== 'DELETE'} />
+            <Button
+              title={t('common.cancel')}
+              variant="ghost"
+              onPress={() => {
+                setDeleteOpen(false);
+                setConfirmText('');
+              }}
+            />
+          </Card>
+        </View>
+      </Modal>
+    </SafeAreaView>
+  );
 }

@@ -16,6 +16,13 @@ export interface Post {
     };
     imageUrl?: string;
     comments?: any[];
+    author?: { id: string; name: string; avatar?: string | null } | null;
+    status?: "ACTIVE" | "RESOLVED" | "EXPIRED" | "REMOVED";
+    isStale?: boolean;
+    verificationStatus?: "UNVERIFIED" | "COMMUNITY_CONFIRMED" | "OFFICIAL_SOURCE";
+    confirmations?: { stillHappening: number; noLongerPresent: number };
+    commentCount?: number;
+    viewer?: { isAuthor: boolean; hasVoted: boolean; hasSaved: boolean; confirmation: string | null };
 }
 
 export interface PostProps {

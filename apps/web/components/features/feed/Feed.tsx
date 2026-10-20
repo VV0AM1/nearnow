@@ -17,20 +17,13 @@ import { useDashboard } from "../../../context/DashboardContext";
 import { Post } from "../../../types/post";
 
 interface FeedContainerProps {
-    initialLocation?: { lat: number; long: number };
     initialPosts?: Post[];
     onReportClick?: () => void;
 }
 
-export default function FeedContainer({ initialLocation, initialPosts = [], onReportClick }: FeedContainerProps) {
+export default function FeedContainer({ initialPosts = [], onReportClick }: FeedContainerProps) {
     const { location, setLocation, searchQuery } = useDashboard();
 
-    // Sync if initialLocation changes (server side props) - update Global Context
-    useEffect(() => {
-        if (initialLocation) {
-            setLocation(initialLocation);
-        }
-    }, [initialLocation, setLocation]);
 
     const [radius, setRadius] = useState(10);
     const [categories, setCategories] = useState<string[]>(["ALL"]);
@@ -92,9 +85,9 @@ export default function FeedContainer({ initialLocation, initialPosts = [], onRe
                 <div>
                     <h1 className="text-2xl font-black bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 bg-clip-text text-transparent flex items-center gap-3">
                         <Activity className="h-6 w-6 text-blue-500" />
-                        Live Activity Feed
+                        Community updates
                     </h1>
-                    <p className="text-zinc-400 text-xs mt-1 ml-1">Real-time community updates • <span className="text-emerald-400 font-mono animate-pulse">LIVE</span></p>
+                    <p className="text-zinc-400 text-xs mt-1 ml-1">Posts from people near {location?.label ?? "your chosen area"} · each shows when it was posted and confirmed</p>
                 </div>
 
 
@@ -105,7 +98,7 @@ export default function FeedContainer({ initialLocation, initialPosts = [], onRe
                 <div className="flex flex-col md:flex-row gap-4 px-2 items-center">
                     <div className="flex-1 w-full md:max-w-2xl ml-1">
                         <LocationSearch
-                            onLocationSelect={(lat, long) => setLocation({ lat, long })}
+                            onLocationSelect={(lat, long) => setLocation({ lat, long, label: "Searched place" })}
                         />
                     </div>
 
@@ -163,7 +156,7 @@ export default function FeedContainer({ initialLocation, initialPosts = [], onRe
                         <div className="absolute top-4 left-4 z-10 pointer-events-none scale-90 origin-top-left md:scale-100">
                             <MapStatsOverlay posts={mapPosts} radius={radius} onReportClick={onReportClick} />
                         </div>
-                        <MapLoader posts={mapPosts} center={location} radius={radius} highlightedPostId={highlightedPostId} />
+                        {location && <MapLoader posts={mapPosts} center={location} radius={radius} highlightedPostId={highlightedPostId} />}
                     </div>
                 </div>
             )}

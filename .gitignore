@@ -40,3 +40,9 @@ next-env.d.ts
 
 # Brain
 brain/
+
+# Build output and runtime data
+dist/
+apps/api/uploads/
+.env.*
+!.env.example

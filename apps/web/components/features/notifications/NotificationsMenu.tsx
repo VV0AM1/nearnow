@@ -55,9 +55,9 @@ export default function NotificationsMenu() {
                                                 }`}
                                         >
                                             <p className="font-medium line-clamp-1">
-                                                {n.type === 'POST_NEARBY' ? "New Activity Nearby" : "Reply to your post"}
+                                                {n.title || "Notification"}
                                             </p>
-                                            {n.post && <p className="text-xs text-muted-foreground line-clamp-1">{n.post.title}</p>}
+                                            <p className="text-xs text-muted-foreground line-clamp-2">{n.message}</p>
                                             <span className="text-[10px] text-muted-foreground/80 mt-1 block">
                                                 {new Date(n.createdAt).toLocaleTimeString()}
                                             </span>

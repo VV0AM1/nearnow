@@ -1,88 +1,133 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import * as SecureStore from 'expo-secure-store';
-import { useRouter, useSegments } from 'expo-router';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import api, { setAuthToken, setUnauthorizedHandler } from '@/services/api';
+import { getString, KEYS, setString } from '@/lib/storage';
+import { isExpired, tokenExpiry } from '@/lib/jwt';
+import { toAppError } from '@/lib/errors';
+import type { Profile } from '@/lib/types';
 
-type AuthType = {
-    user: string | null;
-    isLoading: boolean;
-    signIn: (token: string) => void;
-    signOut: () => void;
-};
+export type AuthStatus = 'loading' | 'signedOut' | 'signedIn';
+export type SignOutReason = 'user' | 'expired' | 'deleted';
 
-const AuthContext = createContext<AuthType>({
-    user: null,
-    isLoading: true,
-    signIn: () => { },
-    signOut: () => { },
-});
-
-export function useAuth() {
-    return useContext(AuthContext);
+interface AuthValue {
+  status: AuthStatus;
+  /** Loaded profile; null while loading it or when the network is unavailable. */
+  user: Profile | null;
+  /** Message to show on the login screen after an involuntary sign-out. */
+  notice: SignOutReason | null;
+  signIn: (token: string) => Promise<void>;
+  signOut: (reason?: SignOutReason) => Promise<void>;
+  refreshUser: () => Promise<void>;
+  clearNotice: () => void;
 }
 
-function useProtectedRoute(user: string | null) {
-    const segments = useSegments();
-    const router = useRouter();
+const AuthContext = createContext<AuthValue | null>(null);
 
-    useEffect(() => {
-        const inAuthGroup = (segments[0] as string) === '(app)';
-
-        if (
-            // If the user is not signed in and the initial segment is not anything in the auth group.
-            !user &&
-            inAuthGroup
-        ) {
-            // Redirect to the sign-in page.
-            router.replace('/login');
-        } else if (user && !inAuthGroup) {
-            // Redirect away from the sign-in page.
-            router.replace('/(app)/home' as any);
-        }
-    }, [user, segments]);
+/** Hooks registered here run before the token is dropped (e.g. revoke push token). */
+const beforeSignOut = new Set<() => Promise<void>>();
+export function onBeforeSignOut(fn: () => Promise<void>) {
+  beforeSignOut.add(fn);
+  return () => beforeSignOut.delete(fn);
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [user, setUser] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+  const [status, setStatus] = useState<AuthStatus>('loading');
+  const [user, setUser] = useState<Profile | null>(null);
+  const [notice, setNotice] = useState<SignOutReason | null>(null);
+  const expiryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const signingOut = useRef(false);
 
-    useEffect(() => {
-        const checkToken = async () => {
-            try {
-                const token = await SecureStore.getItemAsync('token');
-                if (token) {
-                    setUser(token);
-                }
-            } catch (e) {
-                console.error('Failed to fetch token', e);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        checkToken();
-    }, []);
+  const clearSession = useCallback(async (reason: SignOutReason) => {
+    if (signingOut.current) return; // many requests may 401 at once: clear only once
+    signingOut.current = true;
+    try {
+      if (reason === 'user') {
+        for (const fn of beforeSignOut) await fn().catch(() => undefined);
+      }
+      if (expiryTimer.current) clearTimeout(expiryTimer.current);
+      setAuthToken(null);
+      await setString(KEYS.token, null);
+      await setString(KEYS.legacyToken, null);
+      setUser(null);
+      setNotice(reason === 'user' ? null : reason);
+      setStatus('signedOut');
+    } finally {
+      signingOut.current = false;
+    }
+  }, []);
 
-    // useProtectedRoute(user);
+  const scheduleExpiry = useCallback(
+    (token: string) => {
+      if (expiryTimer.current) clearTimeout(expiryTimer.current);
+      const exp = tokenExpiry(token);
+      if (!exp) return;
+      // setTimeout overflows above ~24.8 days; re-check on the next app start instead.
+      const ms = Math.min(exp.getTime() - Date.now(), 2 ** 31 - 1);
+      expiryTimer.current = setTimeout(() => void clearSession('expired'), Math.max(0, ms));
+    },
+    [clearSession],
+  );
 
-    const signIn = async (token: string) => {
-        await SecureStore.setItemAsync('token', token);
-        setUser(token);
+  const refreshUser = useCallback(async () => {
+    try {
+      const res = await api.get<Profile>('/users/me');
+      setUser(res.data);
+    } catch (e) {
+      // 401 is handled by the interceptor; offline keeps the session usable.
+      if (toAppError(e).kind !== 'unauthorized') throw e;
+    }
+  }, []);
+
+  const signIn = useCallback(
+    async (token: string) => {
+      setAuthToken(token);
+      await setString(KEYS.token, token);
+      setNotice(null);
+      scheduleExpiry(token);
+      setStatus('signedIn');
+      await refreshUser().catch(() => undefined);
+    },
+    [refreshUser, scheduleExpiry],
+  );
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => void clearSession('expired'));
+    (async () => {
+      const token = (await getString(KEYS.token)) ?? (await getString(KEYS.legacyToken));
+      if (!token || isExpired(token)) {
+        await setString(KEYS.token, null);
+        await setString(KEYS.legacyToken, null);
+        if (token) setNotice('expired');
+        setStatus('signedOut');
+        return;
+      }
+      setAuthToken(token);
+      scheduleExpiry(token);
+      setStatus('signedIn');
+      await refreshUser().catch(() => undefined);
+    })();
+    return () => {
+      setUnauthorizedHandler(null);
+      if (expiryTimer.current) clearTimeout(expiryTimer.current);
     };
+  }, [clearSession, refreshUser, scheduleExpiry]);
 
-    const signOut = async () => {
-        await SecureStore.deleteItemAsync('token');
-        setUser(null);
-    };
+  const value = useMemo<AuthValue>(
+    () => ({
+      status,
+      user,
+      notice,
+      signIn,
+      signOut: (reason = 'user') => clearSession(reason),
+      refreshUser,
+      clearNotice: () => setNotice(null),
+    }),
+    [status, user, notice, signIn, clearSession, refreshUser],
+  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
 
-    return (
-        <AuthContext.Provider
-            value={{
-                signIn,
-                signOut,
-                user,
-                isLoading,
-            }}
-        >
-            {children}
-        </AuthContext.Provider>
-    );
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used inside AuthProvider');
+  return ctx;
 }

@@ -1,58 +1,77 @@
-import { Controller, Post, Body, Get, UseGuards, Request } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import type { User } from '@prisma/client';
 import { AuthService } from './auth.service';
-import { LoginInput, SignupInput } from './dto/create-auth.input';
+import {
+  EmailDto,
+  LoginDto,
+  ProviderTokenDto,
+  ResetPasswordDto,
+  SignupDto,
+  VerifyOtpDto,
+} from './dto/auth.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { ClientIp, CurrentUser } from '../common/current-user.decorator';
+import { UsersService } from '../users/users.service';
 
 @Controller('auth')
 export class AuthController {
-    constructor(private readonly authService: AuthService) { }
+  constructor(
+    private readonly authService: AuthService,
+    private readonly usersService: UsersService,
+  ) {}
 
-    @Post('login')
-    login(@Body() loginInput: LoginInput) {
-        return this.authService.login(loginInput);
-    }
+  @Post('signup')
+  signup(@Body() body: SignupDto, @ClientIp() ip: string) {
+    return this.authService.signup(body, ip);
+  }
 
-    @Post('signup')
-    signup(@Body() signupInput: SignupInput) {
-        return this.authService.signup(signupInput);
-    }
+  @Post('login')
+  @HttpCode(200)
+  login(@Body() body: LoginDto, @ClientIp() ip: string) {
+    return this.authService.login(body, ip);
+  }
 
-    @Post('google')
-    googleLogin(@Body() input: any) { // using any or specific DTO
-        return this.authService.googleLogin(input);
-    }
+  @Post('otp/verify')
+  @HttpCode(200)
+  verifyOtp(@Body() body: VerifyOtpDto) {
+    return this.authService.verifyOtp(body);
+  }
 
-    @Post('facebook')
-    facebookLogin(@Body() input: any) {
-        return this.authService.facebookLogin(input);
-    }
+  @Post('forgot-password')
+  @HttpCode(200)
+  forgotPassword(@Body() body: EmailDto, @ClientIp() ip: string) {
+    return this.authService.requestPasswordReset(body.email, ip);
+  }
 
-    @Post('otp/request')
-    requestOtp(@Body() body: { email: string }) {
-        return this.authService.requestOtp(body.email);
-    }
+  @Post('reset-password')
+  @HttpCode(200)
+  resetPassword(@Body() body: ResetPasswordDto) {
+    return this.authService.resetPassword(body);
+  }
 
-    @Post('otp/verify')
-    verifyOtp(@Body() input: any) {
-        return this.authService.verifyOtp(input);
-    }
+  @Post('google')
+  @HttpCode(200)
+  googleLogin(@Body() body: ProviderTokenDto) {
+    return this.authService.googleLogin(body);
+  }
 
-    @Post('forgot-password')
-    forgotPassword(@Body() body: { email: string }) {
-        return this.authService.requestPasswordReset(body.email);
-    }
+  @Post('facebook')
+  @HttpCode(200)
+  facebookLogin(@Body() body: ProviderTokenDto) {
+    return this.authService.facebookLogin(body);
+  }
 
-    @Post('reset-password')
-    resetPassword(@Body() input: any) {
-        return this.authService.resetPassword(input);
-    }
-
-    @UseGuards(JwtAuthGuard)
-    @Get('me')
-    async getProfile(@Request() req) {
-        // req.user contains basic info from JWT. We need fresh stats for gamification.
-        // We can't easily access PrismaService here directly without injecting it, 
-        // but AuthService has UsersService, or we can add a method to AuthService.
-        return this.authService.getProfileStats(req.user.id);
-    }
+  /** Alias of GET /users/me kept for the web client. */
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  me(@CurrentUser() user: User) {
+    return this.usersService.findProfile(user.id);
+  }
 }

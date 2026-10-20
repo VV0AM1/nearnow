@@ -21,15 +21,15 @@ export default function DownloadPage() {
             <main className="flex-1 max-w-7xl mx-auto px-6 py-12 md:py-20 w-full grid md:grid-cols-2 gap-16 items-center">
                 <div className="space-y-8">
                     <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-tight">
-                        Safety in your <br />
+                        Your neighbourhood in your <br />
                         <span className="text-primary">Pocket.</span>
                     </h1>
                     <p className="text-xl text-zinc-400 max-w-lg">
-                        Get real-time alerts, report incidents instantly, and keep your loved ones safe with the NearNow mobile app.
+                        See and share useful local updates, find lost items, and confirm or resolve reports with the NearNow mobile app.
                     </p>
 
                     <div className="space-y-4">
-                        {['Instant Push Notifications', 'Live GPS Tracking', 'SOS Emergency Mode', 'Neighborhood Chat'].map((feat) => (
+                        {['Opt-in alerts for the area you choose', 'Lost & found with private contact requests', 'Urgent help request (not an emergency service — call 112)', 'English, Español, Català'].map((feat) => (
                             <div key={feat} className="flex items-center gap-3 text-lg font-medium">
                                 <div className="h-6 w-6 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
                                     <Check className="h-4 w-4" />

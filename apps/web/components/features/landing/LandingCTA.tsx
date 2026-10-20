@@ -13,9 +13,9 @@ export default function LandingCTA() {
                 transition={{ duration: 0.6 }}
                 className="relative z-10 max-w-3xl mx-auto"
             >
-                <h2 className="text-5xl font-bold mb-8">Ready to feel safer?</h2>
+                <h2 className="text-5xl font-bold mb-8">Ready to join your neighbourhood?</h2>
                 <p className="text-xl text-muted-foreground mb-12">
-                    Join 10,000+ neighbors protecting their communities today. Free for everyone.
+                    Share useful updates, help return lost items and keep reports current. Free to use.
                 </p>
                 <Link href="/signup" className="px-10 py-5 bg-white text-black rounded-full font-bold text-xl hover:scale-105 transition-transform inline-flex items-center gap-2">
                     Get Started Now

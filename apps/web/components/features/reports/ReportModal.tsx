@@ -40,7 +40,10 @@ export default function ReportModal({ isOpen, onClose, postId }: ReportModalProp
                 body: JSON.stringify({ postId, reason })
             });
 
-            if (!res.ok) throw new Error("Failed to submit report");
+            if (!res.ok) {
+                const body = await res.json().catch(() => null);
+                throw new Error(body?.message || 'Could not submit report. Please try again.');
+            }
 
             toast({
                 title: "Report Submitted",
@@ -51,7 +54,7 @@ export default function ReportModal({ isOpen, onClose, postId }: ReportModalProp
         } catch (error) {
             toast({
                 title: "Error",
-                description: "Could not submit report. Please try again.",
+                description: error instanceof Error ? error.message : "Could not submit report. Please try again.",
                 variant: "destructive"
             });
         } finally {
@@ -95,11 +98,13 @@ export default function ReportModal({ isOpen, onClose, postId }: ReportModalProp
                             className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer"
                         >
                             <option value="" disabled>Select a reason</option>
-                            <option value="spam">Spam or Misleading</option>
-                            <option value="harassment">Harassment or Hate Speech</option>
-                            <option value="inappropriate_image">Inappropriate Image</option>
-                            <option value="violence">Violence or Threat</option>
-                            <option value="other">Other</option>
+                            <option value="SPAM">Spam or advertising</option>
+                            <option value="HARASSMENT">Harassment or abuse</option>
+                            <option value="PRIVATE_INFORMATION">Shares private information</option>
+                            <option value="UNVERIFIED_ACCUSATION">Accuses a person without evidence</option>
+                            <option value="MISLEADING">False or misleading</option>
+                            <option value="HATE_OR_VIOLENCE">Hate or violence</option>
+                            <option value="OTHER">Something else</option>
                         </select>
                     </div>
 

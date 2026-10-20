@@ -4,7 +4,7 @@ import { NavItem } from "../../../types/ui";
 export const MAIN_NAV_ITEMS: NavItem[] = [
     { icon: Home, label: "Home", href: "/" },
     { icon: Map, label: "Live Map", href: "/map" },
-    { icon: ShieldAlert, label: "Safety", href: "/safety" },
+    { icon: ShieldAlert, label: "Area overview", href: "/safety" },
     { icon: Bookmark, label: "Saved", href: "/saved" },
 ];
 

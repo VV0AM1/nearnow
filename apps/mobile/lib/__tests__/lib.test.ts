@@ -1,0 +1,156 @@
+import { AxiosError, AxiosHeaders } from 'axios';
+import en from '../i18n/en';
+import es from '../i18n/es';
+import ca from '../i18n/ca';
+import { translate } from '../i18n';
+import { toAppError } from '../errors';
+import { isExpired, tokenExpiry } from '../jwt';
+import { parseMapMessage, toMapScript } from '../map-bridge';
+import { buildPostFormData, emptyDraft, lostFoundRange } from '../post-form';
+import { buildFeedParams, mergePages } from '../../hooks/useFeed';
+import { mediaUrl } from '../config';
+
+jest.mock('expo-localization', () => ({ getLocales: () => [{ languageCode: 'es' }] }));
+jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn(), setItemAsync: jest.fn(), deleteItemAsync: jest.fn() }));
+
+function keys(obj: object, prefix = ''): string[] {
+  return Object.entries(obj).flatMap(([k, v]) => (typeof v === 'string' ? [`${prefix}${k}`] : keys(v, `${prefix}${k}.`)));
+}
+
+describe('i18n', () => {
+  it('Spanish and Catalan define every English key and keep placeholders', () => {
+    const enKeys = keys(en);
+    for (const dict of [es, ca]) {
+      expect(keys(dict).sort()).toEqual([...enKeys].sort());
+      for (const k of enKeys) {
+        const placeholders = (translate('en', k).match(/\{\w+\}/g) ?? []).sort();
+        const other = dict === es ? 'es' : 'ca';
+        expect([k, (translate(other, k).match(/\{\w+\}/g) ?? []).sort()]).toEqual([k, placeholders]);
+      }
+    }
+  });
+
+  it('interpolates and falls back to the key for unknown entries', () => {
+    expect(translate('en', 'urgent.call', { number: '112' })).toBe('Call 112');
+    expect(translate('ca', 'urgent.call', { number: '112' })).toBe('Truca al 112');
+    expect(translate('en', 'does.not.exist')).toBe('does.not.exist');
+  });
+
+  it('never promises dispatch in the urgent-help copy', () => {
+    for (const lang of ['en', 'es', 'ca'] as const) {
+      const text = keys(en)
+        .filter((k) => k.startsWith('urgent.'))
+        .map((k) => translate(lang, k).toLowerCase())
+        .join(' ');
+      expect(text).not.toMatch(/help is on the way|ayuda está en camino|ajuda és en camí/);
+    }
+  });
+});
+
+describe('error adapter', () => {
+  const axiosErr = (status: number | null, data?: unknown, code?: string) => {
+    const e = new AxiosError('x', code);
+    if (status !== null) e.response = { status, data, statusText: '', headers: {}, config: { headers: new AxiosHeaders() } };
+    return e;
+  };
+
+  it('maps network failures to offline/timeout', () => {
+    expect(toAppError(axiosErr(null)).kind).toBe('offline');
+    expect(toAppError(axiosErr(null, undefined, 'ECONNABORTED')).kind).toBe('timeout');
+  });
+
+  it('joins validation messages and hides server error bodies', () => {
+    expect(toAppError(axiosErr(400, { message: ['a', 'b'] }))).toMatchObject({ kind: 'validation', message: 'a\nb' });
+    expect(toAppError(axiosErr(500, { message: 'stack trace here' }))).toMatchObject({ kind: 'server', message: null });
+    expect(toAppError(axiosErr(429)).kind).toBe('rateLimited');
+  });
+});
+
+describe('jwt expiry', () => {
+  const token = (exp: number) => `x.${btoa(JSON.stringify({ exp })).replace(/=+$/, '')}.y`;
+  it('reads exp and treats missing/garbage tokens as expired', () => {
+    const now = Date.now();
+    expect(tokenExpiry(token(now / 1000 + 3600))!.getTime()).toBeGreaterThan(now);
+    expect(isExpired(token(now / 1000 + 3600), now)).toBe(false);
+    expect(isExpired(token(now / 1000 - 10), now)).toBe(true);
+    expect(isExpired('garbage')).toBe(true);
+  });
+});
+
+describe('map bridge', () => {
+  const id = '123e4567-e89b-12d3-a456-426614174000';
+  it('accepts only well-formed messages', () => {
+    expect(parseMapMessage(JSON.stringify({ type: 'MARKER_PRESS', id }))).toEqual({ type: 'MARKER_PRESS', id });
+    expect(parseMapMessage(JSON.stringify({ type: 'MARKER_PRESS', id: '<img onerror=x>' }))).toBeNull();
+    expect(parseMapMessage(JSON.stringify({ type: 'MOVE_END', lat: 95, lng: 0, radiusKm: 1 }))).toBeNull();
+    expect(parseMapMessage(JSON.stringify({ type: 'NAVIGATE', payload: 'javascript:alert(1)' }))).toBeNull();
+    expect(parseMapMessage('not json')).toBeNull();
+  });
+
+  it('drops markers with unexpected colours or ids before injecting', () => {
+    const script = toMapScript({
+      type: 'SET_MARKERS',
+      markers: [
+        { id, lat: 1, lng: 2, color: '#2563eb', shape: 'circle', dim: false },
+        { id: 'evil"});alert(1);//', lat: 1, lng: 2, color: 'red;background:url(x)', shape: 'circle', dim: false },
+      ],
+    });
+    expect(script).toContain(id);
+    expect(script).not.toContain('alert(1)');
+    expect(script).not.toContain('url(x)');
+  });
+});
+
+describe('post form', () => {
+  // React Native's FormData keeps entries in `_parts`; jest runs on Node's implementation.
+  const NodeFormData = global.FormData;
+  beforeAll(() => {
+    global.FormData = class {
+      _parts: [string, unknown][] = [];
+      append(k: string, v: unknown) {
+        this._parts.push([k, v]);
+      }
+    } as unknown as typeof FormData;
+  });
+  afterAll(() => {
+    global.FormData = NodeFormData;
+  });
+
+  it('builds multipart fields including lost & found window and the file field', () => {
+    const now = new Date(2026, 9, 19, 15, 0);
+    const form = buildPostFormData(
+      { ...emptyDraft(), category: 'LOST_FOUND', latitude: 0, longitude: 0, title: ' Keys ', lfDirection: 'LOST', lfItemType: 'KEYS', lfWindow: 'yesterday' },
+      { uri: 'file:///x.jpg', mimeType: 'image/jpeg', fileName: 'photo.jpg' },
+      now,
+    ) as unknown as { _parts: [string, unknown][] };
+    const fields = Object.fromEntries(form._parts);
+    expect(fields).toMatchObject({ title: 'Keys', category: 'LOST_FOUND', latitude: '0', longitude: '0', approximateLocation: 'true', lostFoundDirection: 'LOST' });
+    expect(fields.file).toEqual({ uri: 'file:///x.jpg', name: 'photo.jpg', type: 'image/jpeg' });
+    const { from, to } = lostFoundRange('yesterday', now);
+    expect(to.getTime() - from.getTime()).toBe(86_400_000);
+  });
+
+  it('refuses incomplete drafts', () => {
+    expect(() => buildPostFormData(emptyDraft(), null)).toThrow();
+  });
+});
+
+describe('feed paging', () => {
+  it('only sends filters that are set', () => {
+    expect(buildFeedParams({ latitude: 1, longitude: 2, radius: 5, since: 'all' }, 1)).toEqual({ latitude: 1, longitude: 2, radius: 5, page: 1, limit: 20 });
+    expect(buildFeedParams({ latitude: 1, longitude: 2, radius: 5, categories: ['EVENT'], since: '24h', search: ' x ' }, 2)).toMatchObject({ category: 'EVENT', since: '24h', search: 'x', page: 2 });
+  });
+
+  it('suppresses duplicates across pages', () => {
+    const p = (id: string) => ({ id }) as never;
+    expect(mergePages([p('a'), p('b')], [p('b'), p('c')]).map((x: { id: string }) => x.id)).toEqual(['a', 'b', 'c']);
+  });
+});
+
+describe('media urls', () => {
+  it('only resolves server upload paths', () => {
+    expect(mediaUrl('/uploads/a.jpg')).toMatch(/\/uploads\/a\.jpg$/);
+    expect(mediaUrl('/etc/passwd')).toBeNull();
+    expect(mediaUrl(null)).toBeNull();
+  });
+});

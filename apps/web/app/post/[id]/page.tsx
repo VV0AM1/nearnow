@@ -17,7 +17,7 @@ function PostContent({ post }: { post: any }) {
     useEffect(() => {
         // Check if saved
         if (userId && token) {
-            fetch(`${API_URL}/users/${userId}/saved/${post.id}/check`, {
+            fetch(`${API_URL}/users/me/saved/${post.id}/check`, {
                 headers: { Authorization: `Bearer ${token}` }
             }).then(res => res.json()).then(data => setIsSaved(data.isSaved)).catch(console.error);
         }
@@ -30,7 +30,7 @@ function PostContent({ post }: { post: any }) {
         setIsSaved(newState); // Optimistic
 
         try {
-            await fetch(`${API_URL}/users/${userId}/saved/${post.id}`, {
+            await fetch(`${API_URL}/users/me/saved/${post.id}`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${token}` }
             });

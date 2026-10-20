@@ -5,20 +5,19 @@ import { SocketProvider } from "../lib/socket-provider";
 import { AuthProvider } from "../context/AuthContext";
 import { Toaster } from "@/components/ui/toaster";
 import { NotificationProvider } from "../context/NotificationContext";
+import { DashboardProvider } from "../context/DashboardContext";
 
 import type { Metadata, Viewport } from "next";
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   themeColor: "#0a0a0a",
 };
 
 export const metadata: Metadata = {
   title: "Nearnow",
-  description: "Real-time neighborhood safety alerts",
+  description: "Local updates and community help, right around you",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -40,8 +39,10 @@ export default function RootLayout({
         <SocketProvider>
           <AuthProvider>
             <NotificationProvider>
-              {children}
-              <Toaster />
+              <DashboardProvider>
+                {children}
+                <Toaster />
+              </DashboardProvider>
             </NotificationProvider>
           </AuthProvider>
         </SocketProvider>
