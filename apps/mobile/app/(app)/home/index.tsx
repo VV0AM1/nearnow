@@ -1,8 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, FlatList, Platform, RefreshControl, View } from 'react-native';
+import Animated, { FadeIn, FadeInUp, FadeOut } from 'react-native-reanimated';
+import { useHeaderHeight } from '@react-navigation/elements';
 import * as Haptics from 'expo-haptics';
 import { Stack, useRouter } from 'expo-router';
 import { useArea } from '@/context/LocationContext';
+import { useAuth } from '@/context/AuthContext';
+import { useRealtime } from '@/context/RealtimeContext';
+import { matchesFeed } from '@/lib/realtime';
+import type { Post } from '@/lib/types';
 import { useI18n } from '@/lib/i18n';
 import { describeError } from '@/lib/errors';
 import { useFeed } from '@/hooks/useFeed';
@@ -10,7 +16,7 @@ import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { FeedPost, FeedPostSkeleton } from '@/components/FeedPost';
 import { FilterBar, FilterSummary, type Filters } from '@/components/FilterBar';
 import { UrgentHelpButton } from '@/components/SOSButton';
-import { Icon, IconButton, PressableScale, StateView, Text, useTokens } from '@/design';
+import { Button, Icon, IconButton, PressableScale, StateView, Text, useTokens } from '@/design';
 import { RADIUS_OPTIONS_KM } from '@/constants/places';
 
 export default function Home() {
@@ -43,6 +49,30 @@ export default function Home() {
     [area, filters, debounced],
   );
   const feed = useFeed(query);
+  const { user } = useAuth();
+  const { onPosts } = useRealtime();
+  const headerHeight = useHeaderHeight();
+  const list = useRef<FlatList<Post>>(null);
+  // Ids of matching posts created since the list was loaded (shown as a pill, never auto-inserted).
+  const [fresh, setFresh] = useState<string[]>([]);
+
+  useEffect(() => setFresh([]), [query]);
+  useEffect(() => {
+    if (!query) return;
+    return onPosts({
+      created: (post) => {
+        if (matchesFeed(post, query, user?.id ?? null)) setFresh((ids) => (ids.includes(post.id) ? ids : [...ids, post.id]));
+      },
+      updated: feed.applyUpdate,
+    });
+  }, [query, user?.id, onPosts, feed.applyUpdate]);
+  const freshCount = fresh.filter((id) => !feed.posts.some((p) => p.id === id)).length;
+
+  const showFresh = () => {
+    list.current?.scrollToOffset({ offset: Platform.OS === 'ios' ? -headerHeight : 0, animated: !tokens.reduceMotion });
+    setFresh([]);
+    void feed.refresh();
+  };
 
   const changeFilters = (f: Filters) => {
     setFilters(f);
@@ -54,6 +84,7 @@ export default function Home() {
 
   const refresh = () => {
     void Haptics.selectionAsync().catch(() => undefined);
+    setFresh([]);
     void feed.refresh();
   };
 
@@ -98,6 +129,7 @@ export default function Home() {
         }}
       />
       <FlatList
+        ref={list}
         data={feed.posts}
         keyExtractor={(p) => p.id}
         renderItem={({ item }) => <FeedPost item={item} />}
@@ -145,6 +177,16 @@ export default function Home() {
         }
         contentContainerStyle={{ paddingBottom: tokens.space.xl, flexGrow: 1 }}
       />
+      {freshCount > 0 ? (
+        <Animated.View
+          entering={tokens.reduceMotion ? FadeIn : FadeInUp.springify().damping(20)}
+          exiting={FadeOut}
+          pointerEvents="box-none"
+          style={{ position: 'absolute', left: 0, right: 0, top: (Platform.OS === 'ios' ? headerHeight : 0) + tokens.space.sm, alignItems: 'center' }}
+        >
+          <Button title={t('feed.newPostsCount', { n: freshCount })} icon="arrow-up" size="small" haptic onPress={showFresh} />
+        </Animated.View>
+      ) : null}
     </>
   );
 }

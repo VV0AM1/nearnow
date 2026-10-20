@@ -129,6 +129,7 @@ const es: Dictionary = {
     end: 'Estás al día',
     areaActivity: 'Resumen de la zona',
     newPosts: 'Hay publicaciones nuevas — desliza para actualizar',
+    newPostsCount: 'Publicaciones nuevas ({n})',
   },
   post: {
     comments: 'Comentarios',

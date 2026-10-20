@@ -129,6 +129,7 @@ const ca: Dictionary = {
     end: 'Ja estàs al dia',
     areaActivity: 'Resum de la zona',
     newPosts: 'Hi ha publicacions noves — llisca per actualitzar',
+    newPostsCount: 'Publicacions noves ({n})',
   },
   post: {
     comments: 'Comentaris',

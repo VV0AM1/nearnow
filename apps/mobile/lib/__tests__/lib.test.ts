@@ -12,6 +12,8 @@ import { enGB } from 'date-fns/locale';
 import { groupByDay } from '../format';
 import { circleRing, haversineKm, regionRadiusKm, zoomToDeltas } from '../geo';
 import { clusterMarkers, project, zoomForSpan } from '../cluster';
+import { matchesFeed, parsePostUpdate } from '../realtime';
+import type { Post } from '../types';
 import { mediaUrl } from '../config';
 
 jest.mock('expo-localization', () => ({ getLocales: () => [{ languageCode: 'es' }] }));
@@ -239,5 +241,31 @@ describe('marker clustering', () => {
     const a = project(41.4, 2.17, 10);
     const b = project(41.4, 2.17, 11);
     expect(b.x / a.x).toBeCloseTo(2, 6);
+  });
+});
+
+describe('real-time feed matching', () => {
+  const query = { latitude: 41.387, longitude: 2.17, radius: 2 };
+  const post = (over: Partial<Post> = {}) =>
+    ({ id: '123e4567-e89b-12d3-a456-426614174000', latitude: 41.39, longitude: 2.172, category: 'EVENT', status: 'ACTIVE', author: { id: 'someone', name: 'A', avatar: null }, ...over }) as Post;
+
+  it('accepts active posts inside the radius and matching filters', () => {
+    expect(matchesFeed(post(), query, 'me')).toBe(true);
+    expect(matchesFeed(post(), { ...query, categories: ['EVENT'] }, 'me')).toBe(true);
+  });
+
+  it('rejects own posts, far posts, other categories, inactive posts and searches', () => {
+    expect(matchesFeed(post({ author: { id: 'me', name: 'Me', avatar: null } }), query, 'me')).toBe(false);
+    expect(matchesFeed(post({ latitude: 41.5 }), query, 'me')).toBe(false);
+    expect(matchesFeed(post(), { ...query, categories: ['GENERAL'] }, 'me')).toBe(false);
+    expect(matchesFeed(post({ status: 'RESOLVED' }), query, 'me')).toBe(false);
+    expect(matchesFeed(post(), { ...query, search: 'market' }, 'me')).toBe(false);
+  });
+
+  it('validates postUpdated payloads', () => {
+    expect(parsePostUpdate({ id: '123e4567-e89b-12d3-a456-426614174000', status: 'REMOVED' })).toEqual({ id: '123e4567-e89b-12d3-a456-426614174000', status: 'REMOVED' });
+    expect(parsePostUpdate({ id: 'x', status: 'REMOVED' })).toBeNull();
+    expect(parsePostUpdate({ id: '123e4567-e89b-12d3-a456-426614174000', status: 'HACKED' })).toBeNull();
+    expect(parsePostUpdate(null)).toBeNull();
   });
 });

@@ -9,6 +9,11 @@ const api = axios.create({ baseURL: API_URL, timeout: 30_000 });
 let authToken: string | null = null;
 let onUnauthorized: (() => void) | null = null;
 
+/** Current session token (memory only), for the real-time socket handshake. */
+export function getAuthToken() {
+  return authToken;
+}
+
 /** Called by AuthContext; requests read the token from memory, not SecureStore. */
 export function setAuthToken(token: string | null) {
   authToken = token;

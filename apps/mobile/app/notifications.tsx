@@ -4,6 +4,7 @@ import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeabl
 import * as Haptics from 'expo-haptics';
 import { Stack, useRouter } from 'expo-router';
 import api from '@/services/api';
+import { useRealtime } from '@/context/RealtimeContext';
 import { useI18n } from '@/lib/i18n';
 import { describeError } from '@/lib/errors';
 import { groupByDay, timeAgo } from '@/lib/format';
@@ -25,6 +26,7 @@ export default function NotificationsScreen() {
   const { t, dateLocale } = useI18n();
   const tokens = useTokens();
   const router = useRouter();
+  const { adjustUnread, refreshUnread } = useRealtime();
   const [items, setItems] = useState<AppNotification[]>([]);
   const [unread, setUnread] = useState(0);
   const [page, setPage] = useState(1);
@@ -59,7 +61,8 @@ export default function NotificationsScreen() {
     if (n.read) return;
     setItems((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
     setUnread((u) => Math.max(0, u - 1));
-    api.post(`/notifications/me/read/${n.id}`).catch(() => undefined);
+    adjustUnread(-1);
+    api.post(`/notifications/me/read/${n.id}`).catch(() => refreshUnread());
   };
 
   const open = (n: AppNotification) => {
@@ -72,11 +75,13 @@ export default function NotificationsScreen() {
     const prev = items;
     setItems((list) => list.map((x) => ({ ...x, read: true })));
     setUnread(0);
+    adjustUnread(null);
     try {
       await api.post('/notifications/me/read-all');
     } catch (e) {
       setItems(prev);
       setError(e);
+      refreshUnread();
     }
   };
 

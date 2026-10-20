@@ -15,6 +15,7 @@ import '../global.css';
 import { AuthProvider, onBeforeSignOut, useAuth } from '@/context/AuthContext';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import { ToastProvider } from '@/context/ToastContext';
+import { RealtimeProvider } from '@/context/RealtimeContext';
 import { LocationProvider, useArea } from '@/context/LocationContext';
 import { I18nProvider, useI18n } from '@/lib/i18n';
 import { config } from '@/lib/config';
@@ -45,11 +46,13 @@ export default function RootLayout() {
               <ConfigError />
             ) : (
               <AuthProvider>
-                <LocationProvider>
-                  <ToastProvider>
-                    <Navigation />
-                  </ToastProvider>
-                </LocationProvider>
+                <RealtimeProvider>
+                  <LocationProvider>
+                    <ToastProvider>
+                      <Navigation />
+                    </ToastProvider>
+                  </LocationProvider>
+                </RealtimeProvider>
               </AuthProvider>
             )}
           </ThemeProvider>

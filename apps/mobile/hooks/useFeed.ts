@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import api from '@/services/api';
 import type { Category, LostFoundDirection, Post, TimeWindow } from '@/lib/types';
+import type { PostUpdate } from '@/lib/realtime';
 
 export interface FeedQuery {
   latitude: number;
@@ -87,8 +88,15 @@ export function useFeed(query: FeedQuery | null) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
+  /** Live status change from the socket: removed posts disappear, others update in place. */
+  const applyUpdate = useCallback(
+    (u: PostUpdate) => setPosts((prev) => (u.status === 'REMOVED' ? prev.filter((p) => p.id !== u.id) : prev.map((p) => (p.id === u.id ? { ...p, status: u.status } : p)))),
+    [],
+  );
+
   return {
     posts,
+    applyUpdate,
     loading,
     refreshing,
     loadingMore,

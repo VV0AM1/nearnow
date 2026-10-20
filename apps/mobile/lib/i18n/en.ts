@@ -126,6 +126,7 @@ const en = {
     end: "You're all caught up",
     areaActivity: 'Area overview',
     newPosts: 'New posts available — pull to refresh',
+    newPostsCount: 'New posts ({n})',
   },
   post: {
     comments: 'Comments',
