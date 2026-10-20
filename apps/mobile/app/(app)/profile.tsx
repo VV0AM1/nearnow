@@ -205,6 +205,7 @@ export default function ProfileScreen() {
           {config.supportEmail ? <Row icon="help-circle-outline" label={t('profile.support')} onPress={() => void Linking.openURL(`mailto:${config.supportEmail}`)} /> : null}
           <Row icon="log-out-outline" label={t('profile.signOut')} onPress={confirmSignOut} />
           <Row icon="trash-outline" label={t('profile.deleteAccount')} onPress={() => setDeleteOpen(true)} danger />
+          {__DEV__ ? <Row icon="color-palette-outline" label="Design kit (dev only)" onPress={() => router.push('/dev/gallery')} /> : null}
         </Card>
       </ScrollView>
 

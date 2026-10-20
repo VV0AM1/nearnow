@@ -325,14 +325,16 @@ Step-by-step for the account-dependent steps: `docs/RELEASE_SETUP.md`.
 - Haptics only for meaningful outcomes: success, warnings, toggles and the urgent countdown.
 
 **Design system (built first, used everywhere)**
-- [ ] Tokens: colour (light, dark and high-contrast; one accent colour plus semantic colours), spacing on a 4-pt grid, corner radii (continuous corners), elevation and materials, plus a motion scale (spring presets, durations).
-- [ ] Typography: the system font (SF Pro / Roboto) with text styles mirroring iOS (Large Title … Caption 2), all scaling with Dynamic Type, and tested at the largest accessibility size.
-- [ ] Icons: SF Symbols on iOS (`expo-symbols`), Material Symbols / Ionicons on Android, through one `<Icon>` component.
-- [ ] Component library:
+- [x] Tokens (`apps/mobile/design/tokens.ts`, done; high-contrast variant still to do): colour (light, dark and high-contrast; one accent colour plus semantic colours), spacing on a 4-pt grid, corner radii (continuous corners), elevation and materials, plus a motion scale (spring presets, durations).
+- [x] Typography (`design/Text.tsx`, done; still to test at the largest accessibility size on a device): the system font (SF Pro / Roboto) with text styles mirroring iOS (Large Title … Caption 2), all scaling with Dynamic Type, and tested at the largest accessibility size.
+- [x] Icons (`design/Icon.tsx`, done; the Ionicons fallback for every mapped symbol is covered by a test): SF Symbols on iOS (`expo-symbols`), Material Symbols / Ionicons on Android, through one `<Icon>` component.
+- [~] Component library (`apps/mobile/design/`; buttons, list rows, segmented control, chips, search/text fields, banner, skeleton, state views, avatar, badges, card and glass surface done; `components/ui.tsx` now wraps the kit so existing screens use it):
   - buttons (filled / tinted / plain), grouped list rows (Settings-style), segmented control, chips, search field
   - sheets with detents, toasts / banners, skeleton shimmer, empty / error states, avatar
   - post card, status badges, map callout card
-- [ ] A `/dev/gallery` screen (development builds only) showing every component in light and dark mode for review.
+  - still to do: sheets with detents (these will be native form sheets), toasts moved onto the kit, post card and map callout card (built with the screens that use them)
+  - colour-contrast test `design/__tests__/tokens.test.ts` checks the WCAG AA text pairs in light and dark mode; it caught four failing pairs, and the tokens were fixed (dark mode now uses navy text on the blue accent)
+- [x] A `/dev/gallery` screen (done; open it from Profile → "Design kit (dev only)") (development builds only) showing every component in light and dark mode for review.
 
 **Technology (check compatibility with Expo SDK 54 before adopting each one)**
 - Navigation:

@@ -79,6 +79,8 @@ function useRouteGuard() {
 
   useEffect(() => {
     if (status === 'loading' || !ready) return;
+    // Design-kit gallery: reviewable without an account, development builds only.
+    if (__DEV__ && first === 'dev') return;
     const isPublic = PUBLIC_ROUTES.has(first);
     const isSetup = SETUP_ROUTES.has(first);
     if (status === 'signedOut') {
@@ -139,6 +141,7 @@ function Navigation() {
         <Stack.Screen name="contact-requests" options={{ title: t('contacts.title') }} />
         <Stack.Screen name="saved" options={{ title: t('profile.saved') }} />
         <Stack.Screen name="area" options={{ title: t('activity.title') }} />
+        <Stack.Screen name="dev/gallery" options={{ title: 'Design kit' }} />
         <Stack.Screen name="+not-found" />
       </Stack>
     </NavigationThemeProvider>
