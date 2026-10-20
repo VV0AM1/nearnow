@@ -10,6 +10,7 @@ import { buildPostFormData, emptyDraft, lostFoundRange } from '../post-form';
 import { buildFeedParams, mergePages } from '../../hooks/useFeed';
 import { enGB } from 'date-fns/locale';
 import { groupByDay } from '../format';
+import { circleRing, haversineKm, regionRadiusKm, zoomToDeltas } from '../geo';
 import { mediaUrl } from '../config';
 
 jest.mock('expo-localization', () => ({ getLocales: () => [{ languageCode: 'es' }] }));
@@ -101,6 +102,12 @@ describe('map bridge', () => {
     expect(script).not.toContain('alert(1)');
     expect(script).not.toContain('url(x)');
   });
+
+  it('never sends marker labels (user text) into the WebView', () => {
+    const script = toMapScript({ type: 'SET_MARKERS', markers: [{ id, lat: 1, lng: 2, color: '#2563eb', shape: 'circle', dim: false, label: '<img src=x onerror=alert(1)>' }] });
+    expect(script).toContain(id);
+    expect(script).not.toContain('onerror');
+  });
 });
 
 describe('post form', () => {
@@ -173,5 +180,33 @@ describe('groupByDay', () => {
 
   it('adds the year for items from an earlier year', () => {
     expect(groupByDay([{ createdAt: new Date(2025, 11, 31, 12).toISOString() }], labels, enGB, now)[0].title).toBe('31 December 2025');
+  });
+});
+
+describe('geo helpers', () => {
+  it('measures great-circle distance', () => {
+    // Barcelona (Plaça de Catalunya) to Madrid (Puerta del Sol) is about 505 km.
+    expect(haversineKm(41.387, 2.170, 40.417, -3.704)).toBeGreaterThan(495);
+    expect(haversineKm(41.387, 2.170, 40.417, -3.704)).toBeLessThan(515);
+    expect(haversineKm(41.4, 2.17, 41.4, 2.17)).toBe(0);
+  });
+
+  it('reports a region radius as the centre-to-corner distance', () => {
+    const r = regionRadiusKm({ latitude: 41.4, longitude: 2.17, latitudeDelta: 0.02, longitudeDelta: 0.02 });
+    expect(r).toBeCloseTo(haversineKm(41.4, 2.17, 41.41, 2.18), 6);
+  });
+
+  it('halves the span for each zoom level', () => {
+    const a = zoomToDeltas(14, 41.4, 400, 800);
+    const b = zoomToDeltas(15, 41.4, 400, 800);
+    expect(a.longitudeDelta / b.longitudeDelta).toBeCloseTo(2, 6);
+    expect(a.latitudeDelta).toBeGreaterThan(a.longitudeDelta); // taller than wide
+  });
+
+  it('builds a closed circle whose points sit at the radius', () => {
+    const ring = circleRing(41.4, 2.17, 2, 32);
+    expect(ring).toHaveLength(33);
+    expect(ring[0]).toEqual(ring[32]);
+    for (const [lng, lat] of ring) expect(haversineKm(41.4, 2.17, lat, lng)).toBeCloseTo(2, 1);
   });
 });

@@ -12,6 +12,8 @@ export interface MapMarker {
   color: string;
   shape: MarkerShape;
   dim: boolean;
+  /** Screen-reader label for native map markers. Never sent into the WebView. */
+  label?: string;
 }
 
 export type FromMap =
@@ -59,7 +61,9 @@ const SHAPES: MarkerShape[] = ['circle', 'square', 'diamond', 'triangle'];
 /** Script injected into the WebView. JSON.stringify yields a safe JS literal. */
 export function toMapScript(msg: ToMap): string {
   if (msg.type === 'SET_MARKERS') {
-    const markers = msg.markers.filter((mk) => ID.test(mk.id) && COLOR.test(mk.color) && SHAPES.includes(mk.shape));
+    const markers = msg.markers
+      .filter((mk) => ID.test(mk.id) && COLOR.test(mk.color) && SHAPES.includes(mk.shape))
+      .map(({ id, lat, lng, color, shape, dim }) => ({ id, lat, lng, color, shape, dim }));
     return `window.__nn && window.__nn.receive(${JSON.stringify({ ...msg, markers })});true;`;
   }
   return `window.__nn && window.__nn.receive(${JSON.stringify(msg)});true;`;

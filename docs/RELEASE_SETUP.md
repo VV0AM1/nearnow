@@ -61,6 +61,8 @@ npx expo start --dev-client
 
 Then open the app on the phone; it connects to Metro.
 
+**Maps:** the Android map uses MapLibre, which is only in development and release builds. In Expo Go, Android falls back to the older Leaflet map, so check the map in a development build. iOS uses Apple Maps in both. Map tiles come from OpenFreeMap (free, no key). To use another style server, set `EXPO_PUBLIC_MAP_STYLE_LIGHT` / `EXPO_PUBLIC_MAP_STYLE_DARK` with `eas env:create`.
+
 ## 4. iPhone development build (needs Apple Developer Program, $99/year)
 
 There is no iOS simulator on Windows, so a physical iPhone needs a paid Apple account.

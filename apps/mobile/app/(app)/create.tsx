@@ -14,7 +14,7 @@ import { buildPostFormData, emptyDraft, isDirty, type LfWindow, type PickedImage
 import { CONTENT_MAX, IMAGE_TYPES, MAX_IMAGE_BYTES, TITLE_MAX, validTitle } from '@/lib/validation';
 import { LOST_FOUND_ITEM_TYPES, type Category, type CreatedPost } from '@/lib/types';
 import { CATEGORY_META, CATEGORY_ORDER, ITEM_TYPE_ICON } from '@/constants/categories';
-import { LeafletMap, type LeafletMapHandle } from '@/components/LeafletMap';
+import { NativeMap, type NearMapHandle } from '@/components/map/NativeMap';
 import { CategoryBadge } from '@/components/PostStatus';
 import type { FromMap } from '@/lib/map-bridge';
 import { Banner, Button, Card, Chip, GlassSurface, Icon, IconButton, ListRow, ListSection, ListSwitchRow, PressableScale, Text, TextField, continuous, useTokens } from '@/design';
@@ -30,7 +30,7 @@ export default function CreateScreen() {
   const router = useRouter();
   const { showToast } = useToast();
   const { area } = useArea();
-  const map = useRef<LeafletMapHandle>(null);
+  const map = useRef<NearMapHandle>(null);
 
   const [step, setStep] = useState<Step>(1);
   const [draft, setDraft] = useState<PostDraft>(emptyDraft);
@@ -198,7 +198,7 @@ export default function CreateScreen() {
           {t('create.moveMap')}
         </Text>
         <View style={{ flex: 1 }} onLayout={(e) => setMapSize({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height })}>
-          {start ? <LeafletMap ref={map} initial={{ ...start, zoom: 16 }} onMessage={onMapMessage} pinMode accessibilityLabel={t('create.locationTitle')} /> : null}
+          {start ? <NativeMap ref={map} initial={{ ...start, zoom: 16 }} onMessage={onMapMessage} pinMode accessibilityLabel={t('create.locationTitle')} /> : null}
           <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, alignItems: 'center', justifyContent: 'center' }}>
             {draft.approximate && ringPx ? (
               <View style={{ position: 'absolute', width: ringPx, height: ringPx, borderRadius: ringPx / 2, backgroundColor: tokens.colors.accentSoft, borderWidth: 1.5, borderColor: tokens.colors.accent }} />

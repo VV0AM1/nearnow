@@ -23,6 +23,9 @@ export const config = {
   easProjectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID?.trim() || appJsonProjectId || null,
   privacyUrl: process.env.EXPO_PUBLIC_PRIVACY_URL?.trim() || null,
   supportEmail: process.env.EXPO_PUBLIC_SUPPORT_EMAIL?.trim() || null,
+  /** Vector map styles for MapLibre (Android). OpenFreeMap is free and needs no key; override per build if needed. */
+  mapStyleLight: process.env.EXPO_PUBLIC_MAP_STYLE_LIGHT?.trim() || 'https://tiles.openfreemap.org/styles/positron',
+  mapStyleDark: process.env.EXPO_PUBLIC_MAP_STYLE_DARK?.trim() || 'https://tiles.openfreemap.org/styles/dark',
   /** EU-wide emergency number; NearNow is not an emergency service. */
   emergencyNumber: '112',
 };
