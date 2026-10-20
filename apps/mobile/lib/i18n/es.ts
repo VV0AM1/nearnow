@@ -273,6 +273,11 @@ const es: Dictionary = {
   },
   map: {
     searchArea: 'Buscar en esta zona',
+    cluster: '{count} publicaciones aquí. Toca para acercar.',
+    showList: 'Mostrar lista',
+    hideList: 'Ocultar lista',
+    category: 'Categoría',
+    time: 'Periodo',
     recenter: 'Volver a mi zona',
     legend: 'Leyenda',
     tilesFailed: 'No se pudo cargar el mapa. Las publicaciones se mostrarán cuando vuelvas a tener conexión.',

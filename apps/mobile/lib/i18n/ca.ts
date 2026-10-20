@@ -273,6 +273,11 @@ const ca: Dictionary = {
   },
   map: {
     searchArea: 'Cerca en aquesta zona',
+    cluster: '{count} publicacions aquí. Toca per apropar.',
+    showList: 'Mostra la llista',
+    hideList: 'Amaga la llista',
+    category: 'Categoria',
+    time: 'Període',
     recenter: 'Torna a la meva zona',
     legend: 'Llegenda',
     tilesFailed: "No s'ha pogut carregar el mapa. Les publicacions es mostraran quan tornis a tenir connexió.",

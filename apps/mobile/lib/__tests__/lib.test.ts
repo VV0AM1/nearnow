@@ -11,6 +11,7 @@ import { buildFeedParams, mergePages } from '../../hooks/useFeed';
 import { enGB } from 'date-fns/locale';
 import { groupByDay } from '../format';
 import { circleRing, haversineKm, regionRadiusKm, zoomToDeltas } from '../geo';
+import { clusterMarkers, project, zoomForSpan } from '../cluster';
 import { mediaUrl } from '../config';
 
 jest.mock('expo-localization', () => ({ getLocales: () => [{ languageCode: 'es' }] }));
@@ -208,5 +209,35 @@ describe('geo helpers', () => {
     expect(ring).toHaveLength(33);
     expect(ring[0]).toEqual(ring[32]);
     for (const [lng, lat] of ring) expect(haversineKm(41.4, 2.17, lat, lng)).toBeCloseTo(2, 1);
+  });
+});
+
+describe('marker clustering', () => {
+  const pt = (id: string, lat: number, lng: number) => ({ id, lat, lng });
+  // Two posts ~50 m apart and one ~3 km away.
+  const items = [pt('a', 41.3870, 2.1700), pt('b', 41.3874, 2.1703), pt('c', 41.4100, 2.1900)];
+
+  it('groups nearby markers when zoomed out and splits them when zoomed in', () => {
+    const far = clusterMarkers(items, 13);
+    expect(far.map((c) => c.kind)).toEqual(['cluster', 'single']);
+    const cluster = far[0];
+    expect(cluster.kind === 'cluster' && cluster.items.map((i) => i.id)).toEqual(['a', 'b']);
+    expect(clusterMarkers(items, 19).every((c) => c.kind === 'single')).toBe(true);
+  });
+
+  it('places a cluster at the mean position with a stable key', () => {
+    const [c] = clusterMarkers([pt('b', 1, 1), pt('a', 1.0001, 1.0001)], 10);
+    expect(c.kind).toBe('cluster');
+    if (c.kind === 'cluster') {
+      expect(c.key).toBe('a|b');
+      expect(c.lat).toBeCloseTo(1.00005, 6);
+    }
+  });
+
+  it('round-trips zoom from a span and projects consistently', () => {
+    expect(zoomForSpan(zoomToDeltas(15, 41.4, 390, 700).longitudeDelta, 390)).toBeCloseTo(15, 6);
+    const a = project(41.4, 2.17, 10);
+    const b = project(41.4, 2.17, 11);
+    expect(b.x / a.x).toBeCloseTo(2, 6);
   });
 });

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View } from 'react-native';
+import { Text, View } from 'react-native';
 import type { MarkerShape } from '@/lib/map-bridge';
 
 const SIZE = 20;
@@ -43,6 +43,34 @@ export function MarkerPin({ color, shape, dim }: { color: string; shape: MarkerS
           elevation: 2,
         }}
       />
+    </View>
+  );
+}
+
+/** Group of nearby posts; the count is the text, so it reads without colour. */
+export function ClusterPin({ count, color, textColor }: { count: number; color: string; textColor: string }) {
+  const size = count < 10 ? 34 : count < 100 ? 40 : 46;
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        backgroundColor: color,
+        borderWidth: 3,
+        borderColor: '#FFFFFF',
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOpacity: 0.25,
+        shadowRadius: 3,
+        shadowOffset: { width: 0, height: 1 },
+        elevation: 3,
+      }}
+    >
+      <Text allowFontScaling={false} style={{ color: textColor, fontWeight: '700', fontSize: 14 }}>
+        {String(count)}
+      </Text>
     </View>
   );
 }

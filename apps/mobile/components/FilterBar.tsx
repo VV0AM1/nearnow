@@ -15,6 +15,9 @@ export interface Filters {
 
 const TIMES: TimeWindow[] = ['24h', '7d', '30d', 'all'];
 
+/** Map defaults: recent posts only, so the map shows what is current. */
+export const DEFAULT_MAP_FILTERS: Omit<Filters, 'radiusKm'> = { category: null, since: '7d' };
+
 /** One filter surface shared by feed and map; every option changes the server query. */
 export function FilterBar({ value, onChange, showCategories = true }: { value: Filters; onChange: (f: Filters) => void; showCategories?: boolean }) {
   const { t } = useI18n();

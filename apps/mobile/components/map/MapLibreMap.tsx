@@ -1,21 +1,26 @@
 import React, { forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Camera, GeoJSONSource, Layer, Map, Marker, type CameraRef, type ViewStateChangeEvent } from '@maplibre/maplibre-react-native';
-import type { NativeSyntheticEvent } from 'react-native';
+import { View, type NativeSyntheticEvent } from 'react-native';
 import { config } from '@/lib/config';
 import { circleRing, haversineKm } from '@/lib/geo';
+import { clusterMarkers } from '@/lib/cluster';
+import { useI18n } from '@/lib/i18n';
 import type { MapMarker } from '@/lib/map-bridge';
 import { useTokens } from '@/design';
-import { MarkerPin } from './MarkerPin';
+import { ClusterPin, MarkerPin } from './MarkerPin';
 import type { NearMapHandle, NearMapProps } from './types';
 
 /** MapLibre Native with OpenFreeMap vector tiles (free, no API key). Android development/release builds. */
 export const MapLibreMap = forwardRef<NearMapHandle, NearMapProps>(function MapLibreMap({ initial, onMessage, pinMode = false, accessibilityLabel }, ref) {
+  const { t } = useI18n();
   const tokens = useTokens();
   const camera = useRef<CameraRef>(null);
   // The first region change is the initial render, not a user gesture.
   const programmatic = useRef(true);
   const [markers, setMarkers] = useState<MapMarker[]>([]);
   const [area, setArea] = useState<{ lat: number; lng: number; radiusKm: number } | null>(null);
+  const [zoom, setZoom] = useState(initial.zoom);
+  const clusters = useMemo(() => clusterMarkers(markers, zoom), [markers, zoom]);
   const [initialViewState] = useState(() => ({ center: [initial.lng, initial.lat] as [number, number], zoom: initial.zoom }));
 
   useImperativeHandle(
@@ -39,7 +44,8 @@ export const MapLibreMap = forwardRef<NearMapHandle, NearMapProps>(function MapL
   );
 
   const onRegionDidChange = (e: NativeSyntheticEvent<ViewStateChangeEvent>) => {
-    const { center, bounds, userInteraction } = e.nativeEvent;
+    const { center, bounds, userInteraction, zoom: z } = e.nativeEvent;
+    setZoom(z);
     const [lng, lat] = center;
     const [, , east, north] = bounds;
     onMessage({ type: 'MOVE_END', lat, lng, radiusKm: Math.max(haversineKm(lat, lng, north, east), 0.001), byUser: userInteraction && !programmatic.current });
@@ -67,11 +73,29 @@ export const MapLibreMap = forwardRef<NearMapHandle, NearMapProps>(function MapL
           <Layer id="nn-area-line" type="line" style={{ lineColor: tokens.colors.accent, lineWidth: 1.5 }} />
         </GeoJSONSource>
       ) : null}
-      {markers.map((m) => (
-        <Marker key={m.id} id={m.id} lngLat={[m.lng, m.lat]} onPress={() => onMessage({ type: 'MARKER_PRESS', id: m.id })}>
-          <MarkerPin color={m.color} shape={m.shape} dim={m.dim} />
-        </Marker>
-      ))}
+      {clusters.map((c) =>
+        c.kind === 'single' ? (
+          <Marker key={c.item.id} id={c.item.id} lngLat={[c.item.lng, c.item.lat]} onPress={() => onMessage({ type: 'MARKER_PRESS', id: c.item.id })}>
+            <View accessible accessibilityRole="button" accessibilityLabel={c.item.label}>
+              <MarkerPin color={c.item.color} shape={c.item.shape} dim={c.item.dim} />
+            </View>
+          </Marker>
+        ) : (
+          <Marker
+            key={c.key}
+            id={c.key}
+            lngLat={[c.lng, c.lat]}
+            onPress={() => {
+              programmatic.current = true;
+              camera.current?.easeTo({ center: [c.lng, c.lat], zoom: Math.min(18, zoom + 2), duration: tokens.reduceMotion ? 0 : 350 });
+            }}
+          >
+            <View accessible accessibilityRole="button" accessibilityLabel={t('map.cluster', { count: c.items.length })}>
+              <ClusterPin count={c.items.length} color={tokens.colors.accent} textColor={tokens.colors.onAccent} />
+            </View>
+          </Marker>
+        ),
+      )}
     </Map>
   );
 });

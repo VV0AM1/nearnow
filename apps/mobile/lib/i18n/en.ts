@@ -270,6 +270,11 @@ const en = {
   },
   map: {
     searchArea: 'Search this area',
+    cluster: '{count} posts here. Tap to zoom in.',
+    showList: 'Show list',
+    hideList: 'Hide list',
+    category: 'Category',
+    time: 'Time',
     recenter: 'Back to my area',
     legend: 'Legend',
     tilesFailed: "Map tiles couldn't load. Posts are still listed below the pins once you're back online.",

@@ -1,16 +1,19 @@
-import React, { forwardRef, useCallback, useImperativeHandle, useRef, useState } from 'react';
+import React, { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useWindowDimensions, View } from 'react-native';
 import MapView, { Circle, Marker, type Region } from 'react-native-maps';
 import type { MapMarker } from '@/lib/map-bridge';
 import { regionRadiusKm, zoomToDeltas } from '@/lib/geo';
+import { clusterMarkers, zoomForSpan } from '@/lib/cluster';
+import { useI18n } from '@/lib/i18n';
 import { useTokens } from '@/design';
-import { MarkerPin } from './MarkerPin';
+import { ClusterPin, MarkerPin } from './MarkerPin';
 import type { NearMapHandle, NearMapProps } from './types';
 
 export type { NearMapHandle, NearMapProps } from './types';
 
 /** Apple Maps (MapKit) via react-native-maps. Works in Expo Go and development builds. */
 export const NativeMap = forwardRef<NearMapHandle, NearMapProps>(function AppleMap({ initial, onMessage, pinMode = false, accessibilityLabel }, ref) {
+  const { t } = useI18n();
   const tokens = useTokens();
   const window = useWindowDimensions();
   const map = useRef<MapView>(null);
@@ -20,6 +23,8 @@ export const NativeMap = forwardRef<NearMapHandle, NearMapProps>(function AppleM
   const programmatic = useRef(true);
   const [markers, setMarkers] = useState<MapMarker[]>([]);
   const [area, setArea] = useState<{ lat: number; lng: number; radiusKm: number } | null>(null);
+  const [zoom, setZoom] = useState(initial.zoom);
+  const clusters = useMemo(() => clusterMarkers(markers, zoom), [markers, zoom]);
 
   const [initialRegion] = useState<Region>(() => ({
     latitude: initial.lat,
@@ -49,11 +54,17 @@ export const NativeMap = forwardRef<NearMapHandle, NearMapProps>(function AppleM
   const onRegionChangeComplete = useCallback(
     (r: Region) => {
       region.current = r;
+      setZoom(zoomForSpan(r.longitudeDelta, size.current.width));
       onMessage({ type: 'MOVE_END', lat: r.latitude, lng: r.longitude, radiusKm: regionRadiusKm(r), byUser: !programmatic.current });
       programmatic.current = false;
     },
     [onMessage],
   );
+
+  const zoomInto = (lat: number, lng: number) => {
+    programmatic.current = true;
+    map.current?.animateToRegion({ latitude: lat, longitude: lng, ...zoomToDeltas(Math.min(18, zoom + 2), lat, size.current.width, size.current.height) }, tokens.reduceMotion ? 0 : 350);
+  };
 
   return (
     <View
@@ -79,18 +90,30 @@ export const NativeMap = forwardRef<NearMapHandle, NearMapProps>(function AppleM
         {area && !pinMode ? (
           <Circle center={{ latitude: area.lat, longitude: area.lng }} radius={area.radiusKm * 1000} strokeColor={tokens.colors.accent} strokeWidth={1.5} fillColor={tokens.colors.accentSoft} />
         ) : null}
-        {markers.map((m) => (
-          <Marker
-            key={m.id}
-            identifier={m.id}
-            coordinate={{ latitude: m.lat, longitude: m.lng }}
-            tracksViewChanges={false}
-            accessibilityLabel={m.label}
-            onPress={() => onMessage({ type: 'MARKER_PRESS', id: m.id })}
-          >
-            <MarkerPin color={m.color} shape={m.shape} dim={m.dim} />
-          </Marker>
-        ))}
+        {clusters.map((c) =>
+          c.kind === 'single' ? (
+            <Marker
+              key={c.item.id}
+              identifier={c.item.id}
+              coordinate={{ latitude: c.item.lat, longitude: c.item.lng }}
+              tracksViewChanges={false}
+              accessibilityLabel={c.item.label}
+              onPress={() => onMessage({ type: 'MARKER_PRESS', id: c.item.id })}
+            >
+              <MarkerPin color={c.item.color} shape={c.item.shape} dim={c.item.dim} />
+            </Marker>
+          ) : (
+            <Marker
+              key={c.key}
+              coordinate={{ latitude: c.lat, longitude: c.lng }}
+              tracksViewChanges={false}
+              accessibilityLabel={t('map.cluster', { count: c.items.length })}
+              onPress={() => zoomInto(c.lat, c.lng)}
+            >
+              <ClusterPin count={c.items.length} color={tokens.colors.accent} textColor={tokens.colors.onAccent} />
+            </Marker>
+          ),
+        )}
       </MapView>
     </View>
   );

@@ -138,6 +138,7 @@ function Navigation() {
         <Stack.Screen name="forgot-password" options={{ title: t('auth.resetTitle') }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
         <Stack.Screen name="city-picker" options={{ title: t('area.pickTitle'), presentation: 'modal' }} />
+        <Stack.Screen name="map-filters" options={{ title: t('map.filters'), presentation: 'formSheet', sheetAllowedDetents: [0.55, 1], sheetGrabberVisible: true, sheetCornerRadius: 24 }} />
         <Stack.Screen name="post/[id]" options={{ title: '' }} />
         <Stack.Screen name="notifications" options={{ title: t('notifications.title') }} />
         <Stack.Screen name="alerts" options={{ title: t('alerts.title') }} />
