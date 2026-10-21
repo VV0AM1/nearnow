@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
@@ -33,6 +33,10 @@ function MapScreen() {
     const [selectedId, setSelectedId] = useState<string | null>(params.get("focus"));
     const [mobileView, setMobileView] = useState<"map" | "list">("map");
     const { posts, error } = useMapPosts(location, Number(radius));
+    // This boundary hydrates after the saved area loads from storage; render the same
+    // placeholder on the server and the first client pass to avoid a mismatch.
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
 
     const focus = useMemo(() => {
         const lat = Number(params.get("lat"));
@@ -46,6 +50,7 @@ function MapScreen() {
     }, [posts, category, since]);
     const selected = visible.find((p) => p.id === selectedId) ?? (posts as Post[]).find((p) => p.id === selectedId) ?? null;
 
+    if (!mounted) return <div className="h-[calc(100dvh-11.5rem)] animate-pulse rounded-[28px] bg-surface-2 lg:h-[calc(100dvh-5.75rem)]" aria-label="Loading map" />;
     if (!location) {
         return (
             <div className="mx-auto max-w-lg px-4 py-10">
@@ -61,7 +66,7 @@ function MapScreen() {
         <div className="flex h-full flex-col">
             <div className="space-y-3 border-b border-border p-4">
                 <div className="flex items-baseline justify-between">
-                    <h1 className="text-[22px] font-bold tracking-tight">Map</h1>
+                    <h1 className="display text-[30px] leading-none">Map</h1>
                     <span className="text-[13px] text-muted-foreground">
                         {visible.length} post{visible.length === 1 ? "" : "s"}
                     </span>
@@ -132,7 +137,7 @@ function MapScreen() {
     );
 
     return (
-        <div className="flex h-[calc(100dvh-4rem-4rem-env(safe-area-inset-bottom))] flex-col lg:h-[calc(100dvh-4rem)] lg:flex-row">
+        <div className="flex h-[calc(100dvh-11.5rem-env(safe-area-inset-bottom))] flex-col overflow-hidden rounded-[28px] bg-surface shadow-[var(--shadow-deep)] ring-1 ring-border lg:h-[calc(100dvh-5.75rem)] lg:flex-row">
             <div className="flex justify-center border-b border-border p-2 lg:hidden">
                 <Segmented
                     label="View"

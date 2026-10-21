@@ -17,7 +17,7 @@ type ButtonVariant = "filled" | "tinted" | "plain" | "outline" | "destructive" |
 type ButtonSize = "sm" | "md" | "lg";
 
 const VARIANT: Record<ButtonVariant, string> = {
-    filled: "bg-primary text-primary-foreground hover:brightness-110 active:brightness-95 shadow-sm",
+    filled: "bg-primary text-primary-foreground hover:brightness-110 active:brightness-95 shadow-[0_8px_20px_-8px_var(--nn-accent)]",
     tinted: "bg-primary-soft text-primary hover:bg-primary/15",
     plain: "text-primary hover:bg-primary-soft",
     outline: "border border-border bg-surface text-foreground hover:bg-surface-2",
@@ -25,9 +25,9 @@ const VARIANT: Record<ButtonVariant, string> = {
     destructiveTinted: "bg-danger-soft text-danger hover:bg-danger/15",
 };
 const SIZE: Record<ButtonSize, string> = {
-    sm: "h-9 px-3.5 text-[13px] gap-1.5 rounded-[10px]",
-    md: "h-11 px-5 text-[15px] gap-2 rounded-xl",
-    lg: "h-12 px-6 text-base gap-2 rounded-[14px]",
+    sm: "h-9 px-4 text-[13px] gap-1.5 rounded-full",
+    md: "h-11 px-5 text-[15px] gap-2 rounded-full",
+    lg: "h-13 px-7 text-base gap-2 rounded-full",
 };
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -114,14 +114,14 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
 /* ── Surfaces ───────────────────────────────────────────────────────────── */
 
 export function Card({ children, className, padded = true, as: As = "div" }: { children: ReactNode; className?: string; padded?: boolean; as?: "div" | "section" | "article" }) {
-    return <As className={cn("rounded-[20px] bg-surface shadow-[var(--shadow-card)]", padded && "p-5", className)}>{children}</As>;
+    return <As className={cn("rounded-[22px] bg-surface shadow-[var(--shadow-card)] ring-1 ring-border/60", padded && "p-5", className)}>{children}</As>;
 }
 
 export function PageHeader({ title, subtitle, actions, className }: { title: string; subtitle?: ReactNode; actions?: ReactNode; className?: string }) {
     return (
         <div className={cn("flex flex-wrap items-end justify-between gap-4", className)}>
             <div className="min-w-0">
-                <h1 className="text-[28px] font-bold leading-tight tracking-tight sm:text-[32px]">{title}</h1>
+                <h1 className="display text-[34px] leading-[1.02] sm:text-[44px]">{title}</h1>
                 {subtitle ? <p className="mt-1 text-[15px] text-muted-foreground">{subtitle}</p> : null}
             </div>
             {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}

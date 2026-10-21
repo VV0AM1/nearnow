@@ -7,6 +7,7 @@ import { Bookmark, Check, Flag, Map as MapIcon, MessageCircle, Share2, ThumbsUp 
 import { mediaUrl } from "@/lib/api";
 import { getCategory } from "@/config/categories";
 import { Card, Skeleton } from "@/components/nn";
+import { Tilt } from "@/components/motion";
 import ReportModal from "@/components/features/reports/ReportModal";
 import { usePostInteractions } from "./Post/usePostInteractions";
 import { CategoryBadge, ITEM_TYPE_LABEL, TrustLine } from "./PostStatus";
@@ -76,7 +77,9 @@ function PostCardInner({ post, onHover, compact }: { post: Post; onHover?: (id: 
     };
 
     return (
-        <Card padded={false} as="article" className={cn("group transition-shadow hover:shadow-[var(--shadow-float)]", inactive && "opacity-80")}>
+        <Tilt max={3} scale={1.006} className="rounded-[22px]">
+        <Card padded={false} as="article" className={cn("group relative overflow-hidden transition-shadow duration-300 hover:shadow-[var(--shadow-deep)]", inactive && "opacity-80")}>
+            <span aria-hidden className="absolute inset-y-4 left-0 w-[4px] rounded-r-full" style={{ background: getCategory(post.category).hex }} />
             <div
                 role="link"
                 tabIndex={0}
@@ -95,7 +98,7 @@ function PostCardInner({ post, onHover, compact }: { post: Post; onHover?: (id: 
                         </span>
                     ) : null}
                 </div>
-                <h3 className="text-[17px] font-semibold leading-snug">{post.title}</h3>
+                <h3 className="display text-[22px] leading-[1.15]">{post.title}</h3>
                 {post.content ? <p className={cn("whitespace-pre-line break-words text-[15px] leading-relaxed text-muted-foreground", compact ? "line-clamp-2" : "line-clamp-3")}>{post.content}</p> : null}
                 {image && !compact ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -127,6 +130,7 @@ function PostCardInner({ post, onHover, compact }: { post: Post; onHover?: (id: 
             </div>
             <ReportModal isOpen={reporting} onClose={() => setReporting(false)} postId={post.id} />
         </Card>
+        </Tilt>
     );
 }
 

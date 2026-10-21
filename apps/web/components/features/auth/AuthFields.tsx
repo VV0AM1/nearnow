@@ -88,7 +88,7 @@ export function SocialDivider() {
     return (
         <div className="relative my-6 text-center text-[13px] text-muted-foreground">
             <span className="absolute inset-x-0 top-1/2 h-px bg-border" aria-hidden />
-            <span className="relative bg-background px-3">or</span>
+            <span className="relative bg-surface px-3">or</span>
         </div>
     );
 }

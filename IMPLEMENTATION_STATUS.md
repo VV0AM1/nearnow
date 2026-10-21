@@ -423,6 +423,25 @@ Step-by-step for the account-dependent steps: `docs/RELEASE_SETUP.md`.
 - **Clean-up.** 67 superseded files were moved to `legacy-removed/web/`. Unused dependencies were removed: framer-motion, leaflet and its plugins, Apollo/GraphQL, radix dropdown/slot, react-virtuoso, react-loading-skeleton, js-cookie, jwt-decode and tailwindcss-animate. Lint now has 0 errors and 38 warnings (was 89), all in untouched hooks. `next build` builds all 15 routes.
 - **Still open.** The legal page still holds the old placeholder text, which needs real policy text from the owner. Lost & Found matches and contact requests on the web are still to do. Moderation history in admin is still to do.
 
+**Web identity v2, "living map" (October 2026; checked in the browser at desktop and phone sizes, light and dark):**
+- **Look.** Warm paper and ink with the NearNow blue and a coral signal accent. Fonts are Bricolage Grotesque (display) and IBM Plex Mono (coordinates and labels) via `next/font`. It adds a topographic contour texture (`public/textures/contours.svg`, generated and masked per theme), film grain and warm layered shadows (`--shadow-card/float/deep`).
+- **Theme switching.** `@theme inline`, so any subtree can switch theme with `data-theme` (the night panels on auth and landing).
+- **3D neighbourhood** (`components/scene/IsoCity.tsx`). Built from CSS 3D transforms, with no WebGL. Buildings are extruded with lit faces and windows. It has streets with moving cars, a park and a river, pins that drop in, face the viewer and pulse on the ground, and a tilt that follows the pointer. Tiles under pins stay open. It is decorative on the landing and auth pages; on the dashboard it shows the user's real posts as clickable pins, labelled *"Illustrative layout · positions approximate"*.
+- **Motion** (`components/motion`, framer-motion 12.43).
+  - Scroll parallax, pointer depth layers, 3D tilt with glare, count-up numbers, magnetic buttons, a sliding nav indicator and page transitions.
+  - Enter animations (hero text, scroll reveals, pin drops) are CSS keyframes and transitions, so content never waits on JavaScript frame timing.
+  - Reduce Motion turns all of it off.
+- **Pages.**
+  - Landing (also public at `/welcome`): floating pill nav, full-height hero with the 3D scene and floating example cards, tilted category marquee, a scroll-drawn lifecycle path, a tilting bento grid, a principles statement and a night call to action. All sample content is labelled "Example".
+  - Dashboard: floating sidebar and top bar, a floating dock on phones, a greeting plus the area diorama hero with honest counts, tilting post cards with category edges.
+  - Auth: a night-map brand panel and a card form.
+  - Map: a floating panel.
+- **Fixes on the way:**
+  - a hydration mismatch on `/map` (a late-hydrating Suspense boundary after the saved area loads from storage);
+  - a React warning about mixed `background`/`backgroundImage`;
+  - Google's sign-in button overflowing its card;
+  - coral and "brief" bento cards below WCAG contrast.
+
 - [x] Status, verification and staleness labels; confirm and resolve buttons.
 - [~] Lost & Found: fields done (create form, card and detail); matches and contact requests are still to do.
 - [x] Approximate-location option on the create form.

@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { CheckCheck, Clock, MapPin, ShieldCheck } from "lucide-react";
+import { Clock, MapPin, ShieldCheck } from "lucide-react";
+import { IsoCity } from "@/components/scene/IsoCity";
+import { Depth, PointerStage } from "@/components/motion";
 
 interface AuthLayoutProps {
     children: React.ReactNode;
@@ -11,53 +13,58 @@ interface AuthLayoutProps {
 }
 
 const POINTS = [
-    { icon: MapPin, text: "Updates from neighbours around the area you choose — closures, events, lost & found." },
+    { icon: MapPin, text: "Updates from neighbours around the area you choose." },
     { icon: Clock, text: "Every post shows when it was posted and whether others confirmed it." },
     { icon: ShieldCheck, text: "Your exact location is never shown unless you choose to share it." },
 ];
 
-/** Sign-in frame: brand panel on wide screens, a single card on phones. */
+/** Sign-in frame: a dark "night map" panel on wide screens, a single column on phones. */
 export default function AuthLayout({ children, title, subtitle, footerText, footerLinkText, footerLinkHref }: AuthLayoutProps) {
     return (
-        <div className="grid min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-            <aside className="relative hidden overflow-hidden bg-[#2459e0] p-12 text-white lg:flex lg:flex-col lg:justify-between">
-                <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 size-[420px] rounded-full bg-white/10" />
-                <div aria-hidden className="pointer-events-none absolute -bottom-32 -left-20 size-[360px] rounded-full bg-white/[0.07]" />
-                <Link href="/" className="relative flex items-center gap-2.5 text-xl font-bold">
-                    <span className="flex size-10 items-center justify-center rounded-xl bg-white text-[#2459e0]">
-                        <MapPin className="size-5" aria-hidden />
+        <div className="grid min-h-dvh lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
+            <aside data-theme="dark" className="contours relative m-3 hidden overflow-hidden rounded-[32px] bg-background p-10 text-foreground shadow-[var(--shadow-deep)] lg:flex lg:flex-col lg:justify-between">
+                <div aria-hidden className="pointer-events-none absolute -left-24 top-1/3 size-[420px] rounded-full bg-primary/20 blur-[100px]" />
+                <Link href="/welcome" className="relative flex items-center gap-2.5">
+                    <span className="relative flex size-9 items-center justify-center rounded-full bg-foreground text-background">
+                        <MapPin className="size-[18px]" aria-hidden />
+                        <span className="absolute -right-0.5 -top-0.5 size-3 rounded-full border-2 border-background bg-signal" />
                     </span>
-                    NearNow
+                    <span className="display text-[21px]">NearNow</span>
                 </Link>
-                <div className="relative max-w-md space-y-8">
-                    <h2 className="text-[40px] font-bold leading-[1.1] tracking-tight">Local updates and community help, right around you.</h2>
-                    <ul className="space-y-5">
+                <PointerStage className="relative -my-6 h-[380px]">
+                    <Depth depth={-16} className="absolute inset-0 flex items-center justify-center">
+                        <IsoCity seed={17} tiles={8} pins={[]} className="scale-[0.78]" />
+                    </Depth>
+                </PointerStage>
+                <div className="relative space-y-6">
+                    <h2 className="display text-[44px] leading-[0.98]">
+                        Your street,
+                        <span className="ink-gradient block">right now.</span>
+                    </h2>
+                    <ul className="space-y-3">
                         {POINTS.map(({ icon: IconC, text }) => (
-                            <li key={text} className="flex gap-3.5 text-[17px] leading-snug text-white/90">
-                                <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-white/15">
-                                    <IconC className="size-5" aria-hidden />
-                                </span>
+                            <li key={text} className="flex gap-3 text-[15px] leading-snug text-muted-foreground">
+                                <IconC className="mt-0.5 size-[18px] shrink-0 text-primary" aria-hidden />
                                 {text}
                             </li>
                         ))}
                     </ul>
+                    <p className="font-mono text-[11px] uppercase tracking-wider text-subtle">Not an emergency service · in danger, call 112</p>
                 </div>
-                <p className="relative flex items-center gap-2 text-sm text-white/75">
-                    <CheckCheck className="size-4" aria-hidden /> Not an emergency service — in danger, call 112.
-                </p>
             </aside>
 
-            <main className="flex items-center justify-center px-4 py-10 sm:px-8">
-                <div className="w-full max-w-[400px]">
-                    <Link href="/" className="mb-10 flex items-center gap-2.5 text-xl font-bold lg:hidden">
-                        <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                            <MapPin className="size-5" aria-hidden />
+            <main className="contours flex items-center justify-center px-4 py-10 sm:px-8">
+                <div className="w-full max-w-[420px]">
+                    <Link href="/welcome" className="mb-10 flex items-center gap-2.5 lg:hidden">
+                        <span className="relative flex size-9 items-center justify-center rounded-full bg-ink text-paper">
+                            <MapPin className="size-[18px]" aria-hidden />
+                            <span className="absolute -right-0.5 -top-0.5 size-3 rounded-full border-2 border-background bg-signal" />
                         </span>
-                        NearNow
+                        <span className="display text-[21px]">NearNow</span>
                     </Link>
-                    <h1 className="text-[30px] font-bold tracking-tight">{title}</h1>
-                    <p className="mb-8 mt-1.5 text-[15px] text-muted-foreground">{subtitle}</p>
-                    {children}
+                    <h1 className="display text-[42px] leading-none">{title}</h1>
+                    <p className="mb-8 mt-3 text-[16px] text-muted-foreground">{subtitle}</p>
+                    <div className="rounded-[28px] bg-surface p-6 shadow-[var(--shadow-deep)] ring-1 ring-border sm:p-7">{children}</div>
                     <p className="mt-8 text-center text-[15px]">
                         <span className="text-muted-foreground">{footerText} </span>
                         <Link href={footerLinkHref} className="font-semibold text-primary hover:underline">
