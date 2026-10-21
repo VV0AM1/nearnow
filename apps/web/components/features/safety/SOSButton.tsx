@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { AlertTriangle, Phone, X } from "lucide-react";
+import { AlertCircle, Check, Megaphone, Phone } from "lucide-react";
 import { useCreatePost } from "../../../hooks/useCreatePost";
+import { Banner, Button, Dialog, IconButton } from "@/components/nn";
+import { cn } from "@/lib/utils";
 
 const EMERGENCY_NUMBER = "112";
 const COUNTDOWN = 5;
@@ -14,17 +15,14 @@ type Phase = "closed" | "info" | "locating" | "countdown" | "sending" | "result"
  * services were contacted, always offers 112, and reports the real number of people
  * the server notified.
  */
-export default function SOSButton() {
+export default function SOSButton({ variant = "full" }: { variant?: "full" | "icon" }) {
     const [phase, setPhase] = useState<Phase>("closed");
     const [seconds, setSeconds] = useState(COUNTDOWN);
     const [notified, setNotified] = useState(0);
     const [message, setMessage] = useState<string | null>(null);
-    const [mounted, setMounted] = useState(false);
     const coords = useRef<{ latitude: number; longitude: number } | null>(null);
     const sending = useRef(false);
     const { createPost } = useCreatePost();
-
-    useEffect(() => setMounted(true), []);
 
     const close = () => {
         setPhase("closed");
@@ -81,79 +79,106 @@ export default function SOSButton() {
         }
     };
 
-    const modal =
-        phase === "closed" ? null : (
-            <div role="dialog" aria-modal="true" aria-labelledby="urgent-title" className="fixed inset-0 z-[99999] flex items-end md:items-center justify-center bg-black/60 p-4">
-                <div className="w-full max-w-md rounded-2xl bg-background border border-border p-6 space-y-4 shadow-xl">
-                    <div className="flex items-start justify-between">
-                        <h2 id="urgent-title" className="text-xl font-bold">{phase === "result" ? "Alert posted" : "Urgent help request"}</h2>
-                        {phase !== "sending" && (
-                            <button onClick={close} aria-label="Close" className="p-2 rounded-lg hover:bg-secondary">
-                                <X className="h-5 w-5" />
-                            </button>
-                        )}
-                    </div>
-                    <div className="rounded-xl bg-red-500/10 border border-red-500/30 p-3 text-sm space-y-1">
-                        <p className="font-bold text-red-600">If anyone is in danger, call {EMERGENCY_NUMBER} now.</p>
-                        <p>NearNow is not an emergency service and does not contact police, ambulance or fire services.</p>
-                    </div>
-                    <a href={`tel:${EMERGENCY_NUMBER}`} className="flex items-center justify-center gap-2 w-full rounded-lg bg-red-600 text-white font-bold py-3">
-                        <Phone className="h-4 w-4" /> Call {EMERGENCY_NUMBER}
-                    </a>
+    const progress = seconds / COUNTDOWN;
 
-                    {phase === "info" && (
+    return (
+        <>
+            {variant === "icon" ? (
+                <IconButton icon={AlertCircle} label="Urgent help" className="text-danger hover:bg-danger-soft hover:text-danger" onClick={() => setPhase("info")} />
+            ) : (
+                <Button variant="destructiveTinted" icon={AlertCircle} block onClick={() => setPhase("info")}>
+                    Urgent help
+                </Button>
+            )}
+
+            <Dialog open={phase !== "closed"} onClose={close} dismissible={phase !== "sending"} title={phase === "result" ? "Alert posted" : "Urgent help request"} size="sm">
+                <div className="space-y-4">
+                    <div className="space-y-3 rounded-[16px] bg-danger-soft p-4">
+                        <div className="flex gap-2.5">
+                            <Phone className="mt-0.5 size-5 shrink-0 text-danger" aria-hidden />
+                            <div className="space-y-1">
+                                <p className="font-semibold text-danger">If anyone is in danger, call {EMERGENCY_NUMBER} now.</p>
+                                <p className="text-sm">NearNow is not an emergency service and does not contact police, ambulance or fire services.</p>
+                            </div>
+                        </div>
+                        <a href={`tel:${EMERGENCY_NUMBER}`} className="flex h-12 w-full items-center justify-center gap-2 rounded-[14px] bg-danger text-base font-semibold text-white hover:brightness-110">
+                            <Phone className="size-[18px]" aria-hidden /> Call {EMERGENCY_NUMBER}
+                        </a>
+                    </div>
+
+                    {phase === "info" ? (
                         <>
                             <p className="text-sm text-muted-foreground">
                                 Posting creates an urgent alert at your exact location. It is visible to everyone on NearNow and sent only to nearby people who chose to receive urgent alerts. It expires after 2 hours, then the location is blurred.
                             </p>
-                            <button onClick={start} className="w-full rounded-lg border border-border py-3 font-bold hover:bg-secondary">
+                            <Button variant="tinted" icon={Megaphone} block onClick={start}>
                                 Post urgent alert
-                            </button>
+                            </Button>
                         </>
-                    )}
-                    {phase === "locating" && <p className="text-center text-sm" aria-live="polite">Finding your location…</p>}
-                    {phase === "countdown" && (
-                        <>
-                            <p className="text-center text-lg font-bold" aria-live="assertive">Posting in {seconds}…</p>
-                            <button onClick={close} className="w-full rounded-lg border border-border py-3 font-bold hover:bg-secondary">
+                    ) : null}
+                    {phase === "locating" ? (
+                        <Button variant="tinted" loading block>
+                            Finding your location…
+                        </Button>
+                    ) : null}
+                    {phase === "countdown" ? (
+                        <div className="flex flex-col items-center gap-4 py-2" role="timer" aria-live="assertive" aria-label={`Posting in ${seconds}`}>
+                            <div className="relative size-32">
+                                <svg viewBox="0 0 120 120" className="size-full -rotate-90" aria-hidden>
+                                    <circle cx="60" cy="60" r="52" fill="none" strokeWidth="9" className="stroke-danger-soft" />
+                                    <circle
+                                        cx="60"
+                                        cy="60"
+                                        r="52"
+                                        fill="none"
+                                        strokeWidth="9"
+                                        strokeLinecap="round"
+                                        className="stroke-danger transition-[stroke-dashoffset] duration-1000 ease-linear"
+                                        strokeDasharray={2 * Math.PI * 52}
+                                        strokeDashoffset={2 * Math.PI * 52 * (1 - progress)}
+                                    />
+                                </svg>
+                                <span className="absolute inset-0 flex items-center justify-center text-5xl font-bold tabular-nums text-danger">{seconds}</span>
+                            </div>
+                            <p className="font-semibold">Posting in {seconds}…</p>
+                            <Button variant="tinted" size="lg" block onClick={close}>
                                 Cancel
-                            </button>
-                        </>
-                    )}
-                    {phase === "sending" && <p className="text-center text-sm" aria-live="polite">Posting your alert…</p>}
-                    {phase === "result" && (
-                        <div className="space-y-2 text-sm" aria-live="polite">
-                            <p>
-                                {notified > 0
-                                    ? `${notified} nearby people who turned on urgent alerts were notified in the app.`
-                                    : "Your alert is visible on NearNow, but nobody nearby has urgent alerts turned on right now."}
-                            </p>
-                            <p className="font-bold text-red-600">Nobody has been dispatched. Call {EMERGENCY_NUMBER} if you need help.</p>
+                            </Button>
                         </div>
-                    )}
-                    {phase === "error" && (
+                    ) : null}
+                    {phase === "sending" ? (
+                        <Button variant="tinted" loading block>
+                            Posting your alert…
+                        </Button>
+                    ) : null}
+                    {phase === "result" ? (
+                        <div className="space-y-3" aria-live="polite">
+                            <div className="flex gap-3">
+                                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-success-soft text-success">
+                                    <Check className="size-5" aria-hidden />
+                                </span>
+                                <p className="text-[15px]">
+                                    {notified > 0
+                                        ? `${notified} nearby people who turned on urgent alerts were notified in the app.`
+                                        : "Your alert is visible on NearNow, but nobody nearby has urgent alerts turned on right now."}
+                                </p>
+                            </div>
+                            <p className={cn("font-semibold text-danger")}>Nobody has been dispatched. Call {EMERGENCY_NUMBER} if you need help.</p>
+                            <Button variant="plain" block onClick={close}>
+                                Close
+                            </Button>
+                        </div>
+                    ) : null}
+                    {phase === "error" ? (
                         <div className="space-y-3">
-                            <p className="text-sm text-red-600 font-medium" aria-live="assertive">{message}</p>
-                            <button onClick={start} className="w-full rounded-lg border border-border py-3 font-bold hover:bg-secondary">
+                            <Banner tone="danger" message={message} />
+                            <Button variant="tinted" block onClick={start}>
                                 Try again
-                            </button>
+                            </Button>
                         </div>
-                    )}
+                    ) : null}
                 </div>
-            </div>
-        );
-
-    return (
-        <>
-            <button
-                onClick={() => setPhase("info")}
-                aria-label="Urgent help"
-                className="flex items-center justify-center gap-2 p-2 md:px-4 md:py-2 border border-red-600/50 text-red-600 rounded-lg font-bold hover:bg-red-600/10 transition-colors"
-            >
-                <AlertTriangle className="h-5 w-5" />
-                <span className="hidden md:inline">Urgent help</span>
-            </button>
-            {mounted && modal ? createPortal(modal, document.body) : null}
+            </Dialog>
         </>
     );
 }

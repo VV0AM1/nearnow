@@ -383,13 +383,33 @@ Step-by-step for the account-dependent steps: `docs/RELEASE_SETUP.md`.
 - [ ] Automated screen tests for the main flows (React Native Testing Library) and an end-to-end smoke flow on a device (Maestro).
 
 ### Phase D — Web catches up with mobile
-- [ ] Status, verification and staleness labels; confirm and resolve buttons.
-- [ ] Lost & Found: fields, matches and contact requests.
-- [ ] Approximate-location option on the create form.
+
+**Web redesign (October 2026, done; checked in a desktop and phone-sized browser in light and dark mode, but not by real users):**
+- **Design system.** `app/globals.css` has the same light/dark tokens as the mobile kit. `context/ThemeContext.tsx` offers light, dark and system, with a pre-paint script so there is no flash. The font is Inter (`next/font`). `components/nn` has buttons, icon buttons, cards, badges (category colours tint icons only), chips, a segmented control, fields with counters and errors, an avatar, skeletons, empty states, grouped list rows, a switch, and an accessible dialog (focus trap, Escape, scroll lock; a bottom sheet on phones).
+- **App shell** (`components/shell/AppShell.tsx`). Desktop: a sidebar with New post, navigation, Urgent help and a user card with a theme toggle and sign-out. Phones: a top bar plus a bottom tab bar with a central New post button. The area picker and create dialog are shared. There is a skip link.
+- **Pages rebuilt:**
+  - feed: readable centre column, filter chips, distance control, skeletons, empty states, and a right rail on wide screens with a live map and an area summary
+  - map: side list panel, selected-post card, a Map/List switch on phones, and `?focus=` links
+  - post detail: trust line, "still happening?" check, resolve/delete, comments with avatars, pill-shaped composer
+  - profile: identity card, area, alerts, appearance, your posts, account (account deletion added)
+  - saved, area overview, sign-in/sign-up/reset (split brand layout, one-time-code field), landing, download, legal, admin (inside the app frame, with tabs)
+- **Maps.** Leaflet with CARTO tiles was replaced by MapLibre GL with OpenFreeMap vector styles. CARTO now returns an "API key required" placeholder, which broke the old map and the landing page. The new map is the same keyless provider as the Android app. It has native clusters, shape+colour markers drawn on canvas, the area circle, theme-aware styles, and popups built with `textContent`. The mobile Expo Go fallback now uses keyless OpenStreetMap raster tiles.
+- **Create post.** Category tiles, Lost & Found direction, item type and when, approximate location (on by default), a photo preview and the privacy warning. It now sends the Lost & Found fields the API supports.
+- **Bugs fixed on the way:**
+  - comments crashed (the web read `author.email`, but the API returns only public profile fields)
+  - the post page fetched without the session token, so like/save state was missing
+  - selected category chips used white text on category colours
+  - the download page had App Store / Google Play buttons that did nothing; it now says honestly that the apps are in testing
+- **Clean-up.** 67 superseded files were moved to `legacy-removed/web/`. Unused dependencies were removed: framer-motion, leaflet and its plugins, Apollo/GraphQL, radix dropdown/slot, react-virtuoso, react-loading-skeleton, js-cookie, jwt-decode and tailwindcss-animate. Lint now has 0 errors and 38 warnings (was 89), all in untouched hooks. `next build` builds all 15 routes.
+- **Still open.** The legal page still holds the old placeholder text, which needs real policy text from the owner. Lost & Found matches and contact requests on the web are still to do. Moderation history in admin is still to do.
+
+- [x] Status, verification and staleness labels; confirm and resolve buttons.
+- [~] Lost & Found: fields done (create form, card and detail); matches and contact requests are still to do.
+- [x] Approximate-location option on the create form.
 - [ ] Address lookup moved to the server.
 - [ ] Moderation history in the admin pages.
 - [ ] Responsive, keyboard and dialog-accessibility pass; check behaviour when the backend is down.
-- [ ] Remove unused GraphQL/Apollo code and clear the lint warnings.
+- [~] Remove unused GraphQL/Apollo code and clear the lint warnings (Apollo removed; 38 warnings left in older hooks).
 
 ### Phase E — P3 features
 - [ ] Events: start/end time with time zone, organiser, cancelled status, save, and opt-in reminders that can be unsubscribed from.

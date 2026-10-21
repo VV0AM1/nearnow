@@ -1,340 +1,259 @@
 "use client";
 
-import { User as UserIcon, LogOut, ChevronLeft, Trophy, Medal, Star, Shield, Edit2, Check, X, Loader2, Mail } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { API_URL } from "@/lib/config";
-import { logout, getToken } from "@/lib/auth";
-import { useProfile } from "@/hooks/useProfile";
-import NotificationSettings from "@/components/features/profile/NotificationSettings";
-import FeedList from "@/components/features/feed/FeedList";
-import FeedListSkeleton from "@/components/ui/loading/FeedListSkeleton";
-import { useUserPosts } from "@/hooks/useUserPosts";
-import { calculateGamification, calculateBadges, RANK_ICONS, RANK_COLORS } from "@/lib/gamification";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
+import { Camera, Check, FileText, Loader2, LogOut, MapPin, Pencil, Trash2, X } from "lucide-react";
+import { apiFetch } from "@/lib/api";
+import { API_URL } from "@/lib/config";
+import { getToken, logout } from "@/lib/auth";
+import { useProfile } from "@/hooks/useProfile";
+import { useUserPosts } from "@/hooks/useUserPosts";
+import { calculateGamification } from "@/lib/gamification";
+import { useTheme, type ThemeMode } from "@/context/ThemeContext";
+import { useDashboard } from "@/context/DashboardContext";
 import { useToast } from "@/components/ui/use-toast";
+import { useShell } from "@/components/shell/AppShell";
+import { Avatar, Banner, Button, Card, Dialog, EmptyState, IconButton, ListGroup, ListRow, PageHeader, SectionTitle, Segmented, Skeleton, TextField } from "@/components/nn";
+import { PostCard, PostCardSkeleton } from "@/components/features/feed/PostCard";
+import type { Post } from "@/components/features/feed/Post/Post.types";
+import NotificationSettings from "./NotificationSettings";
 
 export default function ProfileView() {
     const { user, loading, error, refetch } = useProfile();
-    const [activeTab, setActiveTab] = useState<'overview' | 'posts'>('overview');
-    const [isEditingName, setIsEditingName] = useState(false);
-    const [newName, setNewName] = useState("");
-    const [isUploading, setIsUploading] = useState(false);
+    const { mode, setMode } = useTheme();
+    const { location } = useDashboard();
+    const { openAreaPicker } = useShell();
     const { toast } = useToast();
+    const [editing, setEditing] = useState(false);
+    const [name, setName] = useState("");
+    const [uploading, setUploading] = useState(false);
+    const [deleteOpen, setDeleteOpen] = useState(false);
 
-    if (loading) return <div className="min-h-screen pt-24 text-center animate-pulse">Loading Profile...</div>;
-    if (error) return <div className="min-h-screen pt-24 text-center text-red-500">{error}</div>;
-    if (!user) return null;
+    if (loading) {
+        return (
+            <div className="mx-auto max-w-3xl space-y-6">
+                <Skeleton className="h-9 w-40" />
+                <Skeleton className="h-40 w-full rounded-[20px]" />
+                <Skeleton className="h-64 w-full rounded-[20px]" />
+            </div>
+        );
+    }
+    if (error || !user) return <Banner tone="warning" message={error ?? "Could not load your profile."} />;
 
     const stats = calculateGamification(user.reputation || 0);
-    const badges = calculateBadges(user);
 
-    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const uploadAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-
-        setIsUploading(true);
-        const formData = new FormData();
-        formData.append('file', file);
-
+        setUploading(true);
+        const form = new FormData();
+        form.append("file", file);
         try {
-            const token = getToken();
-            const res = await fetch(`${API_URL}/users/avatar`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: formData
-            });
-
-            if (!res.ok) throw new Error("Upload failed");
-
-            const data = await res.json();
-            // Assuming the backend returns the new avatar URL or user object
-            toast({ title: "Success", description: "Avatar updated successfully" });
-
-            // Force reload or update local state if refetch isn't enough/instant
+            const res = await fetch(`${API_URL}/users/avatar`, { method: "POST", headers: { Authorization: `Bearer ${getToken()}` }, body: form });
+            if (!res.ok) throw new Error();
+            toast({ title: "Photo updated" });
             refetch();
-        } catch (err) {
-            console.error(err);
-            toast({ title: "Error", description: "Failed to upload avatar", variant: "destructive" });
+        } catch {
+            toast({ title: "Photo not updated", description: "Use a JPEG, PNG or WebP image up to 5 MB.", variant: "destructive" });
         } finally {
-            setIsUploading(false);
+            setUploading(false);
+            e.target.value = "";
         }
     };
 
     const saveName = async () => {
-        if (!newName.trim()) return;
-
+        const next = name.trim();
+        if (!next) return;
         try {
-            const token = getToken();
-            const res = await fetch(`${API_URL}/users/profile`, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ name: newName })
-            });
-
-            if (!res.ok) throw new Error("Update failed");
-
-            setIsEditingName(false);
-            toast({ title: "Success", description: "Username updated" });
+            await apiFetch("/users/me", { method: "PATCH", json: { name: next } });
+            setEditing(false);
+            toast({ title: "Name updated" });
             refetch();
         } catch (err) {
-            toast({ title: "Error", description: "Failed to update name", variant: "destructive" });
+            toast({ title: "Name not updated", description: err instanceof Error ? err.message : undefined, variant: "destructive" });
         }
     };
 
     return (
-        <div className="flex flex-col min-h-screen lg:h-full lg:overflow-hidden pt-20">
-            {/* Header Actions - Compact */}
-            <div className="flex-none px-6 py-4 flex items-center justify-between z-10 shrink-0">
-                <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-white" onClick={() => window.location.href = '/'}>
-                    <ChevronLeft className="h-4 w-4" />
-                    Back Home
-                </Button>
-                <Button
-                    variant="ghost"
-                    onClick={() => {
-                        logout();
-                        window.location.href = '/login';
-                    }}
-                    className="text-red-500 hover:text-red-400 hover:bg-red-500/10 gap-2"
-                >
-                    <LogOut className="h-4 w-4" />
-                    Sign Out
-                </Button>
-            </div>
+        <div className="mx-auto max-w-3xl space-y-8">
+            <PageHeader title="Profile" />
 
-            {/* Main Content Grid */}
-            <div className="flex-1 lg:overflow-hidden px-4 md:px-6 pb-6 pt-0">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:h-full">
-
-                    {/* LEFT COLUMN: IDENTITY & STATS */}
-                    <div className="lg:col-span-5 xl:col-span-4 lg:h-full lg:overflow-y-auto custom-scrollbar rounded-3xl bg-secondary/10 border border-white/5 flex flex-col relative">
-                        {/* Banner */}
-                        <div className="h-32 w-full bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 relative shrink-0">
-                            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
+            {/* Identity */}
+            <Card className="flex flex-col items-center gap-5 sm:flex-row sm:items-center">
+                <label className="group relative cursor-pointer" aria-label="Change photo">
+                    <Avatar src={user.avatar} name={user.name} size={88} />
+                    <span className="absolute -bottom-0.5 -right-0.5 flex size-8 items-center justify-center rounded-full border-[3px] border-surface bg-primary text-primary-foreground">
+                        {uploading ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Camera className="size-4" aria-hidden />}
+                    </span>
+                    <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={uploadAvatar} disabled={uploading} />
+                </label>
+                <div className="min-w-0 flex-1 text-center sm:text-left">
+                    {editing ? (
+                        <div className="flex items-end gap-2">
+                            <div className="flex-1">
+                                <TextField label="Name" value={name} max={60} autoFocus onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && saveName()} />
+                            </div>
+                            <IconButton icon={Check} label="Save name" variant="filled" onClick={saveName} className="mb-1 text-primary" />
+                            <IconButton icon={X} label="Cancel" variant="filled" onClick={() => setEditing(false)} className="mb-1" />
                         </div>
-
-                        {/* Avatar & Core Info */}
-                        <div className="px-6 relative -mt-12 flex flex-col items-center text-center pb-6">
-                            {/* Avatar */}
-                            <div className="relative group mb-4">
-                                <div className="h-24 w-24 rounded-full border-4 border-background bg-zinc-900 flex items-center justify-center overflow-hidden shadow-2xl group-hover:scale-105 transition-transform duration-300">
-                                    {isUploading ? (
-                                        <Loader2 className="h-8 w-8 text-primary animate-spin" />
-                                    ) : user.avatar ? (
-                                        <img
-                                            src={user.avatar.startsWith('http') ? user.avatar : `${API_URL}/${user.avatar.replace(/^\//, '')}`}
-                                            alt={user.name || 'User'}
-                                            className="h-full w-full object-cover"
-                                            onError={(e) => { e.currentTarget.src = "https://github.com/shadcn.png"; }}
-                                        />
-                                    ) : (
-                                        <UserIcon className="h-10 w-10 text-primary" />
-                                    )}
-
-                                    {/* Upload Overlay */}
-                                    <label className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer z-10">
-                                        <span className="text-[10px] text-white font-bold uppercase tracking-wider">
-                                            {isUploading ? '...' : 'Edit'}
-                                        </span>
-                                        <input
-                                            type="file"
-                                            className="hidden"
-                                            accept="image/*"
-                                            onChange={handleAvatarUpload}
-                                            disabled={isUploading}
-                                        />
-                                    </label>
-                                </div>
-                                <div className="absolute bottom-0 right-0 bg-background rounded-full p-1.5 border border-white/10 shadow-lg text-yellow-500">
-                                    {RANK_ICONS[stats.rank] || <Star className="h-3 w-3" />}
-                                </div>
-                            </div>
-
-                            {/* Editable Name */}
-                            <div className="flex items-center justify-center gap-2 mb-1 min-h-[32px]">
-                                {isEditingName ? (
-                                    <div className="flex items-center gap-2 animate-in fade-in zoom-in duration-200">
-                                        <input
-                                            className="bg-transparent border-b border-white/20 text-xl font-black text-white text-center focus:outline-none focus:border-primary w-40 placeholder:text-muted-foreground/50"
-                                            value={newName}
-                                            onChange={(e) => setNewName(e.target.value)}
-                                            autoFocus
-                                            placeholder="Name"
-                                            onKeyDown={(e) => e.key === 'Enter' && saveName()}
-                                        />
-                                        <Button size="icon" variant="ghost" className="h-6 w-6 text-green-400 hover:bg-green-500/10 hover:text-green-300" onClick={saveName}><Check className="h-4 w-4" /></Button>
-                                        <Button size="icon" variant="ghost" className="h-6 w-6 text-red-400 hover:bg-red-500/10 hover:text-red-300" onClick={() => setIsEditingName(false)}><X className="h-4 w-4" /></Button>
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center gap-2 group/name cursor-pointer p-1 rounded-lg hover:bg-white/5 transition-colors" onClick={() => { setNewName(user.name || ''); setIsEditingName(true); }}>
-                                        <h1 className="text-xl font-black text-white">{user.name || 'Anonymous'}</h1>
-                                        <div className="opacity-0 group-hover/name:opacity-100 transition-all text-muted-foreground hover:text-white">
-                                            <Edit2 className="h-3 w-3" />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="flex items-center gap-2 mt-2 mb-6">
-                                <span className={`px-2 py-0.5 rounded-full border ${RANK_COLORS[stats.rank]} bg-opacity-10 text-[10px] font-bold uppercase`}>
-                                    {stats.rank} Category
-                                </span>
-                                <span className="flex items-center gap-1 text-[10px] text-muted-foreground font-mono">
-                                    <Shield className="h-3 w-3" /> Lvl {stats.level}
-                                </span>
-                            </div>
-
-                            {/* Stats Grid */}
-                            <div className="grid grid-cols-2 gap-3 w-full mb-6">
-                                <div className="p-3 bg-black/20 rounded-xl border border-white/5">
-                                    <div className="text-lg font-bold text-white">{user.reputation || 0}</div>
-                                    <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Reputation</div>
-                                </div>
-                                <div className="p-3 bg-black/20 rounded-xl border border-white/5">
-                                    <div className="text-lg font-bold text-white max-w-full truncate">{stats.nextLevelPoints - (user.reputation || 0)}</div>
-                                    <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">To Level {stats.level + 1}</div>
-                                </div>
-                            </div>
-
-                            {/* Gamification Progress */}
-                            <div className="w-full p-4 rounded-xl bg-white/5 border border-white/5 mb-6 text-left shadow-inner">
-                                <div className="flex justify-between items-center mb-2">
-                                    <div className="flex items-center gap-2">
-                                        <Trophy className="h-3 w-3 text-yellow-500" />
-                                        <span className="font-bold text-xs">Progress</span>
-                                    </div>
-                                    <span className="text-[10px] font-mono text-muted-foreground">{stats.progress.toFixed(0)}%</span>
-                                </div>
-                                <div className="h-2 w-full bg-black/40 rounded-full overflow-hidden p-[1px]">
-                                    <div
-                                        className="h-full rounded-full bg-gradient-to-r from-blue-500 to-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.4)] transition-all duration-1000 ease-out"
-                                        style={{ width: `${stats.progress}%` }}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground bg-white/5 px-3 py-1.5 rounded-full">
-                                <Mail className="h-3 w-3" /> {user.email}
-                            </div>
+                    ) : (
+                        <div className="flex items-center justify-center gap-1 sm:justify-start">
+                            <h2 className="truncate text-[24px] font-bold">{user.name || "Neighbour"}</h2>
+                            <IconButton
+                                icon={Pencil}
+                                label="Edit name"
+                                size="sm"
+                                onClick={() => {
+                                    setName(user.name ?? "");
+                                    setEditing(true);
+                                }}
+                            />
                         </div>
+                    )}
+                    <p className="text-[15px] text-muted-foreground">{user.email}</p>
+                    <p className="mt-1 text-[13px] text-muted-foreground">
+                        Level {stats.level} · {stats.rank} · {user.reputation ?? 0} reputation
+                    </p>
+                </div>
+                <div className="grid w-full grid-cols-2 gap-3 sm:w-auto">
+                    <div className="rounded-[14px] bg-surface-2 px-4 py-3 text-center">
+                        <p className="text-[22px] font-bold tabular-nums">{user._count?.posts ?? 0}</p>
+                        <p className="text-xs text-muted-foreground">Posts</p>
                     </div>
-
-                    {/* RIGHT COLUMN: CONTENT */}
-                    <div className="lg:col-span-7 xl:col-span-8 lg:h-full flex flex-col lg:overflow-hidden rounded-3xl bg-secondary/5 border border-white/5 backdrop-blur-sm min-h-[500px]">
-                        {/* Tabs Header */}
-                        <div className="flex-none px-6 pt-6 border-b border-white/5">
-                            <div className="flex gap-8">
-                                <button
-                                    onClick={() => setActiveTab('overview')}
-                                    className={cn(
-                                        "pb-4 text-sm font-bold transition-all relative uppercase tracking-wide",
-                                        activeTab === 'overview' ? "text-white" : "text-muted-foreground hover:text-white"
-                                    )}
-                                >
-                                    Overview
-                                    {activeTab === 'overview' && <motion.div layoutId="activeProfileTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary shadow-[0_0_10px_rgba(59,130,246,0.5)]" />}
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab('posts')}
-                                    className={cn(
-                                        "pb-4 text-sm font-bold transition-all relative uppercase tracking-wide",
-                                        activeTab === 'posts' ? "text-white" : "text-muted-foreground hover:text-white"
-                                    )}
-                                >
-                                    History
-                                    {activeTab === 'posts' && <motion.div layoutId="activeProfileTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary shadow-[0_0_10px_rgba(59,130,246,0.5)]" />}
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Scrollable Content */}
-                        <div className="flex-1 lg:overflow-y-auto custom-scrollbar p-6">
-                            {activeTab === 'overview' ? (
-                                <div className="space-y-8 animate-in fade-in zoom-in-95 duration-300">
-                                    {/* Badges Section */}
-                                    <div>
-                                        <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
-                                            <Medal className="h-4 w-4 text-purple-400" />
-                                            Achievements
-                                        </h3>
-                                        {badges.length > 0 ? (
-                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                                {badges.map(badge => (
-                                                    <div key={badge.id} className={`p-4 rounded-xl border bg-secondary/5 hover:bg-secondary/10 transition-all hover:scale-[1.02] flex flex-col items-center justify-center text-center gap-3 ${badge.color}`}>
-                                                        <div className="p-3 rounded-full bg-background/50 shadow-inner">
-                                                            <span className="text-2xl">{badge.icon}</span>
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-xs font-bold text-white">{badge.label}</p>
-                                                            <p className="text-[10px] text-muted-foreground leading-tight mt-1">{badge.description}</p>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <div className="p-8 text-center border border-dashed border-white/10 rounded-xl bg-white/5">
-                                                <Medal className="h-8 w-8 text-muted-foreground mx-auto mb-2 opacity-30" />
-                                                <p className="text-sm text-muted-foreground">Keep participating to earn badges!</p>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="h-px bg-white/5 w-full" />
-
-                                    {/* Settings Section */}
-                                    <div>
-                                        <h3 className="text-sm font-bold text-white mb-4">Notification Settings</h3>
-                                        <NotificationSettings />
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                                    <UserPostHistory userId={user.id} />
-                                </div>
-                            )}
-                        </div>
+                    <div className="rounded-[14px] bg-surface-2 px-4 py-3 text-center">
+                        <p className="text-[22px] font-bold tabular-nums">{user._count?.votes ?? 0}</p>
+                        <p className="text-xs text-muted-foreground">Helpful votes</p>
                     </div>
                 </div>
-            </div>
+            </Card>
+
+            <section>
+                <SectionTitle>Your area</SectionTitle>
+                <ListGroup>
+                    <ListRow title="Area you follow" icon={MapPin} iconColor="#34C759" value={location?.label ?? "Not chosen"} onClick={openAreaPicker} />
+                </ListGroup>
+            </section>
+
+            <section>
+                <SectionTitle>Alerts</SectionTitle>
+                <NotificationSettings />
+            </section>
+
+            <section>
+                <SectionTitle>Appearance</SectionTitle>
+                <Card padded={false} className="p-3">
+                    <Segmented<ThemeMode>
+                        label="Appearance"
+                        value={mode}
+                        onChange={setMode}
+                        className="flex w-full"
+                        options={[
+                            { value: "light", label: "Light" },
+                            { value: "dark", label: "Dark" },
+                            { value: "system", label: "System" },
+                        ]}
+                    />
+                </Card>
+            </section>
+
+            <section>
+                <SectionTitle>Your posts</SectionTitle>
+                <UserPosts userId={user.id} />
+            </section>
+
+            <section>
+                <SectionTitle>Account</SectionTitle>
+                <ListGroup>
+                    <ListRow title="Privacy and terms" icon={FileText} iconColor="#8E8E93" href="/legal" />
+                    <ListRow
+                        title="Sign out"
+                        icon={LogOut}
+                        iconColor="#8E8E93"
+                        onClick={() => {
+                            logout();
+                            window.location.href = "/login";
+                        }}
+                    />
+                    <ListRow title="Delete my account" icon={Trash2} destructive onClick={() => setDeleteOpen(true)} />
+                </ListGroup>
+            </section>
+
+            <DeleteAccountDialog open={deleteOpen} onClose={() => setDeleteOpen(false)} />
         </div>
     );
 }
 
-function UserPostHistory({ userId }: { userId: string }) {
+function UserPosts({ userId }: { userId: string }) {
     const { posts, loading, error } = useUserPosts(userId);
-    const [page, setPage] = useState(1);
-    const ITEMS_PER_PAGE = 5;
+    const [shown, setShown] = useState(5);
+    if (loading)
+        return (
+            <div className="space-y-4">
+                <PostCardSkeleton />
+            </div>
+        );
+    if (error) return <Banner tone="warning" message="Could not load your posts." />;
+    if (!posts.length)
+        return (
+            <Card>
+                <EmptyState icon={FileText} title="No posts yet" body="Things you share with your neighbours will appear here." />
+            </Card>
+        );
+    return (
+        <div className="space-y-4">
+            {(posts as Post[]).slice(0, shown).map((p) => (
+                <PostCard key={p.id} post={p} compact />
+            ))}
+            {shown < posts.length ? (
+                <Button variant="tinted" block onClick={() => setShown((n) => n + 5)}>
+                    Show more
+                </Button>
+            ) : null}
+        </div>
+    );
+}
 
-    if (loading) return <FeedListSkeleton />;
-    if (error) return <div className="text-red-500 p-4 border border-red-500/20 rounded-xl bg-red-500/10">Failed to load history</div>;
-    if (posts.length === 0) return <div className="text-muted-foreground text-center py-12">No posts yet.</div>;
+function DeleteAccountDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+    const [text, setText] = useState("");
+    const [busy, setBusy] = useState(false);
+    const [err, setErr] = useState<string | null>(null);
 
-    const totalPages = Math.ceil(posts.length / ITEMS_PER_PAGE);
-    const paginatedPosts = posts.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
-
-    const handlePageChange = (newPage: number) => {
-        if (newPage >= 1 && newPage <= totalPages) {
-            setPage(newPage);
+    const remove = async () => {
+        setBusy(true);
+        setErr(null);
+        try {
+            await apiFetch("/users/me", { method: "DELETE", json: { confirm: "DELETE" } });
+            logout();
+            window.location.href = "/";
+        } catch (e) {
+            setErr(e instanceof Error ? e.message : "Your account could not be deleted.");
+            setBusy(false);
         }
     };
 
     return (
-        <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
-            <FeedList
-                posts={paginatedPosts}
-                onPostClick={() => { }}
-                onNext={() => handlePageChange(page + 1)}
-                onPrev={() => handlePageChange(page - 1)}
-                hasMore={page < totalPages}
-                hasPrev={page > 1}
-                loading={loading}
-                page={page}
-            />
-        </div>
+        <Dialog
+            open={open}
+            onClose={onClose}
+            title="Delete your account?"
+            size="sm"
+            footer={
+                <div className="flex justify-end gap-2">
+                    <Button variant="plain" onClick={onClose}>
+                        Cancel
+                    </Button>
+                    <Button variant="destructive" loading={busy} disabled={text !== "DELETE"} onClick={remove}>
+                        Delete account
+                    </Button>
+                </div>
+            }
+        >
+            <div className="space-y-4">
+                <p className="text-[15px] text-muted-foreground">
+                    Your posts (with their photos and locations), alerts, saved items and contact requests are deleted. Your comments on other posts stay, shown as “Deleted user”. This cannot be undone.
+                </p>
+                <TextField label="Type DELETE to confirm" value={text} onChange={(e) => setText(e.target.value)} autoCapitalize="characters" autoComplete="off" />
+                {err ? <Banner tone="danger" message={err} /> : null}
+            </div>
+        </Dialog>
     );
 }

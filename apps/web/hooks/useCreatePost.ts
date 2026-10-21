@@ -11,6 +11,7 @@ interface CreatePostData {
     longitude: number;
     imageFile?: File;
     approximateLocation?: boolean;
+    lostFound?: { direction: "LOST" | "FOUND"; itemType: string; occurredFrom: string; occurredTo: string };
 }
 
 export interface CreatedPost {
@@ -40,6 +41,12 @@ export function useCreatePost() {
             formData.append('latitude', data.latitude.toString());
             formData.append('longitude', data.longitude.toString());
             if (data.approximateLocation !== undefined) formData.append('approximateLocation', String(data.approximateLocation));
+            if (data.category === 'LOST_FOUND' && data.lostFound) {
+                formData.append('lostFoundDirection', data.lostFound.direction);
+                formData.append('lostFoundItemType', data.lostFound.itemType);
+                formData.append('occurredFrom', data.lostFound.occurredFrom);
+                formData.append('occurredTo', data.lostFound.occurredTo);
+            }
 
             if (data.imageFile) {
                 const options = { maxSizeMB: 0.5, maxWidthOrHeight: 1920, useWebWorker: true, fileType: "image/jpeg" };

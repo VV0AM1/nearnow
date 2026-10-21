@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import Feed from "../feed/Feed";
-import CreateAlertModal from "../alerts/CreateAlert";
-import AreaPrompt from "./AreaPrompt";
 import { useDashboard } from "../../../context/DashboardContext";
+import { AreaChooser } from "@/components/shell/AreaChooser";
+import { Card } from "@/components/nn";
 import { Post } from "../../../types/post";
 import { User } from "../../../types/user";
 
@@ -14,24 +13,20 @@ interface HomeContentProps {
 }
 
 export default function HomeContent({ initialPosts }: HomeContentProps) {
-    const [isModalOpen, setIsModalOpen] = useState(false);
     const { location } = useDashboard();
 
     // No silent default city: the user chooses an area first.
-    if (!location) return <AreaPrompt />;
-
-    return (
-        <div className="flex flex-col h-full w-full overflow-hidden">
-            <CreateAlertModal
-                key={isModalOpen ? "open" : "closed"}
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                userLocation={location}
-            />
-
-            <div className="flex-1 min-h-0 w-full relative">
-                <Feed initialPosts={initialPosts} onReportClick={() => setIsModalOpen(true)} />
+    if (!location) {
+        return (
+            <div className="mx-auto max-w-lg py-6">
+                <h1 className="text-[28px] font-bold tracking-tight">Which area do you want to follow?</h1>
+                <p className="mb-6 mt-1 text-[15px] text-muted-foreground">NearNow shows community posts around the area you choose.</p>
+                <Card>
+                    <AreaChooser />
+                </Card>
             </div>
-        </div>
-    );
+        );
+    }
+
+    return <Feed initialPosts={initialPosts} />;
 }

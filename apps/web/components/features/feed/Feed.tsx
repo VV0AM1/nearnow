@@ -1,165 +1,168 @@
-import { useState, useEffect } from "react";
-import { Activity } from "lucide-react";
+"use client";
+
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import { formatDistanceToNow } from "date-fns";
+import { ArrowRight, ChevronLeft, ChevronRight, Inbox, Maximize2, Plus, SearchX } from "lucide-react";
 import MapLoader from "../map/MapLoader";
-import PostDetailModal from "./PostDetailModal";
 import { useFeed } from "../../../hooks/useFeed";
 import { useMapPosts } from "../../../hooks/useMapPosts";
-import { useHaptic } from "../../../hooks/useHaptic";
-import LocationSearch from "./LocationSearch";
-import MapStatsOverlay from "../map/MapStatsOverlay";
-import RadiusSlider from "./RadiusSlider";
-import CategoryFilter from "./CategoryFilter";
-import DesktopCategoryList from "./filters/DesktopCategoryList";
-import FeedList from "./FeedList";
-import FeedListSkeleton from "../../ui/loading/FeedListSkeleton";
 import { useDashboard } from "../../../context/DashboardContext";
+import { CATEGORIES, getCategory } from "@/config/categories";
+import { Banner, Button, Card, Chip, EmptyState, PageHeader, Segmented } from "@/components/nn";
+import { useShell } from "@/components/shell/AppShell";
+import { PostCard, PostCardSkeleton } from "./PostCard";
+import type { Post } from "./Post/Post.types";
 
-import { Post } from "../../../types/post";
+const RADII = ["1", "2", "5", "10", "25"] as const;
+const PAGE_SIZE = 10;
 
-interface FeedContainerProps {
-    initialPosts?: Post[];
-    onReportClick?: () => void;
-}
+export default function FeedContainer({ initialPosts = [] }: { initialPosts?: Array<{ id: string; title: string; content: string; createdAt: string }> }) {
+    const { location, searchQuery } = useDashboard();
+    const { openCreate, openAreaPicker } = useShell();
+    const [radius, setRadius] = useState<(typeof RADII)[number]>("5");
+    const [category, setCategory] = useState<string>("ALL");
+    const [highlighted, setHighlighted] = useState<string | null>(null);
 
-export default function FeedContainer({ initialPosts = [], onReportClick }: FeedContainerProps) {
-    const { location, setLocation, searchQuery } = useDashboard();
+    const km = Number(radius);
+    const { posts, loading, error, nextPage, prevPage, hasMore, page } = useFeed(location, km, [category], initialPosts, PAGE_SIZE, searchQuery);
+    const { posts: mapPosts } = useMapPosts(location, km);
+    const first = loading && posts.length === 0;
 
+    const summary = useMemo(() => {
+        const active = (mapPosts as Post[]).filter((p) => !p.status || p.status === "ACTIVE");
+        const byCategory = new Map<string, number>();
+        for (const p of active) byCategory.set(p.category, (byCategory.get(p.category) ?? 0) + 1);
+        const latest = active.reduce<string | null>((acc, p) => (!acc || p.createdAt > acc ? p.createdAt : acc), null);
+        return { total: active.length, byCategory: [...byCategory.entries()].sort((a, b) => b[1] - a[1]), latest };
+    }, [mapPosts]);
 
-    const [radius, setRadius] = useState(10);
-    const [categories, setCategories] = useState<string[]>(["ALL"]);
-    const { triggerHaptic } = useHaptic();
-
-    const handleCategorySelect = (id: string) => {
-        triggerHaptic("light");
-
-        if (id === 'ALL') {
-            setCategories(['ALL']);
-            return;
-        }
-
-        let newSelected = [...categories];
-        // If ALL is currently selected, clear it
-        if (newSelected.includes('ALL')) newSelected = [];
-
-        if (newSelected.includes(id)) {
-            newSelected = newSelected.filter(c => c !== id);
-        } else {
-            newSelected.push(id);
-        }
-
-        if (newSelected.length === 0) newSelected = ['ALL'];
-        setCategories(newSelected);
-    };
-
-    // Responsive Limit Logic
-    const [limit, setLimit] = useState(4);
-    useEffect(() => {
-        const updateLimit = () => setLimit(window.innerWidth < 768 ? 2 : 4);
-        updateLimit();
-        window.addEventListener('resize', updateLimit);
-        return () => window.removeEventListener('resize', updateLimit);
-    }, []);
-
-    const { posts, loading, error, incrementCommentCount, nextPage, prevPage, hasMore, page } = useFeed(location, radius, categories, initialPosts, limit, searchQuery);
-    const [selectedPost, setSelectedPost] = useState<any>(null);
-
-    const [highlightedPostId, setHighlightedPostId] = useState<string | null>(null);
-
-    // Initial load check
-    const isLoading = loading && posts.length === 0;
-
-    const { posts: mapPosts, loading: mapLoading } = useMapPosts(location, radius);
+    const nextRadius = RADII.find((r) => Number(r) > km);
 
     return (
-        <div className="flex flex-col min-h-screen md:h-full w-full pt-20">
-            {selectedPost && (
-                <PostDetailModal
-                    post={selectedPost}
-                    onClose={() => setSelectedPost(null)}
-                    onCommentAdded={(id) => incrementCommentCount(id)}
+        <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_340px]">
+            <div className="min-w-0 space-y-5">
+                <PageHeader
+                    title="Community updates"
+                    subtitle={
+                        <>
+                            Near <button onClick={openAreaPicker} className="font-semibold text-primary hover:underline">{location?.label ?? "your area"}</button> · each post shows when it was posted and whether others confirmed it
+                        </>
+                    }
+                    actions={
+                        <Button icon={Plus} onClick={openCreate} className="hidden sm:inline-flex lg:hidden">
+                            New post
+                        </Button>
+                    }
                 />
-            )}
 
-            {/* Header Section */}
-            <div className="flex-none px-6 pt-6 pb-2 mb-2 flex justify-between items-end">
-                <div>
-                    <h1 className="text-2xl font-black bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 bg-clip-text text-transparent flex items-center gap-3">
-                        <Activity className="h-6 w-6 text-blue-500" />
-                        Community updates
-                    </h1>
-                    <p className="text-zinc-400 text-xs mt-1 ml-1">Posts from people near {location?.label ?? "your chosen area"} · each shows when it was posted and confirmed</p>
-                </div>
-
-
-            </div>
-
-            {/* Toolbar: Location Search, Categories & Radius */}
-            <div className="flex flex-col gap-4 mb-4 shrink-0 px-4 md:px-0">
-                <div className="flex flex-col md:flex-row gap-4 px-2 items-center">
-                    <div className="flex-1 w-full md:max-w-2xl ml-1">
-                        <LocationSearch
-                            onLocationSelect={(lat, long) => setLocation({ lat, long, label: "Searched place" })}
-                        />
-                    </div>
-
-                    <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
-                        <div className="w-48 hidden md:block">
-                            <RadiusSlider value={radius} onChange={setRadius} />
-                        </div>
-
-
-                    </div>
-
-                    <div className="flex items-center justify-between pl-2">
-                        {/* Mobile Category Filter will be inside the list */}
-                        <div className="hidden md:block flex-1 overflow-x-auto no-scrollbar p-2 pl-1 pr-4 mask-fade-right">
-                            <CategoryFilter selected={categories} onSelect={setCategories} />
+                {/* Filters */}
+                <div className="space-y-3">
+                    <div className="-mx-4 overflow-x-auto px-4 scrollbar-hide max-sm:mask-fade-x sm:mx-0 sm:px-0">
+                        <div className="flex w-max gap-2 pb-1 sm:w-auto sm:flex-wrap">
+                            {CATEGORIES.map((c) => (
+                                <Chip key={c.id} label={c.label} icon={c.id === "ALL" ? undefined : c.icon} color={c.hex} selected={category === c.id} onClick={() => setCategory(c.id)} />
+                            ))}
                         </div>
                     </div>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <Segmented label="Distance" value={radius} onChange={setRadius} options={RADII.map((r) => ({ value: r, label: `${r} km` }))} />
+                        {searchQuery ? <span className="text-[13px] text-muted-foreground">Results for “{searchQuery}”</span> : null}
+                    </div>
                 </div>
-            </div>
 
-            {error && <div className="text-center p-4 text-red-500 bg-red-50 rounded-lg mb-4">Error: {error}</div>}
+                {error ? <Banner tone="warning" message={error} /> : null}
 
-            {isLoading ? (
-                <div className="h-full flex flex-col gap-6">
-                    <FeedListSkeleton />
-                </div>
-            ) : (
-                <div className="flex flex-col xl:flex-row gap-6 flex-1 min-h-0 px-4 md:px-6 pb-6">
-                    {/* Feed List Section - Scrollable Internally */}
-                    <div className="w-full shrink-0 xl:w-[400px] flex flex-col md:h-full md:overflow-hidden order-last xl:order-first">
-                        <div className="flex-1 md:overflow-y-auto px-1">
-                            {/* Mobile Filters moved here */}
-                            <div className="md:hidden mb-4 overflow-x-auto no-scrollbar pb-2 mask-fade-right -mx-4 px-4 bg-background/80 backdrop-blur-md border-b border-white/5 sticky top-0 z-20 pt-2 flex items-center gap-2">
-                                <span className="text-[10px] font-bold text-muted-foreground uppercase shrink-0">Filter:</span>
-                                <DesktopCategoryList selected={categories} onSelect={handleCategorySelect} className="w-full flex-1" />
-                            </div>
-                            <FeedList
-                                posts={posts}
-                                onPostClick={setSelectedPost}
-                                onPostHover={setHighlightedPostId}
-                                onNext={nextPage}
-                                onPrev={prevPage}
-                                hasMore={hasMore}
-                                hasPrev={page > 1}
-                                loading={loading}
-                                page={page}
+                {first ? (
+                    <div className="space-y-4">
+                        <PostCardSkeleton />
+                        <PostCardSkeleton />
+                        <PostCardSkeleton />
+                    </div>
+                ) : posts.length === 0 ? (
+                    <Card>
+                        {searchQuery ? (
+                            <EmptyState icon={SearchX} title={`No posts match “${searchQuery}”`} body="Try other words or a larger distance." />
+                        ) : (
+                            <EmptyState
+                                icon={Inbox}
+                                title={page > 1 ? "You've reached the end" : "Nothing reported here yet"}
+                                body="No posts match in this area. Try a larger distance, another area, or share something useful."
+                                action={
+                                    <>
+                                        {nextRadius ? (
+                                            <Button variant="tinted" onClick={() => setRadius(nextRadius)}>
+                                                Show {nextRadius} km
+                                            </Button>
+                                        ) : null}
+                                        <Button icon={Plus} onClick={openCreate}>
+                                            Post an update
+                                        </Button>
+                                    </>
+                                }
                             />
-                        </div>
+                        )}
+                    </Card>
+                ) : (
+                    <div className="space-y-4">
+                        {(posts as Post[]).map((post) => (
+                            <PostCard key={post.id} post={post} onHover={setHighlighted} />
+                        ))}
                     </div>
+                )}
 
+                {page > 1 || hasMore ? (
+                    <nav aria-label="Pages" className="flex items-center justify-between pt-2">
+                        <Button variant="outline" size="sm" icon={ChevronLeft} onClick={prevPage} disabled={page <= 1 || loading}>
+                            Newer
+                        </Button>
+                        <span className="text-[13px] text-muted-foreground">Page {page}</span>
+                        <Button variant="outline" size="sm" onClick={nextPage} disabled={!hasMore || loading}>
+                            Older <ChevronRight className="size-4" aria-hidden />
+                        </Button>
+                    </nav>
+                ) : null}
+            </div>
 
-
-                    {/* Map Visualization Section - Fixed */}
-                    <div className="w-full h-[55vh] md:h-[45vh] xl:h-full xl:flex-1 rounded-xl overflow-hidden shadow-sm border border-border relative order-first xl:order-last shrink-0">
-                        <div className="absolute top-4 left-4 z-10 pointer-events-none scale-90 origin-top-left md:scale-100">
-                            <MapStatsOverlay posts={mapPosts} radius={radius} onReportClick={onReportClick} />
+            {/* Right rail */}
+            <aside className="hidden space-y-5 xl:block" aria-label="Area">
+                <div className="sticky top-24 space-y-5">
+                    <Card padded={false} className="overflow-hidden">
+                        <div className="relative h-[280px]">
+                            {location ? <MapLoader posts={mapPosts} center={location} radius={km} highlightedPostId={highlighted} /> : null}
+                            <Link href="/map" className="material absolute right-3 top-3 z-[500] inline-flex h-9 items-center gap-1.5 rounded-full border border-border px-3 text-[13px] font-semibold shadow-[var(--shadow-float)]">
+                                <Maximize2 className="size-4" aria-hidden /> Open map
+                            </Link>
                         </div>
-                        {location && <MapLoader posts={mapPosts} center={location} radius={radius} highlightedPostId={highlightedPostId} />}
-                    </div>
+                    </Card>
+
+                    <Card>
+                        <h2 className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">This area · {km} km</h2>
+                        <p className="mt-2 text-[34px] font-bold leading-none tabular-nums">{summary.total}</p>
+                        <p className="mt-1 text-[13px] text-muted-foreground">
+                            active posts{summary.latest ? ` · latest ${formatDistanceToNow(new Date(summary.latest), { addSuffix: true })}` : ""}
+                        </p>
+                        {summary.byCategory.length ? (
+                            <ul className="mt-4 space-y-2.5">
+                                {summary.byCategory.map(([id, n]) => {
+                                    const c = getCategory(id);
+                                    return (
+                                        <li key={id} className="flex items-center gap-3 text-sm">
+                                            <c.icon className="size-4 shrink-0" style={{ color: c.hex }} aria-hidden />
+                                            <span className="flex-1">{c.label}</span>
+                                            <span className="font-semibold tabular-nums">{n}</span>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        ) : null}
+                        <p className="mt-4 text-xs text-subtle">Counts what people posted. It is not a safety rating.</p>
+                        <Link href="/safety" className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
+                            Area overview <ArrowRight className="size-4" aria-hidden />
+                        </Link>
+                    </Card>
                 </div>
-            )}
+            </aside>
         </div>
     );
 }

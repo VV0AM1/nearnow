@@ -1,141 +1,98 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Bell, Navigation } from "lucide-react";
 import { useNotifications } from "../../../context/NotificationContext";
+import { useDashboard } from "../../../context/DashboardContext";
 import { useToast } from "../../../components/ui/use-toast";
-import { Bell, MapPin, Save, Loader2 } from "lucide-react";
+import { POST_CATEGORIES } from "@/config/categories";
+import { Button, Card, Chip, Segmented, Switch } from "@/components/nn";
 
+const RADII = ["1", "2", "5", "10"] as const;
+
+/**
+ * Alert preferences. Alerts are opt-in: nothing is sent until categories and an
+ * area are chosen. The area defaults to the one the user follows; the device
+ * location is used only if they ask for it.
+ */
 export default function NotificationSettings() {
     const { settings, updateSettings, loading } = useNotifications();
-    const [radius, setRadius] = useState(5);
-    const [categories, setCategories] = useState<string[]>([]);
+    const { location } = useDashboard();
+    const { toast } = useToast();
     const [enabled, setEnabled] = useState(false);
+    const [radius, setRadius] = useState<(typeof RADII)[number]>("2");
+    const [categories, setCategories] = useState<string[]>([]);
 
     useEffect(() => {
-        if (settings) {
-            setRadius(settings.radiusKm);
-            setCategories(settings.categories);
-            setEnabled(!settings.paused);
-        }
+        if (!settings) return;
+        setEnabled(!settings.paused);
+        const r = String(Math.round(settings.radiusKm)) as (typeof RADII)[number];
+        setRadius(RADII.includes(r) ? r : "2");
+        setCategories(settings.categories);
     }, [settings]);
 
-    const { toast } = useToast();
-
-    const handleSave = () => {
-        // Use browser geolocation for "Home Base"
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(async (position) => {
-                await updateSettings({
-                    radiusKm: radius,
-                    categories,
-                    paused: !enabled,
-                    latitude: position.coords.latitude,
-                    longitude: position.coords.longitude
-                });
-
-                toast({
-                    title: "Preferences saved",
-                    description: "We've updated your alert radius to your current location.",
-                    duration: 3000,
-                });
-            }, (err) => {
-                // Determine user friendly error
-                let errorMsg = "Could not get location.";
-                if (err.code === 1) errorMsg = "Please allow location access to set your alert center.";
-
-                toast({
-                    variant: "destructive",
-                    title: "Location Access Required",
-                    description: errorMsg,
-                });
-            });
-        } else {
-            toast({
-                variant: "destructive",
-                title: "Error",
-                description: "Geolocation is not supported by your browser.",
-            });
+    const save = async (center?: { latitude: number; longitude: number; areaLabel: string }) => {
+        const area = center ?? (location ? { latitude: location.lat, longitude: location.long, areaLabel: location.label ?? "Chosen area" } : null);
+        if (enabled && !area) {
+            toast({ variant: "destructive", title: "Choose an area first", description: "Alerts need an area to watch." });
+            return;
+        }
+        try {
+            await updateSettings({ paused: !enabled, radiusKm: Number(radius), categories, ...(area ?? {}) });
+            toast({ title: "Alert settings saved", description: enabled ? `Watching ${area?.areaLabel} within ${radius} km.` : "Alerts are paused." });
+        } catch (e) {
+            toast({ variant: "destructive", title: "Not saved", description: e instanceof Error ? e.message : undefined });
         }
     };
 
-    const toggleCategory = (cat: string) => {
-        if (categories.includes(cat)) {
-            setCategories(categories.filter(c => c !== cat));
-        } else {
-            setCategories([...categories, cat]);
-        }
+    const useDevice = () => {
+        if (!("geolocation" in navigator)) return toast({ variant: "destructive", title: "Location unavailable", description: "Your browser cannot share its location." });
+        navigator.geolocation.getCurrentPosition(
+            (p) => void save({ latitude: p.coords.latitude, longitude: p.coords.longitude, areaLabel: "My location" }),
+            (err) => toast({ variant: "destructive", title: "Location not shared", description: err.code === 1 ? "Allow location access, or use your chosen area." : "Try again." }),
+        );
     };
 
-    const ALL_CATEGORIES = ["GENERAL", "EVENT", "LOST_FOUND", "RECOMMENDATION", "SAFETY", "CRIME", "DANGER"];
-    const LABELS: Record<string, string> = { GENERAL: "Local update", EVENT: "Event", LOST_FOUND: "Lost & found", RECOMMENDATION: "Recommendation", SAFETY: "Safety notice", CRIME: "Incident", DANGER: "Urgent help (within 3 km)" };
+    const toggle = (id: string) => setCategories((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
 
     return (
-        <div className="glass-card p-6 mb-8 animate-in fade-in slide-in-from-bottom-4">
-            <h2 className="text-xl font-bold flex items-center gap-2 mb-6">
-                <Bell className="h-5 w-5 text-primary" />
-                Notification Alerts
-            </h2>
-
-            <div className="space-y-6">
-                {/* Master Switch */}
-                <div className="flex items-center justify-between">
-                    <span className="font-medium">Enable Alerts</span>
-                    <button
-                        onClick={() => setEnabled(!enabled)}
-                        className={`w-12 h-6 rounded-full transition-colors relative ${enabled ? 'bg-primary' : 'bg-muted'}`}
-                    >
-                        <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${enabled ? 'left-7' : 'left-1'}`} />
-                    </button>
-                </div>
-
-                {/* Radius Slider */}
-                <div className={`space-y-2 transition-opacity ${enabled ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
-                    <div className="flex justify-between text-sm">
-                        <span>Radius</span>
-                        <span className="font-mono text-primary">{radius} km</span>
-                    </div>
-                    <input
-                        type="range"
-                        min="0.5"
-                        max="20"
-                        step="0.5"
-                        value={radius}
-                        onChange={(e) => setRadius(parseFloat(e.target.value))}
-                        className="w-full accent-primary h-2 bg-secondary rounded-lg appearance-none cursor-pointer"
-                    />
-                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        Alerts will be centered on your location when you save.
+        <Card className="space-y-5">
+            <div className="flex items-center gap-3">
+                <span className="flex size-9 items-center justify-center rounded-[10px] bg-[#FF3B30] text-white">
+                    <Bell className="size-[18px]" aria-hidden />
+                </span>
+                <div className="flex-1">
+                    <p className="text-[15px] font-semibold">Nearby alerts</p>
+                    <p className="text-[13px] text-muted-foreground">
+                        {settings?.hasAlertArea && settings.areaLabel ? `Watching ${settings.areaLabel} within ${settings.radiusKm} km` : "Off until you choose categories and an area"}
                     </p>
                 </div>
+                <Switch checked={enabled} onChange={setEnabled} label="Nearby alerts" />
+            </div>
 
-                {/* Categories */}
-                <div className={`space-y-3 transition-opacity ${enabled ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
-                    <label className="text-sm font-medium">Categories</label>
+            <fieldset disabled={!enabled} className="space-y-5 disabled:opacity-50">
+                <div className="space-y-2">
+                    <p className="text-[13px] font-semibold">Distance</p>
+                    <Segmented label="Alert distance" value={radius} onChange={setRadius} options={RADII.map((r) => ({ value: r, label: `${r} km` }))} />
+                </div>
+                <div className="space-y-2">
+                    <p className="text-[13px] font-semibold">Tell me about</p>
                     <div className="flex flex-wrap gap-2">
-                        {ALL_CATEGORIES.map(cat => (
-                            <button
-                                key={cat}
-                                onClick={() => toggleCategory(cat)}
-                                className={`text-xs px-3 py-1.5 rounded-full border transition-all ${categories.includes(cat)
-                                    ? 'bg-primary/20 border-primary text-primary'
-                                    : 'bg-transparent border-border text-muted-foreground hover:border-primary/50'
-                                    }`}
-                            >
-                                {LABELS[cat] ?? cat}
-                            </button>
+                        {POST_CATEGORIES.map((c) => (
+                            <Chip key={c.id} label={c.id === "DANGER" ? "Urgent help (within 3 km)" : c.label} icon={c.icon} color={c.hex} selected={categories.includes(c.id)} onClick={() => toggle(c.id)} />
                         ))}
                     </div>
                 </div>
+            </fieldset>
 
-                <button
-                    onClick={handleSave}
-                    disabled={loading}
-                    className="w-full bg-primary text-primary-foreground py-2 rounded-lg font-bold hover:bg-primary/90 transition-all flex justify-center items-center gap-2"
-                >
-                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Save className="h-4 w-4" /> Save Preferences</>}
-                </button>
+            <div className="flex flex-col gap-2 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <Button variant="plain" size="sm" icon={Navigation} onClick={useDevice} disabled={!enabled}>
+                    Use my current location instead
+                </Button>
+                <Button onClick={() => save()} loading={loading}>
+                    Save
+                </Button>
             </div>
-        </div>
+        </Card>
     );
 }

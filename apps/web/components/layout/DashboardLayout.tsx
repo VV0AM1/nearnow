@@ -1,32 +1,11 @@
-// ... imports
-import Sidebar from "./dashboard/Sidebar";
-import DashboardHeader from "./DashboardHeader";
+import AppShell from "../shell/AppShell";
 import { User } from "../../types/user";
-// Removed usePathname
 
-interface DashboardLayoutProps {
-    children: React.ReactNode;
-    initialUser?: User;
-}
-
-export default function DashboardLayout({ children, initialUser }: DashboardLayoutProps) {
+/** Kept for existing pages; the frame itself lives in components/shell/AppShell. */
+export default function DashboardLayout({ children, initialUser, fullBleed }: { children: React.ReactNode; initialUser?: User; fullBleed?: boolean }) {
     return (
-        <>
-            <div className="flex min-h-screen lg:h-screen bg-background lg:overflow-hidden relative">
-                <Sidebar initialUser={initialUser} />
-
-                <main className="flex-1 flex flex-col min-w-0 lg:h-full lg:overflow-hidden relative">
-                    {/* Floating Header Overlay - Always Visible */}
-                    <div className="absolute top-0 left-0 right-0 z-50 pointer-events-none">
-                        <DashboardHeader />
-                    </div>
-
-                    {/* Page Content - Full Height, Underlays Header */}
-                    <div className="flex-1 lg:h-full lg:overflow-hidden relative">
-                        {children}
-                    </div>
-                </main>
-            </div>
-        </>
+        <AppShell initialUser={initialUser} fullBleed={fullBleed}>
+            {children}
+        </AppShell>
     );
 }

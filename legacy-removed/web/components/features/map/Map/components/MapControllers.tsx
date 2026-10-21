@@ -13,10 +13,8 @@ export function MapController({ onZoomChange }: { onZoomChange: (zoom: number) =
 export function ChangeView({ center, zoom }: { center: [number, number], zoom: number }) {
     const map = useMap();
     useEffect(() => {
-        map.flyTo(center, zoom, {
-            animate: true,
-            duration: 1.5
-        });
+        const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        map.setView(center, zoom, { animate: !reduce });
     }, [center, zoom, map]);
     return null;
 }

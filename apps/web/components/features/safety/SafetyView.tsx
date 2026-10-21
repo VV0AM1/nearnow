@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BarChart3, Info, Loader2, Phone } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { Info, Phone } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useDashboard } from "@/context/DashboardContext";
-import AreaPrompt from "@/components/features/home/AreaPrompt";
+import { AreaChooser } from "@/components/shell/AreaChooser";
+import { getCategory } from "@/config/categories";
+import { Banner, Card, PageHeader, Segmented, Skeleton } from "@/components/nn";
 
 interface AreaActivity {
     windowDays: number;
@@ -15,25 +18,14 @@ interface AreaActivity {
     disclaimer: string;
 }
 
-const LABELS: Record<string, string> = {
-    GENERAL: "Local update",
-    EVENT: "Event",
-    LOST_FOUND: "Lost & found",
-    RECOMMENDATION: "Recommendation",
-    SAFETY: "Safety notice",
-    CRIME: "Incident",
-    DANGER: "Urgent help",
-};
-
 /**
- * Recent community posts per area. Replaces the former "safest / most dangerous"
- * ranking, which was computed from raw post counts and could not support any claim
- * about safety. Counts, recency, method and limitations are shown instead.
+ * Recent community posts per neighbourhood. Counts, recency, method and
+ * limitations — never a "safest / most dangerous" ranking.
  */
 export default function SafetyView() {
     const { location } = useDashboard();
-    const [days, setDays] = useState(7);
-    const [radius, setRadius] = useState(5);
+    const [days, setDays] = useState<"1" | "7" | "30">("7");
+    const [radius, setRadius] = useState<"2" | "5" | "10" | "25">("5");
     const [data, setData] = useState<AreaActivity | null>(null);
     const [error, setError] = useState<string | null>(null);
 
@@ -46,61 +38,115 @@ export default function SafetyView() {
             .catch((e: Error) => setError(e.message));
     }, [location, radius, days]);
 
-    if (!location) return <AreaPrompt />;
+    if (!location) {
+        return (
+            <div className="mx-auto max-w-lg">
+                <PageHeader title="Area overview" className="mb-6" />
+                <Card>
+                    <AreaChooser />
+                </Card>
+            </div>
+        );
+    }
+
+    const max = Math.max(1, ...(data?.areas.map((a) => a.reports) ?? [1]));
 
     return (
-        <div className="min-h-screen lg:h-full lg:overflow-y-auto w-full pt-24 px-4 md:px-8 pb-10 max-w-4xl mx-auto space-y-6">
-            <header className="space-y-2">
-                <h1 className="text-2xl font-bold flex items-center gap-2">
-                    <BarChart3 className="h-6 w-6 text-primary" /> Area overview
-                </h1>
-                <p className="text-sm text-muted-foreground">Recent community posts around {location.label ?? "your chosen area"}.</p>
-            </header>
+        <div className="mx-auto max-w-3xl space-y-6">
+            <PageHeader title="Area overview" subtitle={`What neighbours posted around ${location.label ?? "your chosen area"}.`} />
 
-            <div className="flex flex-wrap gap-2" role="group" aria-label="Filters">
-                {[1, 7, 30].map((d) => (
-                    <button key={d} onClick={() => setDays(d)} aria-pressed={days === d} className={`px-3 py-1.5 rounded-full border text-sm ${days === d ? "bg-primary text-primary-foreground border-primary" : "border-border"}`}>
-                        Last {d} {d === 1 ? "day" : "days"}
-                    </button>
-                ))}
-                {[2, 5, 10, 25].map((r) => (
-                    <button key={r} onClick={() => setRadius(r)} aria-pressed={radius === r} className={`px-3 py-1.5 rounded-full border text-sm ${radius === r ? "bg-primary text-primary-foreground border-primary" : "border-border"}`}>
-                        {r} km
-                    </button>
-                ))}
+            <div className="flex flex-wrap gap-2">
+                <Segmented
+                    label="Period"
+                    value={days}
+                    onChange={setDays}
+                    options={[
+                        { value: "1", label: "24 h" },
+                        { value: "7", label: "7 days" },
+                        { value: "30", label: "30 days" },
+                    ]}
+                />
+                <Segmented
+                    label="Distance"
+                    value={radius}
+                    onChange={setRadius}
+                    options={(["2", "5", "10", "25"] as const).map((r) => ({ value: r, label: `${r} km` }))}
+                />
             </div>
 
             {error ? (
-                <p role="alert" className="text-red-600">{error}</p>
+                <Banner tone="warning" message={error} />
             ) : !data ? (
-                <div className="flex justify-center p-10"><Loader2 className="h-6 w-6 animate-spin" /></div>
+                <div className="space-y-3">
+                    <Skeleton className="h-24 w-full rounded-[20px]" />
+                    <Skeleton className="h-20 w-full rounded-[20px]" />
+                    <Skeleton className="h-20 w-full rounded-[20px]" />
+                </div>
             ) : (
                 <>
-                    <p className="font-semibold">
-                        {data.totalReports} posts in the last {data.windowDays} days within {data.radiusKm} km
-                    </p>
-                    {data.areas.length === 0 && <p className="text-muted-foreground">No posts in this period.</p>}
-                    <ul className="space-y-3">
-                        {data.areas.map((a) => (
-                            <li key={a.id ?? a.name} className="rounded-xl border border-border p-4 space-y-1">
-                                <p className="font-bold">
-                                    {a.name} {a.city && <span className="font-normal text-muted-foreground">· {a.city}</span>}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                    {Object.entries(a.byCategory).map(([c, n]) => `${LABELS[c] ?? c}: ${n}`).join(" · ")}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                    {a.lastReportAt ? `Latest ${new Date(a.lastReportAt).toLocaleString()}` : ""}
-                                    {a.resolved ? ` · ${a.resolved} resolved` : ""}
-                                </p>
-                            </li>
-                        ))}
-                    </ul>
-                    <section className="rounded-xl border border-border p-4 space-y-3 text-sm">
-                        <p className="flex items-start gap-2"><Info className="h-4 w-4 mt-0.5 shrink-0" /> {data.disclaimer}</p>
-                        <p className="text-muted-foreground"><strong>How this is counted:</strong> {data.method}</p>
-                        <a href="tel:112" className="inline-flex items-center gap-2 font-bold text-red-600"><Phone className="h-4 w-4" /> Call 112 in an emergency</a>
-                    </section>
+                    <Card className="flex items-end justify-between gap-4">
+                        <div>
+                            <p className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">Posts</p>
+                            <p className="mt-1 text-[40px] font-bold leading-none tabular-nums">{data.totalReports}</p>
+                        </div>
+                        <p className="text-right text-[13px] text-muted-foreground">
+                            last {data.windowDays} {data.windowDays === 1 ? "day" : "days"}
+                            <br />
+                            within {data.radiusKm} km
+                        </p>
+                    </Card>
+
+                    {data.areas.length === 0 ? (
+                        <Card>
+                            <p className="text-center text-[15px] text-muted-foreground">No posts in this period.</p>
+                        </Card>
+                    ) : (
+                        <ul className="space-y-3">
+                            {data.areas.map((a) => (
+                                <li key={a.id ?? a.name}>
+                                    <Card className="space-y-3">
+                                        <div className="flex items-baseline justify-between gap-3">
+                                            <p className="text-[17px] font-semibold">
+                                                {a.name}
+                                                {a.city ? <span className="font-normal text-muted-foreground"> · {a.city}</span> : null}
+                                            </p>
+                                            <span className="text-[15px] font-semibold tabular-nums">{a.reports}</span>
+                                        </div>
+                                        <div className="h-1.5 overflow-hidden rounded-full bg-surface-2" aria-hidden>
+                                            <div className="h-full rounded-full bg-primary" style={{ width: `${(a.reports / max) * 100}%` }} />
+                                        </div>
+                                        <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                                            {Object.entries(a.byCategory).map(([c, n]) => {
+                                                const cat = getCategory(c);
+                                                return (
+                                                    <span key={c} className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground">
+                                                        <cat.icon className="size-3.5" style={{ color: cat.hex }} aria-hidden />
+                                                        {cat.label} <span className="font-semibold text-foreground">{n}</span>
+                                                    </span>
+                                                );
+                                            })}
+                                        </div>
+                                        <p className="text-xs text-subtle">
+                                            {a.lastReportAt ? `Latest ${formatDistanceToNow(new Date(a.lastReportAt), { addSuffix: true })}` : ""}
+                                            {a.resolved ? ` · ${a.resolved} resolved` : ""}
+                                        </p>
+                                    </Card>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+
+                    <Card className="space-y-3 text-sm">
+                        <p className="flex items-start gap-2.5">
+                            <Info className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden /> {data.disclaimer}
+                        </p>
+                        <p className="text-muted-foreground">
+                            <span className="font-semibold text-foreground">How this is counted:</span> {data.method}
+                        </p>
+                        <a href="tel:112" className="inline-flex items-center gap-2 font-semibold text-danger">
+                            <Phone className="size-4" aria-hidden /> Call 112 in an emergency
+                        </a>
+                    </Card>
                 </>
             )}
         </div>

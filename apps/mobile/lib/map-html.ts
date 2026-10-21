@@ -9,9 +9,10 @@ export function buildMapHtml(opts: { dark: boolean; lat: number; lng: number; zo
   const lat = Number(opts.lat).toFixed(6);
   const lng = Number(opts.lng).toFixed(6);
   const zoom = Math.round(opts.zoom);
-  const tiles = opts.dark
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+  // Keyless OpenStreetMap raster tiles (CARTO basemaps now require an API key).
+  // Only the Expo Go fallback uses this page; dark mode is a CSS filter on the tiles.
+  const tiles = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+  const darkTiles = opts.dark ? '.leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9);}' : '';
   const bg = opts.dark ? '#0b1220' : '#f8fafc';
 
   return `<!DOCTYPE html><html><head>
@@ -22,6 +23,7 @@ ${LEAFLET_ASSETS.clusterCss}
 ${LEAFLET_ASSETS.clusterDefaultCss}
 html,body,#map{height:100%;width:100%;margin:0;padding:0;background:${bg};}
 .leaflet-control-zoom{display:none;}
+${darkTiles}
 .nn-m{width:18px;height:18px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);box-sizing:border-box;}
 .nn-circle{border-radius:50%;}
 .nn-square{border-radius:3px;}
@@ -37,7 +39,7 @@ html,body,#map{height:100%;width:100%;margin:0;padding:0;background:${bg};}
   function post(m){ if(window.ReactNativeWebView){ window.ReactNativeWebView.postMessage(JSON.stringify(m)); } }
   var map = L.map('map',{zoomControl:false, attributionControl:true}).setView([${lat},${lng}],${zoom});
   map.attributionControl.setPrefix(false);
-  var tiles = L.tileLayer('${tiles}',{maxZoom:19,subdomains:'abcd',attribution:'&copy; OpenStreetMap contributors &copy; CARTO'}).addTo(map);
+  var tiles = L.tileLayer('${tiles}',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
   var tileErrors = 0;
   tiles.on('tileerror', function(){ tileErrors++; if(tileErrors===3){ post({type:'TILE_ERROR'}); } });
   var cluster = L.markerClusterGroup({showCoverageOnHover:false, maxClusterRadius:50, spiderfyOnMaxZoom:true});
