@@ -58,6 +58,8 @@ model User {
   contactRequestsRecv  ContactRequest[]   @relation("ContactRecipient")
   blocking             UserBlock[]        @relation("Blocker")
   blockedBy            UserBlock[]        @relation("Blocked")
+  savedAreas           SavedArea[]
+  briefPreferences     BriefPreferences?
 
   isBlocked Boolean   @default(false)
   // Set when the account was deleted/anonymised at the user's request.
@@ -473,4 +475,29 @@ model UserBlock {
   createdAt DateTime @default(now())
 
   @@unique([blockerId, blockedId])
+}
+
+/// A place the user chose to follow (home, work, a neighbourhood). Never inferred from tracking.
+model SavedArea {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  label     String
+  latitude  Float
+  longitude Float
+  radiusKm  Float    @default(2)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// "Since you last checked" brief: on/off, topics, and when the user last read it.
+model BriefPreferences {
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String     @id
+  enabled    Boolean    @default(true)
+  /// Empty means every category.
+  categories Category[] @default([])
+  lastSeenAt DateTime?
+  updatedAt  DateTime   @updatedAt
 }

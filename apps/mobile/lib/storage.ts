@@ -13,6 +13,7 @@ export const KEYS = {
   onboarded: 'nn.onboarded',
   feedRadius: 'nn.feedRadius',
   pushToken: 'nn.pushToken',
+  cantConfirm: 'nn.cantConfirm',
 } as const;
 
 export async function getString(key: string): Promise<string | null> {
@@ -45,4 +46,14 @@ export async function getJSON<T>(key: string, validate: (v: unknown) => v is T):
 
 export function setJSON(key: string, value: unknown) {
   return setString(key, value === null ? null : JSON.stringify(value));
+}
+
+/** Posts the user said they can't confirm; the question is not shown again on this device. Capped. */
+export async function getCantConfirm(): Promise<string[]> {
+  return (await getJSON(KEYS.cantConfirm, (v): v is string[] => Array.isArray(v) && v.every((x) => typeof x === 'string'))) ?? [];
+}
+
+export async function addCantConfirm(postId: string): Promise<void> {
+  const ids = (await getCantConfirm()).filter((id) => id !== postId);
+  await setString(KEYS.cantConfirm, JSON.stringify([postId, ...ids].slice(0, 200)));
 }

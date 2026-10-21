@@ -18,6 +18,24 @@ import { cn } from "@/lib/utils";
 
 type Confirmation = "STILL_HAPPENING" | "NO_LONGER_PRESENT";
 
+/** Posts this browser said it can't confirm; the question is not shown again. */
+const CANT_KEY = "nn-cant-confirm";
+function readCant(): string[] {
+    try {
+        const v = JSON.parse(localStorage.getItem(CANT_KEY) || "[]");
+        return Array.isArray(v) ? v.filter((x) => typeof x === "string") : [];
+    } catch {
+        return [];
+    }
+}
+function addCant(id: string) {
+    try {
+        localStorage.setItem(CANT_KEY, JSON.stringify([id, ...readCant().filter((x) => x !== id)].slice(0, 200)));
+    } catch {
+        // storage unavailable: only hidden for this visit
+    }
+}
+
 function Meta({ icon: IconC, children }: { icon: typeof MapPin; children: React.ReactNode }) {
     return (
         <p className="flex items-center gap-2 text-[15px] text-muted-foreground">
@@ -34,6 +52,10 @@ function PostDetail({ initial }: { initial: Post }) {
     const { likes, voted, saved, handleVote, handleSave } = usePostInteractions(post);
     const [reporting, setReporting] = useState(false);
     const [confirming, setConfirming] = useState(false);
+    // Impact receipt: real counts returned by the server after an answer.
+    const [receipt, setReceipt] = useState<string | null>(null);
+    const [skipped, setSkipped] = useState(false);
+    useEffect(() => setSkipped(readCant().includes(initial.id)), [initial.id]);
     const [resolveOpen, setResolveOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [busy, setBusy] = useState(false);
@@ -56,7 +78,8 @@ function PostDetail({ initial }: { initial: Post }) {
                 lastConfirmedAt: state === "STILL_HAPPENING" ? new Date().toISOString() : p.lastConfirmedAt,
                 viewer: p.viewer ? { ...p.viewer, confirmation: state } : p.viewer,
             }));
-            toast({ title: "Thanks — your answer helps neighbours" });
+            const n = state === "STILL_HAPPENING" ? res.confirmations?.stillHappening ?? 0 : res.confirmations?.noLongerPresent ?? 0;
+            setReceipt(`Update recorded. “${state === "STILL_HAPPENING" ? "Still happening" : "No longer happening"}” answers in the last 24 hours: ${n}.`);
         } catch (e) {
             toast({ title: "Answer not saved", description: e instanceof Error ? e.message : undefined, variant: "destructive" });
         } finally {
@@ -159,7 +182,7 @@ function PostDetail({ initial }: { initial: Post }) {
                 </div>
             </Card>
 
-            {active && !isAuthor && post.category !== "LOST_FOUND" ? (
+            {active && !isAuthor && post.category !== "LOST_FOUND" && (!skipped || answer) ? (
                 <Card className="space-y-3">
                     <h2 className="text-[17px] font-semibold">Is this still happening?</h2>
                     <p className="text-[13px] text-muted-foreground">Your answer updates how fresh this post looks to everyone nearby.</p>
@@ -175,6 +198,25 @@ function PostDetail({ initial }: { initial: Post }) {
                             </Button>
                         ))}
                     </div>
+                    {!answer ? (
+                        <Button
+                            variant="plain"
+                            size="sm"
+                            onClick={() => {
+                                addCant(post.id);
+                                setSkipped(true);
+                                toast({ title: "No problem", description: "Only answer when you have seen it yourself." });
+                            }}
+                        >
+                            I can't confirm
+                        </Button>
+                    ) : null}
+                    {receipt ? (
+                        <p role="status" className="flex items-start gap-2 rounded-[12px] bg-success-soft p-3 text-[15px]">
+                            <Check className="mt-0.5 size-4 shrink-0 text-success" aria-hidden />
+                            {receipt}
+                        </p>
+                    ) : null}
                 </Card>
             ) : null}
 

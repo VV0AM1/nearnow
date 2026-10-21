@@ -17,6 +17,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { ReportsModule } from './reports/reports.module';
 import { AdminModule } from './admin/admin.module';
 import { LostFoundModule } from './lost-found/lost-found.module';
+import { BriefModule } from './brief/brief.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { LostFoundModule } from './lost-found/lost-found.module';
     ReportsModule,
     AdminModule,
     LostFoundModule,
+    BriefModule,
   ],
   controllers: [AppController],
   providers: [AppService],

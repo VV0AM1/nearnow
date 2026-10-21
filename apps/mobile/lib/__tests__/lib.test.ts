@@ -13,6 +13,7 @@ import { groupByDay } from '../format';
 import { circleRing, haversineKm, regionRadiusKm, zoomToDeltas } from '../geo';
 import { clusterMarkers, project, zoomForSpan } from '../cluster';
 import { matchesFeed, parsePostUpdate } from '../realtime';
+import { briefLines, briefRadius } from '../brief';
 import type { Post } from '../types';
 import { mediaUrl } from '../config';
 
@@ -267,5 +268,29 @@ describe('real-time feed matching', () => {
     expect(parsePostUpdate({ id: 'x', status: 'REMOVED' })).toBeNull();
     expect(parsePostUpdate({ id: '123e4567-e89b-12d3-a456-426614174000', status: 'HACKED' })).toBeNull();
     expect(parsePostUpdate(null)).toBeNull();
+  });
+});
+
+describe('local change brief', () => {
+  const zero = { new: 0, confirmed: 0, resolved: 0, expired: 0, unconfirmedNew: 0, official: 0 };
+
+  it('says nothing new was found — and warns about coverage when the area is quiet', () => {
+    expect(briefLines({ counts: zero, activeInArea: 0 }).map((l) => l.key)).toEqual(['brief.noneFound', 'brief.coverageLow']);
+    expect(briefLines({ counts: zero, activeInArea: 4 }).map((l) => l.key)).toEqual(['brief.noneFound', 'brief.coverageNote']);
+  });
+
+  it('summarises each kind of change and flags unconfirmed new posts', () => {
+    const lines = briefLines({ counts: { ...zero, new: 3, resolved: 1, unconfirmedNew: 2 }, activeInArea: 9 });
+    expect(lines.map((l) => [l.key, l.params?.n, l.tone])).toEqual([
+      ['brief.lineNew', 3, 'neutral'],
+      ['brief.lineResolved', 1, 'neutral'],
+      ['brief.lineUnconfirmed', 2, 'warning'],
+    ]);
+  });
+
+  it('keeps the brief radius within what the API accepts', () => {
+    expect(briefRadius(25)).toBe(10);
+    expect(briefRadius(0.1)).toBe(0.5);
+    expect(briefRadius(2)).toBe(2);
   });
 });

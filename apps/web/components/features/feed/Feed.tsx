@@ -12,6 +12,8 @@ import { CATEGORIES, getCategory } from "@/config/categories";
 import { Banner, Button, Card, Chip, EmptyState, PageHeader, Segmented } from "@/components/nn";
 import { useShell } from "@/components/shell/AppShell";
 import { PostCard, PostCardSkeleton } from "./PostCard";
+import { BriefCard } from "../brief/BriefCard";
+import { useRouter } from "next/navigation";
 import type { Post } from "./Post/Post.types";
 
 const RADII = ["1", "2", "5", "10", "25"] as const;
@@ -20,6 +22,7 @@ const PAGE_SIZE = 10;
 export default function FeedContainer({ initialPosts = [] }: { initialPosts?: Array<{ id: string; title: string; content: string; createdAt: string }> }) {
     const { location, searchQuery } = useDashboard();
     const { openCreate, openAreaPicker } = useShell();
+    const router = useRouter();
     const [radius, setRadius] = useState<(typeof RADII)[number]>("5");
     const [category, setCategory] = useState<string>("ALL");
     const [highlighted, setHighlighted] = useState<string | null>(null);
@@ -55,6 +58,8 @@ export default function FeedContainer({ initialPosts = [] }: { initialPosts?: Ar
                         </Button>
                     }
                 />
+
+                {location && !searchQuery ? <BriefCard area={location} radiusKm={km} onSettings={() => router.push("/profile#brief")} /> : null}
 
                 {/* Filters */}
                 <div className="space-y-3">

@@ -16,6 +16,7 @@ import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { FeedPost, FeedPostSkeleton } from '@/components/FeedPost';
 import { FilterBar, FilterSummary, type Filters } from '@/components/FilterBar';
 import { UrgentHelpButton } from '@/components/SOSButton';
+import { BriefCard } from '@/components/BriefCard';
 import { Button, Icon, IconButton, PressableScale, StateView, Text, useTokens } from '@/design';
 import { RADIUS_OPTIONS_KM } from '@/constants/places';
 
@@ -159,6 +160,7 @@ export default function Home() {
                 </Text>
               </PressableScale>
             </View>
+            {!debounced ? <BriefCard area={area} radiusKm={filters.radiusKm} /> : null}
             <FilterBar value={filters} onChange={changeFilters} />
             <FilterSummary value={filters} onClear={() => changeFilters({ category: null, since: 'all', radiusKm: filters.radiusKm })} />
           </View>

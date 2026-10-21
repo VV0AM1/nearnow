@@ -108,6 +108,8 @@ const SF: Partial<Record<IoniconName, SFSymbol>> = {
   paw: 'pawprint.fill',
   shirt: 'tshirt.fill',
   cube: 'shippingbox.fill',
+  sparkles: 'sparkles',
+  'options-outline': 'slider.horizontal.3',
 };
 
 export interface IconProps {

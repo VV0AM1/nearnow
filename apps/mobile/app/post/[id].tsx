@@ -12,6 +12,7 @@ import { formatKm, shortDate, timeAgo } from '@/lib/format';
 import { useToast } from '@/context/ToastContext';
 import type { Comment, ConfirmationState, Post } from '@/lib/types';
 import { usePostActions } from '@/hooks/usePostActions';
+import { addCantConfirm, getCantConfirm } from '@/lib/storage';
 import { CategoryBadge, TrustLine } from '@/components/PostStatus';
 import { ReportSheet } from '@/components/ReportSheet';
 import { ContactPanel, MatchesPanel } from '@/components/LostFoundPanel';
@@ -95,6 +96,13 @@ function PostBody({
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  // Impact receipt: real counts returned by the server after an answer.
+  const [receipt, setReceipt] = useState<string | null>(null);
+  const [skipped, setSkipped] = useState(false);
+
+  useEffect(() => {
+    void getCantConfirm().then((ids) => setSkipped(ids.includes(post.id)));
+  }, [post.id]);
   const sendingRef = useRef(false);
   const isAuthor = !!post.viewer?.isAuthor;
   const image = mediaUrl(post.imageUrl);
@@ -130,7 +138,8 @@ function PostBody({
         lastConfirmedAt: state === 'STILL_HAPPENING' ? new Date().toISOString() : post.lastConfirmedAt,
         viewer: post.viewer ? { ...post.viewer, confirmation: state } : post.viewer,
       });
-      showToast(t('post.yourAnswer'), 'success');
+      const n = state === 'STILL_HAPPENING' ? res.data.confirmations.stillHappening : res.data.confirmations.noLongerPresent;
+      setReceipt(t(state === 'STILL_HAPPENING' ? 'post.receiptStill' : 'post.receiptNoLonger', { n }));
     } catch (e) {
       showToast(describeError(e, t), 'error');
     } finally {
@@ -240,7 +249,7 @@ function PostBody({
       </Card>
 
       {/* Reality check */}
-      {active && !isAuthor && post.category !== 'LOST_FOUND' ? (
+      {active && !isAuthor && post.category !== 'LOST_FOUND' && (!skipped || answer) ? (
         <Card style={{ gap: tokens.space.md }}>
           <Text variant="headline">{t('post.confirmPrompt')}</Text>
           <View style={{ flexDirection: 'row', gap: tokens.space.sm }}>
@@ -263,6 +272,26 @@ function PostBody({
               style={{ flex: 1 }}
             />
           </View>
+          {!answer ? (
+            <Button
+              title={t('post.cantConfirm')}
+              variant="plain"
+              size="small"
+              onPress={() => {
+                setSkipped(true);
+                void addCantConfirm(post.id);
+                showToast(t('post.cantConfirmThanks'), 'info');
+              }}
+            />
+          ) : null}
+          {receipt ? (
+            <View accessibilityLiveRegion="polite" style={{ flexDirection: 'row', gap: tokens.space.sm, alignItems: 'flex-start', padding: tokens.space.md, borderRadius: tokens.radius.md, backgroundColor: tokens.colors.successSoft }}>
+              <Icon name="checkmark-circle" size={18} color={tokens.colors.success} />
+              <Text variant="subheadline" style={{ flex: 1 }}>
+                {receipt}
+              </Text>
+            </View>
+          ) : null}
         </Card>
       ) : null}
 

@@ -273,15 +273,35 @@ The addendum keeps the order above (A → B → C first) and then adds the **loc
 | Strategy stage | Item | Status |
 |---|---|---|
 | 0 — Release foundation | Phase A above | Partly done (code-side done; account-dependent steps blocked) |
-| 1 — Finish mobile | Phases B and C above | Not started |
-| 2 — Local Change Brief | "Since you last checked" brief built from existing lifecycle fields, deterministic, no LLM | Not started |
-| 2 | One-tap reality check: add "I can't confirm" next to the existing still-happening / no-longer-present answers; impact receipt showing real counts | Not started (confirmation API exists) |
-| 2 | Saved areas, topic lenses, quiet and controllable notifications | Partly done (one area, categories, quiet hours and pause exist) |
+| 1 — Finish mobile | Phases B and C above | Mostly done in code (see Phase B/C); not yet checked on devices |
+| 2 — Local Change Brief | "Since you last checked" brief built from existing lifecycle fields, deterministic, no LLM | **Done** — API `GET /brief` (+ `POST /brief/seen`), cards on the mobile and web feeds |
+| 2 | One-tap reality check: add "I can't confirm" next to the existing still-happening / no-longer-present answers; impact receipt showing real counts | **Done** — "I can't confirm" is a local skip (nothing sent to the server); the receipt uses the counts returned by `POST /posts/:id/confirm` |
+| 2 | Saved areas, topic lenses, quiet and controllable notifications | **Done**, except brief notifications: up to 5 saved areas and brief topics (`/brief/areas`, `/brief/preferences`); a brief on/off switch; alerts keep their opt-in, quiet hours and caps. A brief digest notification waits for push delivery to be verified on devices |
 | 3 — Practicality Layer | Structured disruption subtypes, one reviewed official source, map plus accessible list, unknown shown as unknown | Not started (official-data interface exists) |
 | 4 — Distribution | Public share pages with privacy rules, partner QR entry points | Not started |
 | 4 | Area Desk partner dashboard | Not started — only after a committed pilot partner |
 | 5 | Newcomer guide, event reminders, community missions, trusted journeys | Not started — each needs evidence first |
 | — | Privacy-conscious analytics plan (outcome metrics, no GPS or content in analytics) | Not started |
+
+**Stage 2 — how it works**
+- **API** (`apps/api/src/brief/`, `JwtAuthGuard`, rate limited).
+  - `GET /brief?latitude&longitude&radius` or `?areaId` returns the changes since the user's `lastSeenAt`. On first use it looks back 24 hours, and never more than 7 days.
+  - Classification is in `brief-builder.ts` (pure, unit-tested). Each post gets one change: **RESOLVED > EXPIRED > NEW > CONFIRMED**.
+  - Each item carries provenance (**OFFICIAL**, with the source name / **COMMUNITY_CONFIRMED** / **UNCONFIRMED**), when the change happened, and its distance.
+  - Visibility rules match the feed (no removed posts, no blocked authors). The reader's own posts are left out.
+  - `activeInArea` gives context only, never a score.
+  - `POST /brief/seen` marks the brief as read. `GET/PATCH /brief/preferences` handles on/off and topics. `GET/POST/DELETE /brief/areas` manages up to 5 saved areas, each owned by one user (404 for anyone else).
+- **Wording.** It is deterministic: "New posts: n", "Marked resolved: n", and so on. Unconfirmed new posts get a warning line. With no changes it says *"No new reports found in this area since then"*, plus a coverage note — and when the area has no active posts, an explicit warning that no reports does not mean nothing is happening.
+- **Tests.**
+  - `brief-builder.spec.ts`: 8 unit tests.
+  - `test/brief.e2e-spec.ts`: 6 e2e tests — auth and area required, provenance, own posts excluded, mark-as-seen then resolve/confirm, topics and the off switch, saved-area ownership and the limit of 5, removal on account deletion.
+  - Mobile `lib/brief`: 3 tests, plus the i18n key-parity test for en/es/ca.
+- **Migration: `20261021151154_local_brief`.** It is additive only: new tables `SavedArea` and `BriefPreferences`, both cascading on user delete, and account deletion also removes them explicitly. Applied to the local and e2e databases only. **Production needs `prisma migrate deploy` after a Neon backup — this is an owner-approved operator step.**
+- **UI.**
+  - Mobile: `components/BriefCard.tsx` at the top of the feed (hidden while searching), with saved-area chips, tappable rows routing to the exact post, Show all and Mark as read; plus `app/brief-settings.tsx` (also reachable from Profile).
+  - Web: `components/features/brief/BriefCard.tsx` on the feed and `BriefSettings` in Profile → Local brief.
+  - The post screens on both platforms add "I can't confirm" and the impact receipt.
+- **Checked** in the local web app with two labelled `[DEMO]` fixture posts written only to the local database: a new post and a resolved post appeared with the right labels. The receipt showed the real count, and Mark as read cleared the brief.
 
 Product guardrails from the addendum that are already enforced:
 - no safety scores;

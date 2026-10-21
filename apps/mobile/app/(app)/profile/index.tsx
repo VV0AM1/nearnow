@@ -201,6 +201,7 @@ export default function ProfileScreen() {
         <ListSection>
           <ListRow title={t('profile.area')} value={area?.label ?? undefined} icon="location" iconColor="#34C759" onPress={() => router.push('/city-picker')} />
           <ListRow title={t('profile.alerts')} icon="notifications" iconColor="#FF3B30" onPress={() => router.push('/alerts')} />
+          <ListRow title={t('brief.settingsTitle')} icon="sparkles" iconColor="#AF52DE" onPress={() => router.push('/brief-settings')} />
           <ListRow title={t('profile.saved')} icon="bookmark" iconColor="#FF9500" onPress={() => router.push('/saved')} />
           <ListRow title={t('profile.contacts')} icon="mail" onPress={() => router.push('/contact-requests')} />
         </ListSection>

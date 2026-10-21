@@ -16,6 +16,7 @@ import { Avatar, Banner, Button, Card, Dialog, EmptyState, IconButton, ListGroup
 import { PostCard, PostCardSkeleton } from "@/components/features/feed/PostCard";
 import type { Post } from "@/components/features/feed/Post/Post.types";
 import NotificationSettings from "./NotificationSettings";
+import { BriefSettings } from "../brief/BriefSettings";
 
 export default function ProfileView() {
     const { user, loading, error, refetch } = useProfile();
@@ -136,6 +137,11 @@ export default function ProfileView() {
             <section>
                 <SectionTitle>Alerts</SectionTitle>
                 <NotificationSettings />
+            </section>
+
+            <section id="brief" className="scroll-mt-24">
+                <SectionTitle>Local brief</SectionTitle>
+                <BriefSettings />
             </section>
 
             <section>

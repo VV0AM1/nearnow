@@ -165,6 +165,8 @@ export class UsersService {
         where: { OR: [{ blockerId: userId }, { blockedId: userId }] },
       });
       await tx.lostFoundMatchDismissal.deleteMany({ where: { userId } });
+      await tx.savedArea.deleteMany({ where: { userId } });
+      await tx.briefPreferences.deleteMany({ where: { userId } });
       await tx.auth.deleteMany({ where: { userId } });
       await tx.user.update({
         where: { id: userId },
