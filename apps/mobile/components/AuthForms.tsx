@@ -123,9 +123,9 @@ export function OtpStep({ email, onResend, onBack }: { email: string; onResend: 
         </View>
       ) : null}
       <Button title={t('auth.verify')} size="large" block onPress={verify} loading={busy} disabled={otp.length !== 6} />
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: tokens.space.sm }}>
-        <Button title={t('common.back')} variant="plain" icon="chevron-back" onPress={onBack} />
+      <View style={{ alignItems: 'center', marginTop: tokens.space.sm }}>
         <Button title={wait > 0 ? t('auth.resendIn', { s: wait }) : t('auth.resend')} variant="plain" onPress={resend} disabled={wait > 0} />
+        <Button title={t('common.back')} variant="plain" icon="chevron-back" onPress={onBack} />
       </View>
     </View>
   );

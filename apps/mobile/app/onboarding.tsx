@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import Animated, { FadeIn, FadeInRight } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,8 +14,13 @@ export default function Onboarding() {
   const { t } = useI18n();
   const tokens = useTokens();
   const router = useRouter();
-  const { completeOnboarding } = useArea();
+  const { area, onboarded, completeOnboarding } = useArea();
   const [page, setPage] = useState<Page>('intro');
+  // Returning from the city picker: the area is chosen, so continue to the feed.
+  useEffect(() => {
+    if (area && onboarded) router.replace('/(app)/home');
+  }, [area, onboarded, router]);
+
   const enter = tokens.reduceMotion ? FadeIn.duration(150) : FadeInRight.springify().damping(22);
 
   const points: [IoniconName, string, string][] = [
