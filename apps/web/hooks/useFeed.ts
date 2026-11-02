@@ -1,6 +1,13 @@
 import { useState, useEffect } from "react";
 import { API_URL } from "../lib/config";
 import { useSocket } from "../lib/socket-provider";
+import { getToken } from "../lib/auth";
+
+const toRad = (d: number) => (d * Math.PI) / 180;
+function distanceKm(a: { lat: number; long: number }, b: { lat: number; long: number }) {
+    const h = Math.sin(toRad(b.lat - a.lat) / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(toRad(b.long - a.long) / 2) ** 2;
+    return 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(h)));
+}
 
 export interface Post {
     id: string;
@@ -13,7 +20,7 @@ export interface Post {
     [key: string]: any;
 }
 
-export function useFeed(location: { lat: number; long: number }, radius: number = 10, categories: string[] = ['ALL'], initialPosts: Post[] = [], limit: number = 20, searchQuery: string = '') {
+export function useFeed(location: { lat: number; long: number } | null, radius: number = 10, categories: string[] = ['ALL'], initialPosts: Post[] = [], limit: number = 20, searchQuery: string = '') {
     const [posts, setPosts] = useState<Post[]>(initialPosts);
     const [loading, setLoading] = useState(initialPosts.length === 0);
     const [error, setError] = useState<string | null>(null);
@@ -30,10 +37,14 @@ export function useFeed(location: { lat: number; long: number }, radius: number 
         // setPosts([]); // Don't clear immediately to avoid flicker, just loading state?
         // Actually clearing is safer for state consistency but flicker is bad.
         // Let's keep existing posts until new ones load if we want smoothness, but for clarity let's clear or handle in loading.
-    }, [location.lat, location.long, radius, categoryString, limit, searchQuery]);
+    }, [location?.lat, location?.long, radius, categoryString, limit, searchQuery]);
 
     useEffect(() => {
         const fetchFeed = async () => {
+            if (!location) {
+                setLoading(false);
+                return;
+            }
             try {
                 setLoading(true);
                 const query = new URLSearchParams({
@@ -45,8 +56,10 @@ export function useFeed(location: { lat: number; long: number }, radius: number 
                     page: page.toString(),
                     limit: limit.toString()
                 });
-                const res = await fetch(`${API_URL}/posts/feed?${query}`);
-                if (!res.ok) throw new Error("Failed to fetch feed");
+                const token = getToken();
+                const res = await fetch(`${API_URL}/posts/feed?${query}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+                if (!res.ok) throw new Error("Could not load posts for this area. Check your connection and try again.");
+                setError(null);
                 const data = await res.json();
 
                 if (data.length < limit) setHasMore(false);
@@ -62,7 +75,7 @@ export function useFeed(location: { lat: number; long: number }, radius: number 
         };
 
         fetchFeed();
-    }, [location.lat, location.long, radius, categoryString, page, limit, searchQuery]);
+    }, [location?.lat, location?.long, radius, categoryString, page, limit, searchQuery]);
 
     const nextPage = () => {
         if (!loading && hasMore) {
@@ -80,20 +93,18 @@ export function useFeed(location: { lat: number; long: number }, radius: number 
     useEffect(() => {
         if (!socket) return;
 
-        socket.on("postCreated", (newPost: Post) => {
-            console.log("New post received via socket:", newPost);
-            // In pagination, do we prepend? Yes, but only if on page 1?
-            // For now, prepend effectively
-            if (page === 1) {
-                setPosts((prev) => [newPost, ...prev].slice(0, limit)); // Maintain limit
-            }
-            // If not page 1, maybe show a "New posts available" badge? For simplicity, ignore or notify.
-        });
-
-        return () => {
-            socket.off("postCreated");
+        const onPostCreated = (newPost: Post) => {
+            // Only show live posts that belong in the current view (area, radius, category).
+            if (!location || page !== 1 || searchQuery) return;
+            if (distanceKm(location, { lat: newPost.latitude, long: newPost.longitude }) > radius) return;
+            if (categoryString !== "ALL" && !categoryString.split(",").includes(newPost.category)) return;
+            setPosts((prev) => (prev.some((p) => p.id === newPost.id) ? prev : [newPost, ...prev].slice(0, limit)));
         };
-    }, [socket, page, limit]);
+        socket.on("postCreated", onPostCreated);
+        return () => {
+            socket.off("postCreated", onPostCreated);
+        };
+    }, [socket, page, limit, location, radius, categoryString, searchQuery]);
 
     const incrementCommentCount = (postId: string) => {
         setPosts(prev => prev.map(p => {

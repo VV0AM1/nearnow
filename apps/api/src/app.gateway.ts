@@ -1,47 +1,64 @@
+import { JwtService } from '@nestjs/jwt';
 import {
-    WebSocketGateway,
-    WebSocketServer,
-    SubscribeMessage,
-    MessageBody,
-    OnGatewayConnection,
-    OnGatewayDisconnect,
+  OnGatewayConnection,
+  WebSocketGateway,
+  WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { PrismaService } from './prisma.service';
+import { appConfig } from './common/env';
 
+/**
+ * Real-time channel. Clients authenticate with their JWT in the handshake
+ * (`auth: { token }`); the server places them in their own private room. Clients
+ * cannot choose rooms, so nobody can subscribe to another user's notifications.
+ * Unauthenticated sockets only receive public post events.
+ */
 @WebSocketGateway({
-    cors: {
-        origin: [
-            'http://localhost:3000',
-            'http://localhost:3001',
-            process.env.FRONTEND_URL || 'http://localhost:3000'
-        ],
-        credentials: true,
-        methods: ['GET', 'POST'],
-    },
-    transports: ['websocket', 'polling'], // Allow polling fallbacks
+  cors: {
+    origin: appConfig().corsOrigins,
+    credentials: true,
+    methods: ['GET', 'POST'],
+  },
+  transports: ['websocket', 'polling'],
 })
-export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
-    @WebSocketServer()
-    server: Server;
+export class AppGateway implements OnGatewayConnection {
+  @WebSocketServer()
+  server: Server;
 
-    handleConnection(client: Socket) {
-        console.log(`Client connected: ${client.id}`);
-    }
+  constructor(
+    private readonly jwt: JwtService,
+    private readonly prisma: PrismaService,
+  ) {}
 
-    handleDisconnect(client: Socket) {
-        console.log(`Client disconnected: ${client.id}`);
-    }
+  async handleConnection(client: Socket) {
+    const raw: unknown =
+      client.handshake.auth?.token ?? client.handshake.headers.authorization;
+    const token =
+      typeof raw === 'string' ? raw.replace(/^Bearer\s+/i, '') : null;
+    if (!token) return; // anonymous: public events only
 
-    @SubscribeMessage('locationUpdate')
-    handleLocationUpdate(@MessageBody() data: any): string {
-        return 'Location received';
+    try {
+      const payload = await this.jwt.verifyAsync<{ sub: string }>(token);
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+        select: { id: true, isBlocked: true, deletedAt: true },
+      });
+      if (!user || user.isBlocked || user.deletedAt)
+        throw new Error('inactive account');
+      await client.join(`user_${user.id}`);
+    } catch {
+      client.emit('auth_error', { message: 'Session expired' });
+      client.disconnect(true);
     }
+  }
 
-    @SubscribeMessage('joinRoom')
-    handleJoinRoom(client: Socket, userId: string) {
-        if (userId) {
-            client.join(`user_${userId}`);
-            console.log(`Client ${client.id} joined room user_${userId}`);
-        }
-    }
+  emitToUser(userId: string, event: string, payload: unknown) {
+    this.server?.to(`user_${userId}`).emit(event, payload);
+  }
+
+  /** Public events (e.g. a new post) carry only data already visible to everyone. */
+  emitPublic(event: string, payload: unknown) {
+    this.server?.emit(event, payload);
+  }
 }

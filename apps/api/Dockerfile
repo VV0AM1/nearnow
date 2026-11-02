@@ -1,5 +1,5 @@
 # Base Image - Switch to slim for better compatibility
-FROM node:18-slim AS builder
+FROM node:20-slim AS builder
 
 # Set working directory
 WORKDIR /app
@@ -24,7 +24,7 @@ COPY . .
 RUN npm run build
 
 # --- Production Image ---
-FROM node:18-slim
+FROM node:20-slim
 
 WORKDIR /app
 

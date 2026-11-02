@@ -1,149 +1,184 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { AlertCircle, Check, Megaphone, Phone } from "lucide-react";
 import { useCreatePost } from "../../../hooks/useCreatePost";
-import { useGeoLocation } from "../../../hooks/useGeoLocation";
-import { useToast } from "../../../components/ui/use-toast";
-import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, X } from "lucide-react";
-import { createPortal } from "react-dom";
+import { Banner, Button, Dialog, IconButton } from "@/components/nn";
+import { cn } from "@/lib/utils";
 
-// Simple Portal Component for inline usage
-const Portal = ({ children }: { children: React.ReactNode }) => {
-    const [mounted, setMounted] = useState(false);
+const EMERGENCY_NUMBER = "112";
+const COUNTDOWN = 5;
+type Phase = "closed" | "info" | "locating" | "countdown" | "sending" | "result" | "error";
 
-    useEffect(() => {
-        setMounted(true);
-        return () => setMounted(false);
-    }, []);
-
-    if (!mounted) return null;
-
-    // Safety check for document body
-    if (typeof document === "undefined") return null;
-
-    return createPortal(children, document.body);
-};
-
-export default function SOSButton() {
-    const [isCountingDown, setIsCountingDown] = useState(false);
-    const [count, setCount] = useState(3);
+/**
+ * Urgent help request. Creates a community alert only — it never claims emergency
+ * services were contacted, always offers 112, and reports the real number of people
+ * the server notified.
+ */
+export default function SOSButton({ variant = "full" }: { variant?: "full" | "icon" }) {
+    const [phase, setPhase] = useState<Phase>("closed");
+    const [seconds, setSeconds] = useState(COUNTDOWN);
+    const [notified, setNotified] = useState(0);
+    const [message, setMessage] = useState<string | null>(null);
+    const coords = useRef<{ latitude: number; longitude: number } | null>(null);
+    const sending = useRef(false);
     const { createPost } = useCreatePost();
-    const { location, getUserLocation } = useGeoLocation();
-    const { toast } = useToast();
 
-    // Reset countdown when closed
-    useEffect(() => {
-        if (!isCountingDown) {
-            setCount(3);
-        }
-    }, [isCountingDown]);
-
-    // Timer Logic
-    useEffect(() => {
-        let timer: NodeJS.Timeout;
-        if (isCountingDown && count > 0) {
-            timer = setTimeout(() => setCount(c => c - 1), 1000);
-        } else if (isCountingDown && count === 0) {
-            handleSOS();
-        }
-        return () => clearTimeout(timer);
-    }, [isCountingDown, count]);
-
-    const handleTrigger = () => {
-        // Refresh location immediately
-        getUserLocation();
-        setIsCountingDown(true);
+    const close = () => {
+        setPhase("closed");
+        setSeconds(COUNTDOWN);
+        setMessage(null);
     };
 
-    const handleSOS = async () => {
-        setIsCountingDown(false); // Close modal
-
-        if (!location.latitude || !location.longitude) {
-            toast({
-                title: "Location Unavailable",
-                description: "Cannot send SOS without GPS location.",
-                variant: "destructive"
-            });
+    const start = () => {
+        if (!("geolocation" in navigator)) {
+            setMessage("Your browser cannot share your location, which is needed for an urgent alert.");
+            setPhase("error");
             return;
         }
+        setPhase("locating");
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                coords.current = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+                setSeconds(COUNTDOWN);
+                setPhase("countdown");
+            },
+            () => {
+                setMessage("Your current location is needed to post an urgent alert.");
+                setPhase("error");
+            },
+            { enableHighAccuracy: true, timeout: 15000 },
+        );
+    };
 
+    useEffect(() => {
+        if (phase !== "countdown") return;
+        if (seconds === 0) {
+            void send();
+            return;
+        }
+        const id = setTimeout(() => setSeconds((s) => s - 1), 1000);
+        return () => clearTimeout(id);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [phase, seconds]);
+
+    const send = async () => {
+        if (sending.current || !coords.current) return;
+        sending.current = true;
+        setPhase("sending");
         try {
-            await createPost({
-                title: "SOS Signal",
-                content: "EMERGENCY: I need immediate assistance at this location.",
-                category: "DANGER",
-                latitude: location.latitude,
-                longitude: location.longitude,
-                // We skip neighborhood/city for speed/reliability in emergency
-                // Backend will accept just coords
-            });
-
-            toast({
-                title: "SOS SENT",
-                description: "Emergency alert broadcasted to nearby users.",
-                className: "bg-red-600 text-white border-none"
-            });
-        } catch (error) {
-            toast({
-                title: "Failed to Send SOS",
-                description: "Please call 911 directly.",
-                variant: "destructive"
-            });
+            const post = await createPost({ title: "Urgent help needed here", content: "", category: "DANGER", ...coords.current });
+            setNotified(post?.alertSummary?.notified ?? 0);
+            setPhase("result");
+        } catch {
+            setMessage(`Your alert could not be posted. Call ${EMERGENCY_NUMBER} if you need help.`);
+            setPhase("error");
+        } finally {
+            sending.current = false;
+            coords.current = null;
         }
     };
+
+    const progress = seconds / COUNTDOWN;
 
     return (
         <>
-            <button
-                onClick={handleTrigger}
-                className="group relative flex items-center justify-center gap-2 p-2 md:px-4 md:py-2 bg-red-600/10 hover:bg-red-600/20 md:border md:border-red-600/50 text-red-500 rounded-lg transition-all font-bold uppercase tracking-wider"
-            >
-                <div className="absolute inset-0 bg-red-600/20 rounded-lg animate-ping opacity-0 group-hover:opacity-100 transition-opacity" />
-                <AlertTriangle className="h-5 w-5" />
-                <span className="hidden md:inline">SOS</span>
-            </button>
+            {variant === "icon" ? (
+                <IconButton icon={AlertCircle} label="Urgent help" className="text-danger hover:bg-danger-soft hover:text-danger" onClick={() => setPhase("info")} />
+            ) : (
+                <Button variant="destructiveTinted" icon={AlertCircle} block onClick={() => setPhase("info")}>
+                    Urgent help
+                </Button>
+            )}
 
-            <AnimatePresence>
-                {isCountingDown && (
-                    <Portal>
-                        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/95 backdrop-blur-3xl h-[100dvh] w-screen touch-none">
-                            <motion.div
-                                initial={{ scale: 0.5, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0.5, opacity: 0 }}
-                                className="flex flex-col items-center gap-8 p-4 relative w-full h-full justify-center"
-                            >
-                                <div className="text-red-500 font-black text-3xl md:text-5xl tracking-[0.2em] animate-pulse text-center">
-                                    SENDING SOS
-                                </div>
-
-                                <div className="relative flex items-center justify-center py-10">
-                                    {/* Ripple Effects */}
-                                    <div className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-20 scale-150" />
-                                    <div className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-20 scale-125 delay-75" />
-
-                                    <div className="h-48 w-48 md:h-64 md:w-64 rounded-full bg-red-600 flex items-center justify-center text-white text-8xl md:text-9xl font-black shadow-[0_0_50px_rgba(220,38,38,0.6)] z-10">
-                                        {count}
-                                    </div>
-                                </div>
-
-                                <p className="text-zinc-400 text-center max-w-sm text-lg md:text-xl px-4">
-                                    Broadcasting emergency alert to all nearby users...
-                                </p>
-
-                                <button
-                                    onClick={() => setIsCountingDown(false)}
-                                    className="flex items-center gap-3 px-12 py-5 bg-white/10 hover:bg-white/20 rounded-full text-white font-bold text-xl transition-colors border border-white/10 mt-8 active:scale-95"
-                                >
-                                    <X className="h-8 w-8" />
-                                    CANCEL
-                                </button>
-                            </motion.div>
+            <Dialog open={phase !== "closed"} onClose={close} dismissible={phase !== "sending"} title={phase === "result" ? "Alert posted" : "Urgent help request"} size="sm">
+                <div className="space-y-4">
+                    <div className="space-y-3 rounded-[16px] bg-danger-soft p-4">
+                        <div className="flex gap-2.5">
+                            <Phone className="mt-0.5 size-5 shrink-0 text-danger" aria-hidden />
+                            <div className="space-y-1">
+                                <p className="font-semibold text-danger">If anyone is in danger, call {EMERGENCY_NUMBER} now.</p>
+                                <p className="text-sm">NearNow is not an emergency service and does not contact police, ambulance or fire services.</p>
+                            </div>
                         </div>
-                    </Portal>
-                )}
-            </AnimatePresence>
+                        <a href={`tel:${EMERGENCY_NUMBER}`} className="flex h-12 w-full items-center justify-center gap-2 rounded-[14px] bg-danger text-base font-semibold text-white hover:brightness-110">
+                            <Phone className="size-[18px]" aria-hidden /> Call {EMERGENCY_NUMBER}
+                        </a>
+                    </div>
+
+                    {phase === "info" ? (
+                        <>
+                            <p className="text-sm text-muted-foreground">
+                                Posting creates an urgent alert at your exact location. It is visible to everyone on NearNow and sent only to nearby people who chose to receive urgent alerts. It expires after 2 hours, then the location is blurred.
+                            </p>
+                            <Button variant="tinted" icon={Megaphone} block onClick={start}>
+                                Post urgent alert
+                            </Button>
+                        </>
+                    ) : null}
+                    {phase === "locating" ? (
+                        <Button variant="tinted" loading block>
+                            Finding your location…
+                        </Button>
+                    ) : null}
+                    {phase === "countdown" ? (
+                        <div className="flex flex-col items-center gap-4 py-2" role="timer" aria-live="assertive" aria-label={`Posting in ${seconds}`}>
+                            <div className="relative size-32">
+                                <svg viewBox="0 0 120 120" className="size-full -rotate-90" aria-hidden>
+                                    <circle cx="60" cy="60" r="52" fill="none" strokeWidth="9" className="stroke-danger-soft" />
+                                    <circle
+                                        cx="60"
+                                        cy="60"
+                                        r="52"
+                                        fill="none"
+                                        strokeWidth="9"
+                                        strokeLinecap="round"
+                                        className="stroke-danger transition-[stroke-dashoffset] duration-1000 ease-linear"
+                                        strokeDasharray={2 * Math.PI * 52}
+                                        strokeDashoffset={2 * Math.PI * 52 * (1 - progress)}
+                                    />
+                                </svg>
+                                <span className="absolute inset-0 flex items-center justify-center text-5xl font-bold tabular-nums text-danger">{seconds}</span>
+                            </div>
+                            <p className="font-semibold">Posting in {seconds}…</p>
+                            <Button variant="tinted" size="lg" block onClick={close}>
+                                Cancel
+                            </Button>
+                        </div>
+                    ) : null}
+                    {phase === "sending" ? (
+                        <Button variant="tinted" loading block>
+                            Posting your alert…
+                        </Button>
+                    ) : null}
+                    {phase === "result" ? (
+                        <div className="space-y-3" aria-live="polite">
+                            <div className="flex gap-3">
+                                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-success-soft text-success">
+                                    <Check className="size-5" aria-hidden />
+                                </span>
+                                <p className="text-[15px]">
+                                    {notified > 0
+                                        ? `${notified} nearby people who turned on urgent alerts were notified in the app.`
+                                        : "Your alert is visible on NearNow, but nobody nearby has urgent alerts turned on right now."}
+                                </p>
+                            </div>
+                            <p className={cn("font-semibold text-danger")}>Nobody has been dispatched. Call {EMERGENCY_NUMBER} if you need help.</p>
+                            <Button variant="plain" block onClick={close}>
+                                Close
+                            </Button>
+                        </div>
+                    ) : null}
+                    {phase === "error" ? (
+                        <div className="space-y-3">
+                            <Banner tone="danger" message={message} />
+                            <Button variant="tinted" block onClick={start}>
+                                Try again
+                            </Button>
+                        </div>
+                    ) : null}
+                </div>
+            </Dialog>
         </>
     );
 }

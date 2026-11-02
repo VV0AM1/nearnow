@@ -1,26 +1,50 @@
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState, ReactNode } from "react";
 
-interface Location {
+export interface Location {
     lat: number;
     long: number;
+    label?: string;
 }
 
 interface DashboardContextType {
-    location: Location;
+    /** The area the user chose (city or their location). null until they choose — never a silent default. */
+    location: Location | null;
     setLocation: (loc: Location) => void;
     searchQuery: string;
     setSearchQuery: (query: string) => void;
-    // We can add radius/filters here later if we want them global
 }
 
+const STORAGE_KEY = "userLocation";
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
 
+const isLocation = (v: unknown): v is Location => {
+    const l = v as Location;
+    return !!l && typeof l.lat === "number" && typeof l.long === "number" && Math.abs(l.lat) <= 90 && Math.abs(l.long) <= 180;
+};
+
 export function DashboardProvider({ children }: { children: ReactNode }) {
-    // Default to San Francisco or user's last known location
-    const [location, setLocation] = useState<Location>({ lat: 37.7749, long: -122.4194 });
+    const [location, setLocationState] = useState<Location | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
+
+    useEffect(() => {
+        try {
+            const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+            if (isLocation(parsed)) setLocationState(parsed);
+        } catch {
+            // ignore malformed cache
+        }
+    }, []);
+
+    const setLocation = useCallback((loc: Location) => {
+        setLocationState(loc);
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(loc));
+        } catch {
+            // storage unavailable: keep in memory
+        }
+    }, []);
 
     return (
         <DashboardContext.Provider value={{ location, setLocation, searchQuery, setSearchQuery }}>

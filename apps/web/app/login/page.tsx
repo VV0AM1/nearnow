@@ -7,9 +7,9 @@ export default function LoginPage() {
     return (
         <AuthLayout
             title="Welcome back"
-            subtitle="Login to connect with your neighborhood"
-            footerText="Don't have an account?"
-            footerLinkText="Sign up"
+            subtitle="Sign in to see what is happening around you."
+            footerText="New to NearNow?"
+            footerLinkText="Create an account"
             footerLinkHref="/signup"
         >
             <LoginForm />

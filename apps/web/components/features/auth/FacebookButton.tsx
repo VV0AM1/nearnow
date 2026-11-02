@@ -62,11 +62,11 @@ export default function FacebookButton() {
     }
 
     return (
-        <div className="w-full flex flex-col items-center gap-2 mt-2">
+        <div className="flex w-full flex-col items-center gap-2">
             <button
                 type="button"
                 onClick={handleLogin}
-                className="w-full flex items-center justify-center gap-2 bg-[#1877F2] hover:bg-[#1864cc] text-white h-10 rounded-full text-sm font-medium transition-colors"
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[#1877F2] text-[15px] font-semibold text-white transition-colors hover:bg-[#1864cc]"
             >
                 <Facebook className="h-5 w-5 fill-white" />
                 Continue with Facebook

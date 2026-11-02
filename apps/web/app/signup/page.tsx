@@ -6,10 +6,10 @@ import AuthLayout from "../../components/features/auth/AuthLayout";
 export default function SignupPage() {
     return (
         <AuthLayout
-            title="Create an account"
-            subtitle="Join your local community today"
+            title="Join NearNow"
+            subtitle="Free. Follow your area and help your neighbours."
             footerText="Already have an account?"
-            footerLinkText="Log in"
+            footerLinkText="Sign in"
             footerLinkHref="/login"
         >
             <SignupForm />

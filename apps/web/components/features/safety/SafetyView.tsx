@@ -1,210 +1,154 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { API_URL } from "@/lib/config";
-import { useGeoLocation } from "@/hooks/useGeoLocation";
-import { RankingCard } from "@/components/features/safety/RankingCard";
-import { SafetyLeaderboard } from "@/components/features/safety/SafetyLeaderboard";
-import { SafetyAnalytics } from "@/components/features/safety/SafetyAnalytics";
-import { Shield, Activity, Target } from "lucide-react";
+import { useEffect, useState } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { Info, Phone } from "lucide-react";
+import { apiFetch } from "@/lib/api";
+import { useDashboard } from "@/context/DashboardContext";
+import { AreaChooser } from "@/components/shell/AreaChooser";
+import { getCategory } from "@/config/categories";
+import { Banner, Card, PageHeader, Segmented, Skeleton } from "@/components/nn";
 
+interface AreaActivity {
+    windowDays: number;
+    radiusKm: number;
+    totalReports: number;
+    areas: { id: string | null; name: string; city: string | null; reports: number; resolved: number; byCategory: Record<string, number>; lastReportAt: string | null }[];
+    method: string;
+    disclaimer: string;
+}
+
+/**
+ * Recent community posts per neighbourhood. Counts, recency, method and
+ * limitations — never a "safest / most dangerous" ranking.
+ */
 export default function SafetyView() {
-    const { location } = useGeoLocation();
-    const [data, setData] = useState<{ topSafe: any[], topDangerous: any[], ranking: any[] }>({ topSafe: [], topDangerous: [], ranking: [] });
-    const [radius, setRadius] = useState(5);
-    const [loading, setLoading] = useState(true);
+    const { location } = useDashboard();
+    const [days, setDays] = useState<"1" | "7" | "30">("7");
+    const [radius, setRadius] = useState<"2" | "5" | "10" | "25">("5");
+    const [data, setData] = useState<AreaActivity | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!location.latitude || !location.longitude) return;
+        if (!location) return;
+        setData(null);
+        setError(null);
+        apiFetch<AreaActivity>(`/neighborhoods/activity?latitude=${location.lat}&longitude=${location.long}&radius=${radius}&days=${days}`)
+            .then(setData)
+            .catch((e: Error) => setError(e.message));
+    }, [location, radius, days]);
 
-        setLoading(true);
-        fetch(`${API_URL}/neighborhoods/rankings?lat=${location.latitude}&lng=${location.longitude}&radius=${radius}`)
-            .then(res => res.json())
-            .then(resData => {
-                if (resData && typeof resData === 'object') {
-                    // Map backend fields to frontend component expectations
-                    const mapItem = (item: any) => {
-                        const safety = item.safetyCount || 0;
-                        const crime = item.crimeCount || 0;
-                        let netScore = safety - crime;
-                        if (netScore < 0) netScore = 0;
+    if (!location) {
+        return (
+            <div className="mx-auto max-w-lg">
+                <PageHeader title="Area overview" className="mb-6" />
+                <Card>
+                    <AreaChooser />
+                </Card>
+            </div>
+        );
+    }
 
-                        return {
-                            ...item,
-                            alerts: item.totalCount,
-                            score: netScore,
-                            safetyCount: safety,
-                            crimeCount: crime,
-                            trend: netScore >= 5 ? 'up' : 'stable'
-                        };
-                    };
-
-                    const mappedRanking = (resData.ranking || []).map(mapItem);
-
-                    // 1. Top Safest Zones
-                    const topSafe = [...mappedRanking]
-                        .sort((a, b) => b.safetyCount - a.safetyCount)
-                        .slice(0, 3);
-
-                    // 2. High Attention Zones
-                    const topDangerous = [...mappedRanking]
-                        .sort((a, b) => b.crimeCount - a.crimeCount)
-                        .slice(0, 3);
-
-                    // 3. Main Ranking Table
-                    const sortedRanking = [...mappedRanking].sort((a, b) => {
-                        if (b.score !== a.score) {
-                            return b.score - a.score;
-                        }
-                        return (b.alerts || 0) - (a.alerts || 0);
-                    });
-
-                    setData({
-                        topSafe: topSafe,
-                        topDangerous: topDangerous,
-                        ranking: sortedRanking
-                    });
-                } else {
-                    console.error("API Error or Invalid Format:", resData);
-                }
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error(err);
-                setLoading(false);
-            });
-    }, [location.latitude, location.longitude, radius]);
+    const max = Math.max(1, ...(data?.areas.map((a) => a.reports) ?? [1]));
 
     return (
-        <div className="flex flex-col min-h-screen lg:h-full w-full pt-20 bg-background">
-            {/* Fixed Header */}
-            <div className="flex-none p-4 sm:p-6 border-b border-white/5 bg-background/50 backdrop-blur-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 z-10">
-                <div>
-                    <h1 className="text-2xl font-black bg-gradient-to-r from-emerald-400 via-blue-500 to-purple-500 bg-clip-text text-transparent flex items-center gap-3">
-                        <Target className="h-6 w-6 text-blue-500" />
-                        Safety Command Center
-                    </h1>
-                    <p className="text-zinc-400 text-xs mt-1">Real-time situational awareness • <span className="text-white font-mono">LIVE</span></p>
-                </div>
+        <div className="mx-auto max-w-3xl space-y-6">
+            <PageHeader title="Area overview" subtitle={`What neighbours posted around ${location.label ?? "your chosen area"}.`} />
 
-                {/* Compact Radius Control */}
-                <div className="flex items-center justify-between w-full sm:w-auto gap-4 bg-secondary/10 px-4 py-2 rounded-lg border border-white/5">
-                    <span className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Scope</span>
-                    <input
-                        type="range"
-                        min="1"
-                        max="50"
-                        step="1"
-                        value={radius}
-                        onChange={(e) => setRadius(parseInt(e.target.value))}
-                        className="flex-1 sm:w-32 h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-500 hover:accent-blue-400 transition-all"
-                    />
-                    <span className="text-sm font-bold text-white min-w-[3rem] text-right">{radius} km</span>
-                </div>
+            <div className="flex flex-wrap gap-2">
+                <Segmented
+                    label="Period"
+                    value={days}
+                    onChange={setDays}
+                    options={[
+                        { value: "1", label: "24 h" },
+                        { value: "7", label: "7 days" },
+                        { value: "30", label: "30 days" },
+                    ]}
+                />
+                <Segmented
+                    label="Distance"
+                    value={radius}
+                    onChange={setRadius}
+                    options={(["2", "5", "10", "25"] as const).map((r) => ({ value: r, label: `${r} km` }))}
+                />
             </div>
 
-            {/* Main Content Grid - Window Scroll on Mobile, Internal on Desktop */}
-            <div className="flex-1 lg:overflow-hidden grid grid-cols-1 lg:grid-cols-12 gap-0 relative">
+            {error ? (
+                <Banner tone="warning" message={error} />
+            ) : !data ? (
+                <div className="space-y-3">
+                    <Skeleton className="h-24 w-full rounded-[20px]" />
+                    <Skeleton className="h-20 w-full rounded-[20px]" />
+                    <Skeleton className="h-20 w-full rounded-[20px]" />
+                </div>
+            ) : (
+                <>
+                    <Card className="flex items-end justify-between gap-4">
+                        <div>
+                            <p className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">Posts</p>
+                            <p className="mt-1 text-[40px] font-bold leading-none tabular-nums">{data.totalReports}</p>
+                        </div>
+                        <p className="text-right text-[13px] text-muted-foreground">
+                            last {data.windowDays} {data.windowDays === 1 ? "day" : "days"}
+                            <br />
+                            within {data.radiusKm} km
+                        </p>
+                    </Card>
 
-                {/* Left Panel: Rankings (Scrollable) */}
-                <div className="lg:col-span-8 lg:h-full lg:overflow-y-auto custom-scrollbar p-6 bg-gradient-to-b from-transparent to-black/20">
-                    {loading ? (
-                        <div className="h-full flex flex-col items-center justify-center text-zinc-500 animate-pulse gap-4">
-                            <Activity className="h-8 w-8 animate-spin" />
-                            <p>Scanning area security...</p>
-                        </div>
-                    ) : data.ranking.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center text-zinc-500">
-                            <Shield className="h-12 w-12 mb-4 opacity-20" />
-                            No neighborhoods found nearby. Try increasing the radius.
-                        </div>
+                    {data.areas.length === 0 ? (
+                        <Card>
+                            <p className="text-center text-[15px] text-muted-foreground">No posts in this period.</p>
+                        </Card>
                     ) : (
-                        <div className="space-y-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                                    <Shield className="h-4 w-4 text-emerald-500" />
-                                    Regional Safety Index
-                                </h2>
-                                <span className="text-xs px-2 py-1 rounded bg-white/5 text-muted-foreground">{data.ranking.length} Zones Active</span>
-                            </div>
-
-                            <SafetyLeaderboard data={data.ranking} />
-
-                            <div className="mt-8">
-                                <SafetyAnalytics
-                                    score={data.ranking.reduce((acc, item) => acc + (item.score || 0), 0)}
-                                    totalAlerts={data.ranking.reduce((acc, item) => acc + (item.alerts || 0), 0)}
-                                    crimeCount={data.ranking.reduce((acc, item) => acc + (item.crimeCount || 0), 0)}
-                                    trend={data.ranking.length > 0 && data.ranking[0].score < 0 ? 'down' : 'up'}
-                                />
-                            </div>
-                        </div>
+                        <ul className="space-y-3">
+                            {data.areas.map((a) => (
+                                <li key={a.id ?? a.name}>
+                                    <Card className="space-y-3">
+                                        <div className="flex items-baseline justify-between gap-3">
+                                            <p className="text-[17px] font-semibold">
+                                                {a.name}
+                                                {a.city ? <span className="font-normal text-muted-foreground"> · {a.city}</span> : null}
+                                            </p>
+                                            <span className="text-[15px] font-semibold tabular-nums">{a.reports}</span>
+                                        </div>
+                                        <div className="h-1.5 overflow-hidden rounded-full bg-surface-2" aria-hidden>
+                                            <div className="h-full rounded-full bg-primary" style={{ width: `${(a.reports / max) * 100}%` }} />
+                                        </div>
+                                        <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                                            {Object.entries(a.byCategory).map(([c, n]) => {
+                                                const cat = getCategory(c);
+                                                return (
+                                                    <span key={c} className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground">
+                                                        <cat.icon className="size-3.5" style={{ color: cat.hex }} aria-hidden />
+                                                        {cat.label} <span className="font-semibold text-foreground">{n}</span>
+                                                    </span>
+                                                );
+                                            })}
+                                        </div>
+                                        <p className="text-xs text-subtle">
+                                            {a.lastReportAt ? `Latest ${formatDistanceToNow(new Date(a.lastReportAt), { addSuffix: true })}` : ""}
+                                            {a.resolved ? ` · ${a.resolved} resolved` : ""}
+                                        </p>
+                                    </Card>
+                                </li>
+                            ))}
+                        </ul>
                     )}
-                </div>
 
-                {/* Right Panel: Highlights & Alerts (Scrollable) */}
-                <div className="lg:col-span-4 lg:h-full lg:overflow-y-auto custom-scrollbar border-l border-white/5 bg-secondary/5 p-6 space-y-8 backdrop-blur-sm">
-
-                    {/* Top Safe Section */}
-                    <div>
-                        <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-500 mb-4 flex items-center gap-2">
-                            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                            Safest Zones
-                        </h3>
-                        <div className="space-y-3">
-                            {data.topSafe.map((hood, i) => (
-                                <div key={hood.id} className="transform transition-all duration-300 hover:scale-[1.02] hover:-translate-x-1">
-                                    <RankingCard neighborhood={hood} rank={i + 1} type="safe" />
-                                </div>
-                            ))}
-                            {data.topSafe.length === 0 && <div className="text-xs text-muted-foreground italic">No data available</div>}
-                        </div>
-                    </div>
-
-                    <div className="h-px bg-white/5 w-full"></div>
-
-                    {/* Top Dangerous Section */}
-                    <div>
-                        <h3 className="text-xs font-bold uppercase tracking-wider text-red-500 mb-4 flex items-center gap-2">
-                            <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
-                            High Alert Zones
-                        </h3>
-                        <div className="space-y-3">
-                            {data.topDangerous.map((hood, i) => (
-                                <div key={hood.id} className="transform transition-all duration-300 hover:scale-[1.02] hover:-translate-x-1">
-                                    <RankingCard neighborhood={hood} rank={i + 1} type="danger" />
-                                </div>
-                            ))}
-                            {data.topDangerous.length === 0 && <div className="text-xs text-muted-foreground italic">No data available</div>}
-                        </div>
-                    </div>
-
-                    <div className="h-px bg-white/5 w-full"></div>
-
-                    {/* System Status / Decor */}
-                    <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-white/5">
-                        <div className="flex items-center gap-3 mb-2">
-                            <Activity className="h-5 w-5 text-blue-400" />
-                            <span className="text-sm font-bold text-white">System Diagnostics</span>
-                        </div>
-                        <div className="space-y-2">
-                            <div className="flex justify-between text-xs">
-                                <span className="text-muted-foreground">Data Stream</span>
-                                <span className="text-emerald-400">Stable</span>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                                <span className="text-muted-foreground">Region Coverage</span>
-                                <span className="text-blue-400">98.5%</span>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                                <span className="text-muted-foreground">Update Rate</span>
-                                <span className="text-purple-400">Real-time</span>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
+                    <Card className="space-y-3 text-sm">
+                        <p className="flex items-start gap-2.5">
+                            <Info className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden /> {data.disclaimer}
+                        </p>
+                        <p className="text-muted-foreground">
+                            <span className="font-semibold text-foreground">How this is counted:</span> {data.method}
+                        </p>
+                        <a href="tel:112" className="inline-flex items-center gap-2 font-semibold text-danger">
+                            <Phone className="size-4" aria-hidden /> Call 112 in an emergency
+                        </a>
+                    </Card>
+                </>
+            )}
         </div>
     );
 }

@@ -3,6 +3,8 @@ module.exports = {
     // NOTE: Update this to include the paths to all of your component files.
     content: ["./app/**/*.{js,jsx,ts,tsx}", "./components/**/*.{js,jsx,ts,tsx}"],
     presets: [require("nativewind/preset")],
+    // ThemeContext sets light/dark manually (Appearance setting), which on web requires class mode.
+    darkMode: "class",
     theme: {
         extend: {},
     },

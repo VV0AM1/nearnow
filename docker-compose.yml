@@ -1,25 +1,39 @@
+# Local development services only. Credentials come from a local, untracked `.env`
+# file next to this compose file (see `.env.example`). Never commit real values.
 services:
   postgres:
     image: postgres:16-alpine
     container_name: nearnow_postgres
-    restart: always
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: nearnow_admin
-      POSTGRES_PASSWORD: Ilya2006.
-      POSTGRES_DB: nearnow_db
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-nearnow_db}
     ports:
-      - "5433:5433"
+      # Host port 5433 -> PostgreSQL's default container port 5432.
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
   redis:
     image: redis:7-alpine
     container_name: nearnow_redis
-    restart: always
+    restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
+
+  # S3-compatible mock for testing STORAGE_PROVIDER=s3 locally and in the e2e suite
+  # (production uses Cloudflare R2 or AWS S3). Accepts any credentials; data is not persisted.
+  s3mock:
+    image: adobe/s3mock@sha256:ab01a6946750f451ca215a47e91030695b260e4003b8a5a6201d25029b8fca92
+    container_name: nearnow_s3mock
+    restart: unless-stopped
+    environment:
+      COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS: nearnow-dev
+    ports:
+      - "127.0.0.1:9090:9090"
 
 volumes:
   postgres_data:

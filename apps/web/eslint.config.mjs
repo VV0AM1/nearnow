@@ -10,6 +10,10 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
+  {
+    // Generated output (Next build, PWA service worker) is not source code.
+    ignores: [".next/**", "out/**", "public/sw.js", "public/workbox-*.js", "public/swe-worker-*.js", "next-env.d.ts"],
+  },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
     rules: {

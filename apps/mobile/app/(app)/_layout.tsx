@@ -1,169 +1,56 @@
-import { Tabs } from 'expo-router';
+import { Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '@/context/ThemeContext';
-import { View, TouchableOpacity, Platform } from 'react-native';
-import { SOSButton } from '@/components/SOSButton';
-import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
-import * as Haptics from 'expo-haptics';
-import '@/services/location-task';
+import { Icon, Label, NativeTabs, VectorIcon } from 'expo-router/unstable-native-tabs';
+import type { SFSymbol } from 'expo-symbols';
+import { useI18n } from '@/lib/i18n';
+import { useTokens, type IoniconName } from '@/design';
 
-function CreateTabBarButton({ children, onPress }: { children: React.ReactNode, onPress?: (e: any) => void }) {
-    return (
-        <TouchableOpacity
-            style={{
-                top: -20,
-                justifyContent: 'center',
-                alignItems: 'center',
-            }}
-            onPress={(e) => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                onPress?.(e);
-            }}
-        >
-            <LinearGradient
-                colors={['#2563eb', '#06b6d4']}
-                style={{
-                    width: 60,
-                    height: 60,
-                    borderRadius: 30,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    shadowColor: '#f43f5e',
-                    shadowOffset: { width: 0, height: 8 },
-                    shadowOpacity: 0.4,
-                    shadowRadius: 10,
-                    elevation: 10,
-                    borderWidth: 4,
-                    borderColor: '#000', // Match bg color usually, slightly hardcoded but effective
-                }}
-            >
-                {children}
-            </LinearGradient>
-        </TouchableOpacity>
-    );
+/**
+ * SF Symbol on iOS, Ionicons drawn into the Material navigation bar on Android.
+ * A plain function, not a component: NativeTabs reads `<Icon>` children by type.
+ */
+function tabIcon(sf: SFSymbol, sfSelected: SFSymbol, android: IoniconName) {
+  return <Icon sf={{ default: sf, selected: sfSelected }} androidSrc={<VectorIcon family={Ionicons} name={android} />} />;
 }
 
-export default function AppLayout() {
-    const { activeTheme } = useTheme();
+/**
+ * System tab bar (UITabBarController / Material bottom navigation). On iOS 26 it
+ * picks up Liquid Glass and minimises while scrolling without extra code.
+ */
+export default function AppTabs() {
+  const { t } = useI18n();
+  const tokens = useTokens();
 
-    return (
-        <Tabs
-            screenOptions={{
-                headerShown: true,
-                headerTransparent: true,
-                headerBackground: () => (
-                    <BlurView
-                        tint={activeTheme === 'dark' ? 'dark' : 'light'}
-                        intensity={80}
-                        style={{ flex: 1 }}
-                    />
-                ),
-                headerTitleStyle: {
-                    color: activeTheme === 'dark' ? '#fff' : '#000',
-                    fontSize: 18,
-                    fontWeight: 'bold',
-                },
-                tabBarShowLabel: false,
-                tabBarStyle: {
-                    position: 'absolute',
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    elevation: 0,
-                    borderTopWidth: 0,
-                    height: Platform.OS === 'ios' ? 85 : 65,
-                    backgroundColor: 'transparent',
-                },
-                tabBarBackground: () => (
-                    <BlurView
-                        tint={activeTheme === 'dark' ? 'dark' : 'light'}
-                        intensity={95}
-                        style={{ flex: 1, backgroundColor: activeTheme === 'dark' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}
-                    />
-                ),
-                tabBarActiveTintColor: '#3b82f6',
-                tabBarInactiveTintColor: '#6b7280',
-                headerRight: () => (
-                    <View className="mr-4">
-                        <SOSButton />
-                    </View>
-                ),
-            }}
-        >
-            <Tabs.Screen
-                name="home"
-                options={{
-                    title: 'Feed',
-                    tabBarIcon: ({ color, focused }) => (
-                        <Ionicons name={focused ? "home" : "home-outline"} size={26} color={color} />
-                    ),
-                }}
-            />
-            <Tabs.Screen
-                name="map"
-                options={{
-                    title: 'Map',
-                    headerShown: false,
-                    tabBarIcon: ({ color, focused }) => (
-                        <Ionicons name={focused ? "map" : "map-outline"} size={26} color={color} />
-                    ),
-                }}
-            />
-
-            <Tabs.Screen
-                name="create"
-                options={{
-                    title: '',
-                    tabBarIcon: ({ focused }) => (
-                        <Ionicons name="add" size={32} color="#fff" />
-                    ),
-                    tabBarButton: (props) => (
-                        <CreateTabBarButton {...props} />
-                    ),
-                    headerShown: false,
-                    // Hide tab bar when creating a post (optional, user might want it visible but standard is hide)
-                    // But if we want the FAB to be the launcher, it stays in the bar.
-                    // The 'create' route might be a modal, but standard screen is fine.
-                }}
-            />
-
-            <Tabs.Screen
-                name="safety"
-                options={{
-                    title: 'Safety',
-                    headerShown: false,
-                    tabBarIcon: ({ color, focused }) => (
-                        <Ionicons name={focused ? "shield-checkmark" : "shield-checkmark-outline"} size={26} color={color} />
-                    ),
-                }}
-            />
-            <Tabs.Screen
-                name="profile"
-                options={{
-                    title: 'Profile',
-                    headerShown: false,
-                    tabBarIcon: ({ color, focused }) => (
-                        <Ionicons name={focused ? "person" : "person-outline"} size={26} color={color} />
-                    ),
-                }}
-            />
-
-            {/* Hidden Routes */}
-            <Tabs.Screen
-                name="saved"
-                options={{
-                    href: null,
-                }}
-            />
-            <Tabs.Screen
-                name="post/[id]"
-                options={{
-                    href: null,
-                    headerShown: false,
-                    tabBarStyle: { display: 'none' }, // Hide tabs on details
-                }}
-            />
-        </Tabs>
-    );
+  return (
+    <NativeTabs
+      tintColor={tokens.colors.accent}
+      iconColor={tokens.colors.labelSecondary}
+      // iOS keeps the system material (Liquid Glass on iOS 26); Android gets a solid bar.
+      backgroundColor={Platform.OS === 'android' ? tokens.colors.surface : undefined}
+      indicatorColor={tokens.colors.accentSoft}
+      labelVisibilityMode="labeled"
+      minimizeBehavior="onScrollDown"
+    >
+      <NativeTabs.Trigger name="home">
+        <Label>{t('tabs.feed')}</Label>
+        {tabIcon('newspaper', 'newspaper.fill', 'newspaper-outline')}
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="map">
+        <Label>{t('tabs.map')}</Label>
+        {tabIcon('map', 'map.fill', 'map-outline')}
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="create">
+        <Label>{t('tabs.post')}</Label>
+        {tabIcon('plus.circle', 'plus.circle.fill', 'add-circle-outline')}
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="lost-found">
+        <Label>{t('tabs.lostFound')}</Label>
+        {tabIcon('magnifyingglass.circle', 'magnifyingglass.circle.fill', 'search-circle-outline')}
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="profile">
+        <Label>{t('tabs.profile')}</Label>
+        {tabIcon('person.crop.circle', 'person.crop.circle.fill', 'person-circle-outline')}
+      </NativeTabs.Trigger>
+    </NativeTabs>
+  );
 }

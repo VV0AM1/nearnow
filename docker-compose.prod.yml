@@ -5,11 +5,10 @@ services:
     container_name: nearnow_postgres
     restart: always
     environment:
-      POSTGRES_USER: nearnow_admin
-      POSTGRES_PASSWORD: Ilya2006
-      POSTGRES_DB: nearnow_db
-    ports:
-      - "5432:5432" # In prod, map only to localhost if possible, or use firewall
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-nearnow_db}
+    # Not published on the host: only containers on this network reach the database.
     volumes:
       - postgres_data_prod:/var/lib/postgresql/data
 
@@ -31,13 +30,15 @@ services:
     volumes:
       - uploads_data_prod:/app/uploads # Persist uploads (Matches Dockerfile WORKDIR /app)
     environment:
-      DATABASE_URL: postgresql://nearnow_admin:Ilya2006@postgres:5432/nearnow_db?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-nearnow_db}?schema=public
       REDIS_URL: redis://redis:6379
       PORT: 3002
-      # Add other ENV vars here (JWT_SECRET, etc)
-      GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      JWT_SECRET: ${JWT_SECRET}
+      NODE_ENV: production
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      CORS_ORIGINS: ${CORS_ORIGINS:?set CORS_ORIGINS in .env}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
+      UPLOAD_DIR: /app/uploads
       EMAIL_USER: ${EMAIL_USER}
       EMAIL_PASS: ${EMAIL_PASS}
     depends_on:

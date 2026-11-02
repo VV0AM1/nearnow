@@ -1,75 +1,43 @@
-import { useState, useCallback } from "react";
-import { API_URL } from "../lib/config";
+import { useCallback, useState } from "react";
+import { apiFetch } from "../lib/api";
 import { getToken } from "../lib/auth";
 
+/** Mirrors the API: authors are public profiles (id, name, avatar) — never an email. */
 export interface Comment {
     id: string;
     content: string;
     createdAt: string;
-    author: {
-        id: string;
-        email: string;
-    };
+    author: { id: string; name: string | null; avatar?: string | null } | null;
 }
 
 export function useComments(postId: string) {
     const [comments, setComments] = useState<Comment[]>([]);
-    // Initialize loading to true ONLY if we don't have initial data (or if we plan to fetch immediately)
-    // Actually, CommentSection sets initial data via setComments.
-    // Better pattern: Let the component drive the fetch if needed.
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const fetchComments = useCallback(async () => {
         setLoading(true);
+        setError(null);
         try {
-            const res = await fetch(`${API_URL}/comments/${postId}`);
-            if (res.ok) {
-                const data = await res.json();
-                setComments(data);
-            } else {
-                setError("Failed to load comments");
-            }
-        } catch (err) {
-            console.error("Failed to fetch comments", err);
-            setError("Failed to load comments");
+            setComments(await apiFetch<Comment[]>(`/comments/${postId}`));
+        } catch {
+            setError("Comments could not be loaded.");
         } finally {
             setLoading(false);
         }
     }, [postId]);
 
-    const createComment = async (content: string) => {
-        const token = getToken();
-        if (!token) {
-            alert("Please login to comment");
-            return false;
-        }
-
+    /** Returns null on success, or a message to show. */
+    const createComment = async (content: string): Promise<string | null> => {
+        if (!getToken()) return "Sign in to comment.";
         setSubmitting(true);
         try {
-            const res = await fetch(`${API_URL}/comments`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    content,
-                    postId
-                })
-            });
-
-            if (res.ok) {
-                await fetchComments(); // Refresh list
-                return true;
-            } else {
-                alert("Failed to post comment");
-                return false;
-            }
-        } catch (err) {
-            console.error(err);
-            return false;
+            const created = await apiFetch<Comment>("/comments", { method: "POST", json: { content, postId } });
+            setComments((prev) => [...prev, created]);
+            return null;
+        } catch (e) {
+            return e instanceof Error ? e.message : "Your comment was not posted.";
         } finally {
             setSubmitting(false);
         }

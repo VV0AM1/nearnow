@@ -1,35 +1,39 @@
 "use client";
 
-import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
-import { useAuth } from '../../../hooks/useAuth';
+import { useEffect, useRef, useState } from "react";
+import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
+import { useAuth } from "../../../hooks/useAuth";
+import { useTheme } from "@/context/ThemeContext";
 
+/** Google sign-in sized to its container; hidden when no client id is configured. */
 export default function GoogleButton() {
     const { googleLogin, error } = useAuth();
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+    const { resolved } = useTheme();
+    const box = useRef<HTMLDivElement>(null);
+    const [width, setWidth] = useState(320);
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
-    if (!clientId) {
-        return <div className="text-destructive text-xs">Missing Google Client ID</div>;
-    }
+    useEffect(() => {
+        // Google's button takes a fixed pixel width (max 400).
+        const w = box.current?.clientWidth;
+        if (w) setWidth(Math.min(400, Math.floor(w)));
+    }, []);
 
+    if (!clientId) return null;
     return (
-        <div className="w-full flex flex-col items-center gap-2">
+        <div ref={box} className="flex w-full flex-col items-center gap-2">
             <GoogleOAuthProvider clientId={clientId}>
                 <GoogleLogin
-                    onSuccess={credentialResponse => {
-                        if (credentialResponse.credential) {
-                            googleLogin(credentialResponse.credential);
-                        }
-                    }}
-                    onError={() => {
-                        console.log('Login Failed');
-                    }}
-                    useOneTap
-                    theme="filled_black"
+                    key={`${resolved}-${width}`}
+                    onSuccess={(res) => res.credential && googleLogin(res.credential)}
+                    theme={resolved === "dark" ? "filled_black" : "outline"}
                     shape="pill"
-                    width="100%"
+                    size="large"
+                    text="continue_with"
+                    width={String(width)}
                 />
             </GoogleOAuthProvider>
-            {error && <p className="text-xs text-destructive">{error}</p>}
+            {error ? <p className="text-[13px] text-danger">{error}</p> : null}
         </div>
     );
 }

@@ -1,197 +1,131 @@
-import { API_URL } from "../services/api";
-import api from "../services/api";
-import { useState, useEffect } from "react";
-import { View, Text, Image, TouchableOpacity, Share } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { formatDistanceToNow } from "date-fns";
-import { Link, useRouter } from "expo-router";
-import { useAuth } from "@/context/AuthContext";
-import { GlassView } from "./GlassView"; // New Premium Component
-import { useToast } from "@/context/ToastContext"; // Custom Toasts
-import { LinearGradient } from "expo-linear-gradient";
+import React, { memo, useState } from 'react';
+import { Platform, Pressable, View } from 'react-native';
+import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
+import { useI18n } from '@/lib/i18n';
+import { mediaUrl } from '@/lib/config';
+import { formatKm } from '@/lib/format';
+import type { Post } from '@/lib/types';
+import { usePostActions } from '@/hooks/usePostActions';
+import { ITEM_TYPE_ICON } from '@/constants/categories';
+import { Card, Icon, PressableScale, Skeleton, Text, continuous, useTokens, type IoniconName } from '@/design';
+import { CategoryBadge, TrustLine } from './PostStatus';
+import { ReportSheet } from './ReportSheet';
 
-export function FeedPost({ item }: { item: any }) {
-    const { user } = useAuth();
-    const router = useRouter();
-    const { showToast } = useToast(); // Use Toast
+function Action({ icon, label, text, onPress, active, color }: { icon: IoniconName; label: string; text?: string; onPress: () => void; active?: boolean; color?: string }) {
+  const t = useTokens();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={text ? `${label}, ${text}` : label}
+      accessibilityState={{ selected: !!active }}
+      onPress={onPress}
+      hitSlop={4}
+      style={{ minWidth: t.minTouch, minHeight: t.minTouch, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 6 }}
+    >
+      <Icon name={icon} size={20} color={active ? (color ?? t.colors.accent) : t.colors.labelSecondary} />
+      {text ? (
+        <Text variant="subheadline" weight="600" tone="secondary">
+          {text}
+        </Text>
+      ) : null}
+    </Pressable>
+  );
+}
 
-    const [votes, setVotes] = useState(item.likes || 0);
-    const [liked, setLiked] = useState(false);
-    const [isSaved, setIsSaved] = useState(false);
+function FeedPostInner({ item }: { item: Post }) {
+  const { t } = useI18n();
+  const tokens = useTokens();
+  const router = useRouter();
+  const { liked, likes, saved, toggleLike, toggleSave, share } = usePostActions(item);
+  const [reporting, setReporting] = useState(false);
+  const image = mediaUrl(item.imageUrl);
+  const inactive = item.status !== 'ACTIVE';
+  const open = () => router.push({ pathname: '/post/[id]', params: { id: item.id } });
 
-    // Initial Check
-    useEffect(() => {
-        if (user) {
-            // Check Vote
-            api.get(`/posts/${item.id}/vote/check`)
-                .then(res => {
-                    if (res.data.hasVoted && res.data.type === 'UP') {
-                        setLiked(true);
-                    }
-                })
-                .catch(err => console.log("Vote check failed", err));
+  const place = [item.neighborhood?.name, item.distanceKm !== undefined ? t('post.distance', { km: formatKm(item.distanceKm) }) : null]
+    .filter(Boolean)
+    .join(' · ');
 
-            // Check Saved
-            api.get(`/users/me/saved/${item.id}/check`)
-                .then(res => setIsSaved(res.data.isSaved))
-                .catch(err => console.log("Save check failed", err));
-        }
-    }, [user, item.id]);
-
-    // Fix Image URL
-    const ROOT_URL = API_URL.replace('/api', '');
-    const imageUrl = item.imageUrl
-        ? (item.imageUrl.startsWith('http') ? item.imageUrl : `${ROOT_URL}${item.imageUrl}`)
-        : null;
-
-    const handleVote = async () => {
-        try {
-            const newLikedState = !liked;
-            setLiked(newLikedState);
-            setVotes((prev: number) => {
-                const newVal = newLikedState ? prev + 1 : prev - 1;
-                return Math.max(0, newVal);
-            });
-
-            await api.post(`/posts/${item.id}/vote`, {
-                type: 'UP'
-            });
-        } catch (e) {
-            console.error(e);
-            // Revert
-            setLiked(!liked);
-            setVotes((prev: number) => liked ? prev + 1 : prev - 1);
-            showToast("Failed to vote", "error");
-        }
-    };
-
-    const handleShare = async () => {
-        try {
-            await Share.share({
-                message: `Check out this post on Nearnow: ${item.title}`,
-                url: `https://nearnow.app/post/${item.id}`,
-            });
-        } catch (error) {
-            console.log(error);
-        }
-    };
-
-    const handleSave = async () => {
-        try {
-            const newState = !isSaved;
-            setIsSaved(newState);
-            await api.post(`/users/me/saved/${item.id}`);
-            if (newState) showToast("Post Saved!", "success");
-        } catch (error) {
-            console.error("Save failed", error);
-            setIsSaved(!isSaved); // Revert
-            showToast("Failed to save", "error");
-        }
-    };
-
-    const handleMapPress = () => {
-        if (item.latitude && item.longitude) {
-            router.push({
-                pathname: '/(app)/map',
-                params: {
-                    latitude: item.latitude,
-                    longitude: item.longitude,
-                    highlightPostId: item.id
-                }
-            } as any);
-        } else {
-            showToast("No location data", "info");
-        }
-    };
-
-
-    return (
-        <GlassView style={{ marginBottom: 16, marginHorizontal: 16, borderRadius: 16 }}>
-            <View style={{ padding: 16 }}>
-                {/* Header */}
-                <View className="flex-row items-center mb-3">
-                    <View className="bg-blue-100 dark:bg-blue-900/40 h-10 w-10 rounded-full items-center justify-center border border-blue-200 dark:border-blue-800">
-                        <Text className="text-blue-700 dark:text-blue-300 font-bold">{item.author?.name?.[0] || 'U'}</Text>
-                    </View>
-                    <View className="ml-3 flex-1">
-                        <Text className="font-bold text-gray-800 dark:text-gray-100 text-base">{item.author?.name || 'Anonymous'}</Text>
-                        <View className="flex-row items-center mt-0.5">
-                            <Text className="text-xs text-gray-500 dark:text-gray-400">{item.neighborhood?.name || 'Nearby'}</Text>
-                            {item.latitude && (
-                                <TouchableOpacity onPress={handleMapPress} className="ml-2 flex-row items-center bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded-md">
-                                    <Ionicons name="location-sharp" size={10} color="#2563eb" />
-                                    <Text className="text-[10px] text-gray-600 dark:text-gray-300 ml-0.5 font-bold">Map</Text>
-                                </TouchableOpacity>
-                            )}
-                        </View>
-                    </View>
-                    <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} className="p-2 opacity-60">
-                        <Ionicons name="ellipsis-horizontal" size={20} color="gray" />
-                    </TouchableOpacity>
-                </View>
-
-                {/* Content */}
-                <Text className="text-lg font-bold text-gray-900 dark:text-white mb-2 leading-6">{item.title}</Text>
-
-                <LinearGradient
-                    colors={['rgba(37, 99, 235, 0.1)', 'rgba(6, 182, 212, 0.1)']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={{ paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999, alignSelf: 'flex-start', marginBottom: 12, borderWidth: 1, borderColor: 'rgba(59, 130, 246, 0.2)' }}
-                >
-                    <Text className="text-blue-600 dark:text-cyan-400 text-xs font-bold uppercase tracking-wider">{item.category}</Text>
-                </LinearGradient>
-
-                <Text className="text-gray-600 dark:text-gray-300 mb-4 leading-6 text-base">{item.content}</Text>
-
-                {imageUrl && (
-                    <Image
-                        source={{ uri: imageUrl }}
-                        className="w-full h-56 rounded-xl mb-4 bg-gray-100 dark:bg-neutral-800"
-                        resizeMode="cover"
-                    />
-                )}
-
-                {/* Footer */}
-                <View className="flex-row justify-between items-center border-t border-gray-100 dark:border-white/10 pt-4 mt-2">
-                    <View className="flex-row items-center space-x-6 gap-6">
-                        <TouchableOpacity
-                            className="flex-row items-center"
-                            onPress={handleVote}
-                        >
-                            <Ionicons name={liked ? "heart" : "heart-outline"} size={24} color={liked ? "#ef4444" : "#9ca3af"} />
-                            <Text className={`ml-2 font-medium ${liked ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`}>{votes}</Text>
-                        </TouchableOpacity>
-
-                        {/* @ts-ignore */}
-                        <Link href={`/(app)/post/${item.id}`} asChild>
-                            <TouchableOpacity className="flex-row items-center">
-                                <Ionicons name="chatbubble-outline" size={22} color="#9ca3af" />
-                                <Text className="ml-2 text-gray-500 dark:text-gray-400 font-medium">{item.comments?.length || item._count?.comments || 0}</Text>
-                            </TouchableOpacity>
-                        </Link>
-
-                        <TouchableOpacity onPress={handleShare}>
-                            <Ionicons name="share-social-outline" size={22} color="#9ca3af" />
-                        </TouchableOpacity>
-                    </View>
-
-                    <View className="flex-row items-center gap-4">
-                        <TouchableOpacity onPress={handleSave}>
-                            <Ionicons name={isSaved ? "bookmark" : "bookmark-outline"} size={22} color={isSaved ? "#3b82f6" : "#9ca3af"} />
-                        </TouchableOpacity>
-
-                        {/* @ts-ignore */}
-                        <Link href={`/(app)/post/${item.id}`} asChild>
-                            <TouchableOpacity>
-                                <Text className="text-xs text-gray-400 font-medium">
-                                    {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
-                                </Text>
-                            </TouchableOpacity>
-                        </Link>
-                    </View>
-                </View>
+  return (
+    <Card padded={false} style={{ marginHorizontal: tokens.space.lg, marginBottom: tokens.space.md, opacity: inactive ? 0.75 : 1, overflow: Platform.OS === 'android' ? 'hidden' : 'visible' }}>
+      <PressableScale accessibilityHint={t('post.comments')} onPress={open} style={{ padding: tokens.space.lg, paddingBottom: tokens.space.sm, gap: tokens.space.sm }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space.sm }}>
+          <CategoryBadge post={item} />
+          {item.lostFound ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Icon name={ITEM_TYPE_ICON[item.lostFound.itemType]} size={14} color={tokens.colors.labelSecondary} />
+              <Text variant="footnote" weight="600" tone="secondary">
+                {item.lostFound.direction === 'LOST' ? t('post.lost') : t('post.found')} · {t(`itemType.${item.lostFound.itemType}`)}
+              </Text>
             </View>
-        </GlassView>
-    );
+          ) : null}
+        </View>
+        <Text variant="headline" numberOfLines={2}>
+          {item.title}
+        </Text>
+        {item.content ? (
+          <Text variant="subheadline" tone="secondary" numberOfLines={3}>
+            {item.content}
+          </Text>
+        ) : null}
+        {image ? (
+          <Image
+            source={{ uri: image }}
+            accessibilityIgnoresInvertColors
+            contentFit="cover"
+            transition={tokens.reduceMotion ? 0 : 200}
+            recyclingKey={item.id}
+            style={{ width: '100%', aspectRatio: 16 / 10, borderRadius: tokens.radius.md, backgroundColor: tokens.colors.surfaceSecondary, ...continuous }}
+          />
+        ) : null}
+        <TrustLine post={item} />
+        {place || item.author ? (
+          <Text variant="footnote" tone="secondary" numberOfLines={1}>
+            {place}
+            {item.isApproximateLocation ? ` · ${t('post.approxLocation')}` : ''}
+            {item.author ? ` · ${t('post.by', { name: item.author.name })}` : ''}
+          </Text>
+        ) : null}
+      </PressableScale>
+
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginHorizontal: tokens.space.sm,
+          borderTopWidth: 0.5,
+          borderTopColor: tokens.colors.separator,
+        }}
+      >
+        <View style={{ flexDirection: 'row' }}>
+          <Action icon={liked ? 'thumbs-up' : 'thumbs-up-outline'} label={t('post.like')} text={String(likes)} onPress={toggleLike} active={liked} />
+          <Action icon="chatbubble-outline" label={t('post.comments')} text={String(item.commentCount)} onPress={open} />
+          <Action icon="map-outline" label={t('post.viewOnMap')} onPress={() => router.push({ pathname: '/(app)/map', params: { focus: item.id, lat: String(item.latitude), lng: String(item.longitude) } })} />
+        </View>
+        <View style={{ flexDirection: 'row' }}>
+          <Action icon={saved ? 'bookmark' : 'bookmark-outline'} label={saved ? t('post.unsave') : t('post.save')} onPress={toggleSave} active={saved} />
+          <Action icon="share-outline" label={t('post.share')} onPress={share} />
+          {!item.viewer?.isAuthor ? <Action icon="flag-outline" label={t('post.report')} onPress={() => setReporting(true)} /> : null}
+        </View>
+      </View>
+      {reporting ? <ReportSheet postId={item.id} visible={reporting} onClose={() => setReporting(false)} /> : null}
+    </Card>
+  );
+}
+
+export const FeedPost = memo(FeedPostInner);
+
+/** Placeholder card shown while the first page loads. */
+export function FeedPostSkeleton() {
+  const t = useTokens();
+  return (
+    <Card style={{ marginHorizontal: t.space.lg, marginBottom: t.space.md, gap: t.space.sm }}>
+      <Skeleton width={90} height={20} radius={t.radius.pill} />
+      <Skeleton width="85%" height={18} />
+      <Skeleton width="60%" />
+      <Skeleton width="40%" height={12} />
+    </Card>
+  );
 }

@@ -1,15 +1,12 @@
 import { Module, forwardRef } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { AuthResolver } from './auth.resolver';
-import { UsersModule } from '../users/users.module';
 import { PassportModule } from '@nestjs/passport';
-import { JwtModule } from '@nestjs/jwt';
-import { ConfigService, ConfigModule } from '@nestjs/config';
-import { JwtStrategy } from './jwt.strategy';
-
+import { JwtModule, type JwtSignOptions } from '@nestjs/jwt';
+import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-
+import { JwtStrategy } from './jwt.strategy';
+import { UsersModule } from '../users/users.module';
 import { EmailModule } from '../email/email.module';
+import { appConfig } from '../common/env';
 
 @Module({
   controllers: [AuthController],
@@ -17,17 +14,16 @@ import { EmailModule } from '../email/email.module';
     forwardRef(() => UsersModule),
     PassportModule,
     EmailModule,
-    ConfigModule,
     JwtModule.registerAsync({
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET') || 'dev_secret',
-        signOptions: { expiresIn: '1d' },
+      useFactory: () => ({
+        secret: appConfig().jwtSecret,
+        signOptions: {
+          expiresIn: appConfig().jwtExpiresIn as JwtSignOptions['expiresIn'],
+        },
       }),
-      inject: [ConfigService],
     }),
   ],
-  providers: [AuthResolver, AuthService, JwtStrategy],
-  exports: [AuthService],
+  providers: [AuthService, JwtStrategy],
+  exports: [AuthService, JwtModule],
 })
-export class AuthModule { }
+export class AuthModule {}

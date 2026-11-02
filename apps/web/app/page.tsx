@@ -11,8 +11,8 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-black text-white">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex h-dvh w-full items-center justify-center bg-background">
+        <Loader2 className="size-7 animate-spin text-primary" aria-label="Loading" />
       </div>
     );
   }
@@ -21,16 +21,9 @@ export default function Home() {
     return <LandingPage />;
   }
 
-  // Default location (SF) - HomeContent handles geo-updates
-  const defaultLocation = { lat: 37.7749, long: -122.4194 };
-
   return (
     <DashboardLayout initialUser={user}>
-      <HomeContent
-        initialUser={user}
-        initialPosts={[]}
-        initialLocation={defaultLocation}
-      />
+      <HomeContent initialUser={user} initialPosts={[]} />
     </DashboardLayout>
   );
 }

@@ -1,72 +1,91 @@
-import { Controller, Get, Post, Put, Body, Param, UseGuards, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import type { User } from '@prisma/client';
 import { NotificationsService } from './notifications.service';
+import { PushService } from './push.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CurrentUser } from '../common/current-user.decorator';
+import {
+  ListNotificationsQueryDto,
+  RegisterDeviceDto,
+  UpdateNotificationSettingsDto,
+} from './dto/notification.dto';
 
-@Controller('notifications')
+/** Every route acts on the authenticated user only; no route accepts a user id. */
+@Controller('notifications/me')
 @UseGuards(JwtAuthGuard)
 export class NotificationsController {
-    constructor(private readonly notificationsService: NotificationsService) { }
+  constructor(
+    private readonly notifications: NotificationsService,
+    private readonly push: PushService,
+  ) {}
 
-    @Get('me')
-    getMyNotifications(@Req() req: any) {
-        return this.notificationsService.getUserNotifications(req.user.id);
-    }
+  @Get()
+  list(@CurrentUser() user: User, @Query() q: ListNotificationsQueryDto) {
+    return this.notifications.list(user.id, q.page, q.limit);
+  }
 
-    @Get('me/settings')
-    getMySettings(@Req() req: any) {
-        return this.notificationsService.getSettings(req.user.id);
-    }
+  @Get('unread-count')
+  unreadCount(@CurrentUser() user: User) {
+    return this.notifications.unreadCount(user.id);
+  }
 
-    @Put('me/settings')
-    updateMySettings(
-        @Req() req: any,
-        @Body() body: { radiusKm: number, latitude: number, longitude: number, categories: any[], pushEnabled: boolean }
-    ) {
-        return this.notificationsService.upsertSettings(
-            req.user.id,
-            body.radiusKm,
-            body.latitude,
-            body.longitude,
-            body.categories,
-            body.pushEnabled
-        );
-    }
+  @Post('read/:id')
+  @HttpCode(200)
+  markAsRead(
+    @CurrentUser() user: User,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.notifications.markAsRead(user.id, id);
+  }
 
-    @Put('me/location')
-    updateMyLocation(
-        @Req() req: any,
-        @Body() body: { latitude: number, longitude: number }
-    ) {
-        return this.notificationsService.updateLocation(req.user.id, body.latitude, body.longitude);
-    }
+  @Post('read-all')
+  @HttpCode(200)
+  markAllAsRead(@CurrentUser() user: User) {
+    return this.notifications.markAllAsRead(user.id);
+  }
 
-    @Post('me/read/:id')
-    markAsRead(@Param('id') id: string) {
-        return this.notificationsService.markAsRead(id);
-    }
+  @Get('settings')
+  getSettings(@CurrentUser() user: User) {
+    return this.notifications.getSettings(user.id);
+  }
 
-    @Get(':userId')
-    getUserNotifications(@Param('userId') userId: string) {
-        return this.notificationsService.getUserNotifications(userId);
-    }
+  @Put('settings')
+  replaceSettings(
+    @CurrentUser() user: User,
+    @Body() body: UpdateNotificationSettingsDto,
+  ) {
+    return this.notifications.updateSettings(user.id, body);
+  }
 
-    @Get('settings/:userId')
-    getSettings(@Param('userId') userId: string) {
-        return this.notificationsService.getSettings(userId);
-    }
+  @Patch('settings')
+  updateSettings(
+    @CurrentUser() user: User,
+    @Body() body: UpdateNotificationSettingsDto,
+  ) {
+    return this.notifications.updateSettings(user.id, body);
+  }
 
-    @Put('settings/:userId')
-    updateSettings(
-        @Param('userId') userId: string,
-        @Body() body: { radiusKm: number, latitude: number, longitude: number, categories: any[], pushEnabled: boolean }
-    ) {
-        return this.notificationsService.upsertSettings(
-            userId,
-            body.radiusKm,
-            body.latitude,
-            body.longitude,
-            body.categories,
-            body.pushEnabled
-        );
-    }
+  @Post('devices')
+  @HttpCode(200)
+  registerDevice(@CurrentUser() user: User, @Body() body: RegisterDeviceDto) {
+    return this.push.registerDevice(user.id, body.token, body.platform);
+  }
+
+  @Delete('devices/:token')
+  revokeDevice(@CurrentUser() user: User, @Param('token') token: string) {
+    return this.push.revokeDevice(user.id, token);
+  }
 }

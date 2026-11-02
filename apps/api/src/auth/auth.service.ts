@@ -1,293 +1,349 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UsersService } from '../users/users.service';
-import { LoginInput, SignupInput, GoogleLoginInput, FacebookLoginInput, VerifyOtpInput } from './dto/create-auth.input';
-import { AuthResponse } from './entities/auth-response.entity';
-import { User } from '../users/entities/user.entity';
-import { OAuth2Client } from 'google-auth-library';
+import { OAuth2Client, type TokenPayload } from 'google-auth-library';
+import type { User } from '@prisma/client';
 import { EmailService } from '../email/email.service';
 import { PrismaService } from '../prisma.service';
-import * as bcrypt from 'bcryptjs';
+import { HOUR, MINUTE, RateLimitService } from '../common/rate-limit.service';
+import {
+  generateOtp,
+  hashOtp,
+  hashPassword,
+  OTP_MAX_ATTEMPTS,
+  OTP_TTL_MS,
+  otpMatches,
+  verifyPassword,
+} from './credentials';
+import {
+  LoginDto,
+  ProviderTokenDto,
+  ResetPasswordDto,
+  SignupDto,
+  VerifyOtpDto,
+} from './dto/auth.dto';
+
+/** The signed-in user's own profile fields (includes email; never shown to others). */
+export interface SelfUser {
+  id: string;
+  email: string;
+  name: string | null;
+  avatar: string | null;
+  bio: string | null;
+  role: User['role'];
+  createdAt: Date;
+}
+
+export interface AuthResponse {
+  accessToken: string;
+  expiresAt: string;
+  user: SelfUser;
+}
+
+export const toSelfUser = (u: User): SelfUser => ({
+  id: u.id,
+  email: u.email,
+  name: u.name,
+  avatar: u.avatar,
+  bio: u.bio,
+  role: u.role,
+  createdAt: u.createdAt,
+});
+
+const INVALID_CREDENTIALS = 'Invalid email or password';
+const INVALID_CODE = 'The code is invalid or has expired. Request a new one.';
+const CODE_SENT =
+  'If the details are correct, a verification code has been sent to your email.';
 
 @Injectable()
 export class AuthService {
-  private googleClient: OAuth2Client;
+  private readonly logger = new Logger(AuthService.name);
+  private readonly googleClient = new OAuth2Client(
+    process.env.GOOGLE_CLIENT_ID,
+  );
 
   constructor(
-    private usersService: UsersService,
-    private jwtService: JwtService,
-    private emailService: EmailService,
-    private prisma: PrismaService,
-  ) {
-    this.googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    private readonly jwtService: JwtService,
+    private readonly emailService: EmailService,
+    private readonly prisma: PrismaService,
+    private readonly rateLimit: RateLimitService,
+  ) {}
+
+  /** Throws if the account may not sign in. */
+  private assertActive(user: User) {
+    if (user.deletedAt) throw new UnauthorizedException(INVALID_CREDENTIALS);
+    if (user.isBlocked)
+      throw new UnauthorizedException('This account has been suspended.');
   }
 
-  async getProfileStats(userId: string) {
-    return this.prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        _count: {
-          select: { posts: true, votes: true }
-        }
-      }
+  async signup(
+    input: SignupDto,
+    ip: string,
+  ): Promise<{ message: string; email: string }> {
+    this.rateLimit.consume(`signup:${ip}`, 10, HOUR);
+
+    const existing = await this.prisma.user.findUnique({
+      where: { email: input.email },
     });
-  }
+    if (existing)
+      throw new ConflictException(
+        'An account with this email already exists. Try signing in.',
+      );
 
-  async validateUser(userId: string): Promise<User | null> {
-    return this.usersService.findOne(userId);
-  }
-
-  async login(loginInput: LoginInput): Promise<{ message: string; email: string }> {
-    const user = await this.prisma.user.findUnique({
-      where: { email: loginInput.email },
-      include: { auth: true }
-    });
-
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    if (user.isBlocked) {
-      throw new UnauthorizedException('Your account has been blocked.');
-    }
-
-    // Auto-heal: If user exists but no Auth record, create it now (Migration Logic)
-    if (!user.auth) {
-      console.warn(`[Auto-Heal] Creating missing Auth record for user ${user.id}`);
-      await this.prisma.auth.create({
-        data: {
-          userId: user.id,
-          passwordHash: loginInput.password
-        }
-      });
-      // Return fresh login call
-      return this.login(loginInput);
-    }
-
-    if (user.auth.passwordHash !== loginInput.password) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    // Trigger OTP flow (Non-blocking)
-    this.requestOtp(user.email).catch(e => console.error("OTP Send Failed:", e));
-
-    return {
-      message: 'OTP sent to your email',
-      email: user.email
-    };
-  }
-
-  async signup(signupInput: SignupInput): Promise<{ message: string; email: string }> {
-    const users = await this.usersService.findAll();
-    if (users.find(u => u.email === signupInput.email)) {
-      throw new BadRequestException('User already exists');
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...userData } = signupInput;
-
-    // 1. Create User
-    const user = await this.usersService.create({
-      email: userData.email,
-      name: userData.name
-    } as any); // Cast avoiding strict DTO issues if any
-
-    // 2. Create Auth Record
-    await this.prisma.auth.create({
+    const passwordHash = await hashPassword(input.password);
+    const user = await this.prisma.user.create({
       data: {
-        userId: user.id,
-        passwordHash: password, // In prod: bcrypt.hashSync(password, 10)
-      }
+        email: input.email,
+        name: input.name,
+        auth: { create: { passwordHash } },
+      },
     });
 
-    try {
-      if (signupInput.name) {
-        this.emailService.sendWelcome(user.email, signupInput.name).catch(e => console.error("Welcome Email Failed:", e));
-      }
-      this.requestOtp(user.email).catch(e => console.error("OTP Email Failed:", e));
-    } catch (e) {
-      console.error("Email initiation failed:", e);
-    }
+    await this.issueOtp(user.id, user.email);
+    void this.emailService.sendWelcome(user.email, input.name);
 
     return {
-      message: 'Account created. Check email for OTP.',
-      email: user.email
+      message: 'Account created. Enter the verification code we emailed you.',
+      email: user.email,
     };
   }
 
-  // --- Google Auth ---
-  async googleLogin(input: GoogleLoginInput): Promise<AuthResponse> {
+  /** Step 1 of sign-in: checks the password and emails a one-time code. */
+  async login(
+    input: LoginDto,
+    ip: string,
+  ): Promise<{ message: string; email: string }> {
+    this.rateLimit.consume(`login:ip:${ip}`, 30, 15 * MINUTE);
+    this.rateLimit.consume(
+      `login:email:${input.email}`,
+      10,
+      15 * MINUTE,
+      'Too many sign-in attempts. Try again in 15 minutes.',
+    );
+
+    const user = await this.prisma.user.findUnique({
+      where: { email: input.email },
+      include: { auth: true },
+    });
+    const check = await verifyPassword(
+      input.password,
+      user?.auth?.passwordHash,
+    );
+    if (!user || !user.auth || !check.valid)
+      throw new UnauthorizedException(INVALID_CREDENTIALS);
+    this.assertActive(user);
+
+    if (check.needsRehash) {
+      await this.prisma.auth.update({
+        where: { id: user.auth.id },
+        data: { passwordHash: await hashPassword(input.password) },
+      });
+      this.logger.log(`Upgraded legacy password storage for user ${user.id}`);
+    }
+
+    await this.issueOtp(user.id, user.email);
+    return {
+      message: 'We sent a 6-digit verification code to your email.',
+      email: user.email,
+    };
+  }
+
+  /** Step 2 of sign-in (and email verification after sign-up). */
+  async verifyOtp(input: VerifyOtpDto): Promise<AuthResponse> {
+    const user = await this.consumeOtp(input.email, input.otp);
+    return this.generateToken(user);
+  }
+
+  async requestPasswordReset(
+    email: string,
+    ip: string,
+  ): Promise<{ message: string }> {
+    this.rateLimit.consume(`reset:ip:${ip}`, 10, HOUR);
+    if (!this.rateLimit.tryConsume(`reset:email:${email}`, 3, HOUR))
+      return { message: CODE_SENT };
+
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (user && !user.deletedAt && !user.isBlocked) {
+      try {
+        await this.issueOtp(user.id, user.email);
+      } catch (e) {
+        // Do not reveal whether the account exists through a different error.
+        this.logger.warn(
+          `Password reset code could not be sent: ${(e as Error).message}`,
+        );
+      }
+    }
+    return { message: CODE_SENT };
+  }
+
+  async resetPassword(input: ResetPasswordDto): Promise<{ message: string }> {
+    const user = await this.consumeOtp(input.email, input.otp);
+    await this.prisma.auth.update({
+      where: { userId: user.id },
+      data: { passwordHash: await hashPassword(input.newPassword) },
+    });
+    return { message: 'Your password has been changed. You can now sign in.' };
+  }
+
+  async googleLogin(input: ProviderTokenDto): Promise<AuthResponse> {
+    if (!process.env.GOOGLE_CLIENT_ID)
+      throw new BadRequestException('Google sign-in is not configured.');
+    let payload: TokenPayload | undefined;
     try {
       const ticket = await this.googleClient.verifyIdToken({
         idToken: input.token,
         audience: process.env.GOOGLE_CLIENT_ID,
       });
-      const payload = ticket.getPayload();
-      if (!payload) throw new UnauthorizedException('Invalid Google Token');
-
-      const { email, name, sub: googleId, picture } = payload;
-
-      let user = await this.prisma.user.findUnique({ where: { email } });
-
-      if (!user) {
-        user = await this.prisma.user.create({
-          data: {
-            email: email!,
-            name: name || 'User',
-            avatar: picture,
-            auth: {
-              create: { googleId }
-            }
-          },
-        });
-      } else {
-        const auth = await this.prisma.auth.findUnique({ where: { userId: user.id } });
-        if (!auth) {
-          await this.prisma.auth.create({ data: { userId: user.id, googleId } });
-        } else if (!auth.googleId) {
-          await this.prisma.auth.update({ where: { id: auth.id }, data: { googleId } });
-        }
-      }
-
-      if (user.isBlocked) {
-        throw new UnauthorizedException('Your account has been blocked.');
-      }
-
-      return this.generateToken(user);
-    } catch (error) {
-      throw new UnauthorizedException('Google Auth Failed: ' + error.message);
+      payload = ticket.getPayload();
+    } catch {
+      throw new UnauthorizedException('Google sign-in failed.');
     }
-  }
-
-  // --- Facebook Auth ---
-  async facebookLogin(input: FacebookLoginInput): Promise<AuthResponse> {
-    try {
-      // Validate Token via Graph API
-      const res = await fetch(`https://graph.facebook.com/me?fields=id,name,email,picture&access_token=${input.token}`);
-      if (!res.ok) {
-        throw new UnauthorizedException('Invalid Facebook Token');
-      }
-      const data = await res.json();
-
-      const email = data.email;
-      const facebookId = data.id;
-      const name = data.name;
-      // Facebook picture is nested: data.picture.data.url
-      const avatar = data.picture?.data?.url;
-
-      if (!email) {
-        // Facebook might not return email if user disallowed it.
-        // For MVP we require email.
-        throw new BadRequestException('Facebook account must have an email address.');
-      }
-
-      let user = await this.prisma.user.findUnique({ where: { email } });
-
-      if (!user) {
-        user = await this.prisma.user.create({
-          data: {
-            email,
-            name: name || 'User',
-            avatar,
-            auth: {
-              create: { facebookId }
-            }
-          },
-        });
-      } else {
-        const auth = await this.prisma.auth.findUnique({ where: { userId: user.id } });
-        if (!auth) {
-          await this.prisma.auth.create({ data: { userId: user.id, facebookId } });
-        } else if (!auth.facebookId) {
-          await this.prisma.auth.update({ where: { id: auth.id }, data: { facebookId } });
-        }
-      }
-
-      if (user.isBlocked) {
-        throw new UnauthorizedException('Your account has been blocked.');
-      }
-
-      return this.generateToken(user);
-    } catch (error) {
-      throw new UnauthorizedException('Facebook Auth Failed: ' + (error.message || 'Unknown error'));
-    }
-  }
-
-  // --- OTP Logic ---
-  async requestOtp(email: string): Promise<boolean> {
-    const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user) throw new BadRequestException('User not found');
-
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
-
-    let auth = await this.prisma.auth.findUnique({ where: { userId: user.id } });
-    if (!auth) {
-      auth = await this.prisma.auth.create({ data: { userId: user.id } });
-    }
-
-    await this.prisma.auth.update({
-      where: { id: auth.id },
-      data: { emailOtp: otp, otpExpires: expires },
-    });
-
-    await this.emailService.sendOtp(email, otp);
-    return true;
-  }
-
-  async verifyOtp(input: VerifyOtpInput): Promise<AuthResponse> {
-    const user = await this.prisma.user.findUnique({ where: { email: input.email } });
-    if (!user) throw new UnauthorizedException('User not found');
-
-    const auth = await this.prisma.auth.findUnique({ where: { userId: user.id } });
-    if (!auth || !auth.emailOtp || !auth.otpExpires) {
-      throw new UnauthorizedException('No OTP requested');
-    }
-
-    if (new Date() > auth.otpExpires) {
-      throw new UnauthorizedException('OTP Expired');
-    }
-
-    // Master OTP for Demo/Testing if email fails
-    if (input.otp !== '123456' && auth.emailOtp !== input.otp) {
-      throw new UnauthorizedException('Invalid OTP');
-    }
-
-    await this.prisma.auth.update({
-      where: { id: auth.id },
-      data: { emailOtp: null, otpExpires: null }
-    });
-
+    if (!payload?.email || !payload.email_verified)
+      throw new UnauthorizedException('Google account email is not verified.');
+    const user = await this.upsertProviderUser(
+      payload.email.toLowerCase(),
+      payload.name,
+      payload.picture,
+      { googleId: payload.sub },
+    );
     return this.generateToken(user);
   }
 
-  private generateToken(user: User): AuthResponse {
-    const payload = { email: user.email, sub: user.id };
-    return {
-      accessToken: this.jwtService.sign(payload),
-      user,
+  async facebookLogin(input: ProviderTokenDto): Promise<AuthResponse> {
+    const res = await fetch(
+      `https://graph.facebook.com/me?fields=id,name,email,picture&access_token=${encodeURIComponent(input.token)}`,
+    ).catch(() => null);
+    if (!res?.ok) throw new UnauthorizedException('Facebook sign-in failed.');
+    const data = (await res.json()) as {
+      id?: string;
+      name?: string;
+      email?: string;
+      picture?: { data?: { url?: string } };
     };
+    if (!data.id) throw new UnauthorizedException('Facebook sign-in failed.');
+    if (!data.email)
+      throw new BadRequestException(
+        'Your Facebook account must share an email address to sign in.',
+      );
+    const user = await this.upsertProviderUser(
+      data.email.toLowerCase(),
+      data.name,
+      data.picture?.data?.url,
+      { facebookId: data.id },
+    );
+    return this.generateToken(user);
   }
 
-  // --- Password Recovery ---
-  async requestPasswordReset(email: string): Promise<boolean> {
-    return this.requestOtp(email);
+  private async upsertProviderUser(
+    email: string,
+    name: string | undefined,
+    avatar: string | undefined,
+    link: { googleId?: string; facebookId?: string },
+  ): Promise<User> {
+    let user = await this.prisma.user.findUnique({
+      where: { email },
+      include: { auth: true },
+    });
+    if (!user) {
+      return this.prisma.user.create({
+        data: {
+          email,
+          name: name || null,
+          avatar: avatar || null,
+          auth: { create: link },
+        },
+      });
+    }
+    this.assertActive(user);
+    if (!user.auth) {
+      await this.prisma.auth.create({ data: { userId: user.id, ...link } });
+    } else if (
+      (link.googleId && !user.auth.googleId) ||
+      (link.facebookId && !user.auth.facebookId)
+    ) {
+      await this.prisma.auth.update({
+        where: { id: user.auth.id },
+        data: link,
+      });
+    }
+    user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: user.id },
+      include: { auth: true },
+    });
+    return user;
   }
 
-  async resetPassword(input: VerifyOtpInput & { newPassword: string }): Promise<boolean> {
-    await this.verifyOtp({ email: input.email, otp: input.otp });
+  private async issueOtp(userId: string, email: string) {
+    this.rateLimit.consume(
+      `otp:send:${email}`,
+      5,
+      HOUR,
+      'Too many codes requested. Try again later.',
+    );
+    const otp = generateOtp();
+    await this.prisma.auth.upsert({
+      where: { userId },
+      update: {
+        emailOtp: hashOtp(email, otp),
+        otpExpires: new Date(Date.now() + OTP_TTL_MS),
+        otpAttempts: 0,
+      },
+      create: {
+        userId,
+        emailOtp: hashOtp(email, otp),
+        otpExpires: new Date(Date.now() + OTP_TTL_MS),
+      },
+    });
+    await this.emailService.sendOtp(email, otp);
+  }
 
-    const user = await this.prisma.user.findUnique({ where: { email: input.email } });
-    if (!user) throw new UnauthorizedException('User not found');
-
-    const auth = await this.prisma.auth.findUnique({ where: { userId: user.id } });
-    if (!auth) throw new BadRequestException('Auth record not found');
-
+  /** Validates and burns a one-time code. Wrong guesses count towards a hard limit. */
+  private async consumeOtp(email: string, otp: string): Promise<User> {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      include: { auth: true },
+    });
+    const auth = user?.auth;
+    if (
+      !user ||
+      !auth?.emailOtp ||
+      !auth.otpExpires ||
+      auth.otpExpires < new Date() ||
+      auth.otpAttempts >= OTP_MAX_ATTEMPTS
+    ) {
+      throw new UnauthorizedException(INVALID_CODE);
+    }
+    if (!otpMatches(email, otp, auth.emailOtp)) {
+      const attempts = auth.otpAttempts + 1;
+      await this.prisma.auth.update({
+        where: { id: auth.id },
+        data:
+          attempts >= OTP_MAX_ATTEMPTS
+            ? { otpAttempts: attempts, emailOtp: null, otpExpires: null }
+            : { otpAttempts: attempts },
+      });
+      throw new UnauthorizedException(INVALID_CODE);
+    }
+    this.assertActive(user);
     await this.prisma.auth.update({
       where: { id: auth.id },
-      data: { passwordHash: input.newPassword }
+      data: { emailOtp: null, otpExpires: null, otpAttempts: 0 },
     });
+    return user;
+  }
 
-    return true;
+  private generateToken(user: User): AuthResponse {
+    const accessToken = this.jwtService.sign({ sub: user.id });
+    const { exp } = this.jwtService.decode<{ exp: number }>(accessToken);
+    return {
+      accessToken,
+      expiresAt: new Date(exp * 1000).toISOString(),
+      user: toSelfUser(user),
+    };
   }
 }

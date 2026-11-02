@@ -65,16 +65,16 @@ export default function AdminUsersPage() {
         }
     };
 
-    if (loading) return <div className="p-8 flex justify-center"><Loader2 className="animate-spin text-white" /></div>;
+    if (loading) return <div className="p-8 flex justify-center"><Loader2 className="animate-spin text-foreground" /></div>;
 
     return (
         <div>
-            <h1 className="text-3xl font-bold text-white mb-6">User Management</h1>
+            <h1 className="sr-only">User Management</h1>
 
-            <div className="bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden overflow-x-auto">
+            <div className="bg-surface rounded-[20px] shadow-[var(--shadow-card)] overflow-hidden overflow-x-auto">
                 <table className="w-full text-left min-w-[800px]">
                     <thead>
-                        <tr className="border-b border-white/10 text-zinc-500 text-xs uppercase tracking-wider bg-black/20">
+                        <tr className="border-b border-border text-muted-foreground text-xs uppercase tracking-wider bg-surface-2">
                             <th className="p-4 font-medium">User</th>
                             <th className="p-4 font-medium">Role</th>
                             <th className="p-4 font-medium text-right">Stats</th>
@@ -82,31 +82,31 @@ export default function AdminUsersPage() {
                             <th className="p-4 font-medium text-right">Actions</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/5">
+                    <tbody className="divide-y divide-border">
                         {users.map((user) => (
-                            <tr key={user.id} className="text-zinc-300 hover:bg-white/5 transition-colors">
+                            <tr key={user.id} className="text-foreground hover:bg-surface-2 transition-colors">
                                 <td className="p-4">
-                                    <div className="font-medium text-white">{user.name || "Unnamed"}</div>
-                                    <div className="text-sm text-zinc-500">{user.email}</div>
+                                    <div className="font-medium text-foreground">{user.name || "Unnamed"}</div>
+                                    <div className="text-sm text-muted-foreground">{user.email}</div>
                                 </td>
                                 <td className="p-4 text-sm">
-                                    <span className={`px-2 py-1 rounded text-xs ${user.role === 'ADMIN' ? 'bg-purple-500/20 text-purple-400' : 'bg-zinc-800 text-zinc-400'}`}>
+                                    <span className={`px-2 py-1 rounded text-xs ${user.role === 'ADMIN' ? 'bg-primary-soft text-primary' : 'bg-surface-2 text-muted-foreground'}`}>
                                         {user.role}
                                     </span>
                                 </td>
-                                <td className="p-4 text-right text-sm text-zinc-500">
+                                <td className="p-4 text-right text-sm text-muted-foreground">
                                     <div>{user._count.posts} posts</div>
                                     <div>{user._count.reports} reports</div>
                                 </td>
                                 <td className="p-4 text-right">
-                                    <span className={`px-2 py-1 rounded text-xs ${user.isBlocked ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
+                                    <span className={`px-2 py-1 rounded text-xs ${user.isBlocked ? 'bg-danger-soft text-danger' : 'bg-success-soft text-success'}`}>
                                         {user.isBlocked ? 'Blocked' : 'Active'}
                                     </span>
                                 </td>
                                 <td className="p-4 text-right">
                                     <button
                                         onClick={() => toggleBlock(user.id)}
-                                        className={`p-2 rounded-lg transition-colors ${user.isBlocked ? 'bg-green-500/10 text-green-400 hover:bg-green-500/20' : 'bg-red-500/10 text-red-400 hover:bg-red-500/20'}`}
+                                        className={`p-2 rounded-xl transition-colors ${user.isBlocked ? 'bg-success-soft text-success hover:brightness-95' : 'bg-danger-soft text-danger hover:brightness-95'}`}
                                         title={user.isBlocked ? "Unblock User" : "Block User"}
                                     >
                                         {user.isBlocked ? <CheckCircle className="w-4 h-4" /> : <Ban className="w-4 h-4" />}

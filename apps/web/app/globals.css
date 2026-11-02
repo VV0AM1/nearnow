@@ -1,215 +1,241 @@
 @import "tailwindcss";
 
-@theme {
-  --color-border: hsl(var(--border));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
+/*
+ * NearNow web identity v2 — "living map": warm paper and ink, the NearNow blue,
+ * a coral signal accent, topographic contours and warm layered shadows.
+ * Text pairs stay WCAG AA in both themes. Theme: <html data-theme="light|dark">.
+ */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
+@theme inline {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-display-face), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono-face), ui-monospace, "SFMono-Regular", Menlo, monospace;
 
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-background: var(--nn-background);
+  --color-foreground: var(--nn-label);
+  --color-surface: var(--nn-surface);
+  --color-surface-2: var(--nn-surface-2);
+  --color-elevated: var(--nn-elevated);
+  --color-card: var(--nn-surface);
+  --color-card-foreground: var(--nn-label);
+  --color-popover: var(--nn-elevated);
+  --color-popover-foreground: var(--nn-label);
+  --color-ink: var(--nn-ink);
+  --color-paper: var(--nn-paper);
 
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-primary: var(--nn-accent);
+  --color-primary-foreground: var(--nn-on-accent);
+  --color-primary-soft: var(--nn-accent-soft);
+  --color-signal: var(--nn-signal);
+  --color-signal-soft: var(--nn-signal-soft);
+  --color-secondary: var(--nn-surface-2);
+  --color-secondary-foreground: var(--nn-label);
+  --color-muted: var(--nn-surface-2);
+  --color-muted-foreground: var(--nn-label-2);
+  --color-subtle: var(--nn-label-3);
+  /* shadcn semantics: "accent" is the hover/selected background. */
+  --color-accent: var(--nn-surface-2);
+  --color-accent-foreground: var(--nn-label);
 
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-destructive: var(--nn-danger);
+  --color-destructive-foreground: var(--nn-on-accent-fixed);
+  --color-danger: var(--nn-danger);
+  --color-danger-soft: var(--nn-danger-soft);
+  --color-success: var(--nn-success);
+  --color-success-soft: var(--nn-success-soft);
+  --color-warning: var(--nn-warning);
+  --color-warning-soft: var(--nn-warning-soft);
 
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-border: var(--nn-separator);
+  --color-input: var(--nn-separator);
+  --color-ring: var(--nn-accent);
 
-  --color-popover: hsl(var(--popover));
-  --color-popover-foreground: hsl(var(--popover-foreground));
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --radius-xl: 30px;
 
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
+  /* Warm, layered shadows: contact + ambient + long cast. */
+  --shadow-card: var(--nn-shadow-card);
+  --shadow-float: var(--nn-shadow-float);
+  --shadow-deep: var(--nn-shadow-deep);
 
-  --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-sm: calc(var(--radius) - 4px);
+  --animate-in: nn-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-float: nn-float 7s ease-in-out infinite;
+  --animate-pulse-ring: nn-pulse-ring 2.4s cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
+  --animate-marquee: nn-marquee 38s linear infinite;
+  --animate-dash: nn-dash 22s linear infinite;
 
-  --animate-accordion-down: accordion-down 0.2s ease-out;
-  --animate-accordion-up: accordion-up 0.2s ease-out;
-
-  @keyframes accordion-down {
-    from {
-      height: 0;
-    }
-
-    to {
-      height: var(--radix-accordion-content-height);
-    }
+  @keyframes nn-in {
+    from { opacity: 0; transform: translateY(6px) scale(0.985); }
+    to { opacity: 1; transform: none; }
   }
-
-  @keyframes accordion-up {
-    from {
-      height: var(--radix-accordion-content-height);
-    }
-
-    to {
-      height: 0;
-    }
+  @keyframes nn-float {
+    0%, 100% { transform: translate3d(0, 0, 0); }
+    50% { transform: translate3d(0, -10px, 0); }
+  }
+  @keyframes nn-pulse-ring {
+    0% { transform: scale(0.4); opacity: 0.55; }
+    100% { transform: scale(2.6); opacity: 0; }
+  }
+  @keyframes nn-marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  @keyframes nn-dash {
+    to { stroke-dashoffset: -400; }
   }
 }
 
-/*
-  Tailwind v4 default border color falls back to `currentColor`.
-  This keeps v3-style behavior so things that rely on default borders still look right.
-*/
-@layer base {
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+  --nn-paper: #f4f0e8;
+  --nn-ink: #13141b;
+  --nn-background: #f4f0e8;
+  --nn-surface: #fffdf8;
+  --nn-surface-2: #ece6da;
+  --nn-elevated: #fffdf8;
+  --nn-separator: rgb(40 32 20 / 0.12);
+  --nn-label: #13141b;
+  --nn-label-2: rgb(30 27 22 / 0.7);
+  --nn-label-3: rgb(30 27 22 / 0.46);
+  --nn-accent: #2459e0;
+  --nn-on-accent: #ffffff;
+  --nn-on-accent-fixed: #ffffff;
+  --nn-accent-soft: rgb(36 89 224 / 0.1);
+  --nn-signal: #ff5a36;
+  --nn-signal-soft: rgb(255 90 54 / 0.14);
+  --nn-danger: #c4231a;
+  --nn-danger-soft: rgb(196 35 26 / 0.1);
+  --nn-success: #1e7a3c;
+  --nn-success-soft: rgb(30 122 60 / 0.12);
+  --nn-warning: #8f4d00;
+  --nn-warning-soft: rgb(150 81 0 / 0.12);
+  --nn-scrim: rgb(20 16 10 / 0.42);
+  --nn-contour: rgb(70 52 24 / 0.11);
+  --nn-grain-opacity: 0.35;
+  --nn-shadow-card: 0 1px 0 rgb(255 255 255 / 0.7) inset, 0 1px 2px rgb(60 40 10 / 0.06), 0 6px 16px -6px rgb(60 40 10 / 0.12);
+  --nn-shadow-float: 0 1px 0 rgb(255 255 255 / 0.7) inset, 0 2px 4px rgb(60 40 10 / 0.06), 0 18px 40px -14px rgb(60 40 10 / 0.28);
+  --nn-shadow-deep: 0 2px 6px rgb(60 40 10 / 0.08), 0 30px 70px -24px rgb(60 40 10 / 0.38), 0 60px 120px -60px rgb(36 89 224 / 0.25);
+}
 
+[data-theme="dark"] {
+  color-scheme: dark;
+  --nn-paper: #0b0e15;
+  --nn-ink: #f3efe6;
+  --nn-background: #0b0e15;
+  --nn-surface: #131824;
+  --nn-surface-2: #1c2232;
+  --nn-elevated: #171d2b;
+  --nn-separator: rgb(150 165 200 / 0.14);
+  --nn-label: #f3efe6;
+  --nn-label-2: rgb(236 232 222 / 0.72);
+  --nn-label-3: rgb(236 232 222 / 0.46);
+  --nn-accent: #5b8cff;
+  --nn-on-accent: #04122e;
+  --nn-on-accent-fixed: #ffffff;
+  --nn-accent-soft: rgb(91 140 255 / 0.15);
+  --nn-signal: #ff7a59;
+  --nn-signal-soft: rgb(255 122 89 / 0.16);
+  --nn-danger: #ff5b4f;
+  --nn-danger-soft: rgb(255 91 79 / 0.16);
+  --nn-success: #4cd17a;
+  --nn-success-soft: rgb(76 209 122 / 0.16);
+  --nn-warning: #ffb547;
+  --nn-warning-soft: rgb(255 181 71 / 0.16);
+  --nn-scrim: rgb(0 0 0 / 0.62);
+  --nn-contour: rgb(140 165 230 / 0.09);
+  --nn-grain-opacity: 0.22;
+  --nn-shadow-card: 0 0 0 1px rgb(255 255 255 / 0.05), 0 1px 0 rgb(255 255 255 / 0.05) inset, 0 8px 20px -10px rgb(0 0 0 / 0.6);
+  --nn-shadow-float: 0 0 0 1px rgb(255 255 255 / 0.07), 0 1px 0 rgb(255 255 255 / 0.06) inset, 0 24px 50px -18px rgb(0 0 0 / 0.75);
+  --nn-shadow-deep: 0 0 0 1px rgb(255 255 255 / 0.06), 0 40px 90px -30px rgb(0 0 0 / 0.85), 0 60px 140px -60px rgb(91 140 255 / 0.35);
+}
+
+@layer base {
   *,
   ::after,
   ::before,
   ::backdrop,
   ::file-selector-button {
-    border-color: var(--color-gray-200, currentColor);
+    border-color: var(--color-border);
   }
-}
 
-/* === Design Tokens (HSL) ================================================== */
-
-:root {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
-
-  --card: 222.2 84% 4.9%;
-  --card-foreground: 210 40% 98%;
-
-  --popover: 222.2 84% 4.9%;
-  --popover-foreground: 210 40% 98%;
-
-  --primary: 217.2 91.2% 59.8%;
-  --primary-foreground: 222.2 47.4% 11.2%;
-
-  --secondary: 217.2 32.6% 17.5%;
-  --secondary-foreground: 210 40% 98%;
-
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
-
-  --accent: 217.2 32.6% 17.5%;
-  --accent-foreground: 210 40% 98%;
-
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 210 40% 98%;
-
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 224.3 76.3% 48%;
-
-  --radius: 0.5rem;
-}
-
-/* === Base styles ========================================================== */
-
-@layer base {
-  * {
-    @apply border-border;
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
   }
 
   body {
-    @apply bg-background text-foreground antialiased min-h-screen relative overflow-x-hidden;
+    @apply bg-background text-foreground antialiased min-h-screen;
+    font-feature-settings: "cv11", "ss01";
   }
 
   ::selection {
-    @apply bg-primary/30 text-primary-foreground;
+    background: var(--nn-accent-soft);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--nn-accent);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
-/* === Glassmorphism Utilities ============================================== */
-/* Navbar glass (class used on <nav className="glass ...">) */
-.glass {
-  background:
-    radial-gradient(circle at 0% 0%, hsl(var(--primary) / 0.28), transparent 55%),
-    radial-gradient(circle at 100% 0%, hsl(var(--accent) / 0.24), transparent 55%),
-    hsl(var(--background) / 0.96);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border-bottom: 1px solid hsl(var(--border) / 0.7);
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.85);
+/* === MapLibre: popups and controls follow the theme ======================= */
+
+.maplibregl-map {
+  font-family: inherit;
+  background: var(--nn-surface-2);
 }
 
-/* Card-style glass panels (feed container, auth shells, etc.) */
-.glass-card {
-  background:
-    radial-gradient(circle at 0% 0%, hsl(var(--primary) / 0.18), transparent 55%),
-    radial-gradient(circle at 100% 100%, hsl(var(--accent) / 0.16), transparent 55%),
-    hsl(var(--background) / 0.90);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border-radius: var(--radius-lg);
-  border-color: hsl(var(--border) / 0.65);
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.80);
-  transition:
-    box-shadow 0.2s ease,
-    border-color 0.2s ease,
-    transform 0.2s ease;
-}
-
-.glass-card:hover {
-  border-color: hsl(var(--primary) / 0.75);
-  box-shadow: 0 22px 55px rgba(15, 23, 42, 0.95);
-  transform: translateY(-1px);
-}
-
-/* Popup-style glass (used together with Leaflet overrides below) */
-.glass-popup {
-  background:
-    radial-gradient(circle at 0% 0%, hsl(var(--primary) / 0.22), transparent 55%),
-    hsl(var(--background) / 0.96);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-radius: var(--radius-md);
-  border: 1px solid hsl(var(--border) / 0.7);
-  color: hsl(var(--foreground));
+.maplibregl-popup-content {
+  background: var(--nn-elevated);
+  color: var(--nn-label);
+  border-radius: 14px;
+  box-shadow: var(--shadow-float);
   padding: 0;
-  overflow: hidden;
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.85);
 }
 
-/* === Leaflet Overrides for Dark / Glass Popups =========================== */
-
-.leaflet-popup-content-wrapper {
-  background: transparent !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-  border-radius: var(--radius-md) !important;
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+  border-top-color: var(--nn-elevated);
 }
 
-.leaflet-popup-tip {
-  background: rgba(30, 41, 59, 0.9) !important;
-  border-radius: 2px !important;
+.maplibregl-popup-anchor-top .maplibregl-popup-tip {
+  border-bottom-color: var(--nn-elevated);
 }
 
-/* Custom Marker Cluster Styles */
-.custom-cluster-icon {
-  background: transparent;
-  border: none;
+.maplibregl-ctrl-attrib {
+  background: color-mix(in srgb, var(--nn-surface) 85%, transparent) !important;
+  color: var(--nn-label-2);
 }
 
-/* === Custom Scrollbar Utilities ========================================== */
-
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+.maplibregl-ctrl-attrib a {
+  color: var(--nn-accent);
 }
 
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
+.maplibregl-ctrl-group {
+  background: var(--nn-surface) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--shadow-float) !important;
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.2);
-  border-radius: 20px;
+[data-theme="dark"] .maplibregl-ctrl-group button span {
+  filter: invert(1);
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.4);
-}
+/* === Utilities ============================================================ */
 
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
@@ -218,4 +244,208 @@
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--nn-separator) transparent;
+}
+
+@utility mask-fade-x {
+  mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 24px), transparent);
+}
+
+.material {
+  background: color-mix(in srgb, var(--nn-surface) 82%, transparent);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+/* Browser autofill keeps the field colours of the current theme. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--nn-label);
+  -webkit-box-shadow: 0 0 0 1000px var(--nn-surface) inset;
+  caret-color: var(--nn-label);
+}
+
+/* === Texture and motion utilities ========================================= */
+
+/* Topographic contour lines, tinted per theme through a mask. */
+@utility contours {
+  position: relative;
+  isolation: isolate;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: var(--nn-contour);
+    mask: url("/textures/contours.svg") center / cover no-repeat;
+    -webkit-mask: url("/textures/contours.svg") center / cover no-repeat;
+  }
+}
+
+/* Film grain over the page; static, decorative. */
+.grain::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: var(--nn-grain-opacity);
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.45 0 0 0 0 0.4 0 0 0 0.18 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+[data-theme="dark"] .grain::after {
+  mix-blend-mode: screen;
+}
+
+/* Display type: tight, confident headings. */
+.display {
+  font-family: var(--font-display);
+  letter-spacing: -0.035em;
+  font-weight: 700;
+  font-variation-settings: "wdth" 92;
+}
+
+/* Text that wears the brand: ink → blue → signal. */
+.ink-gradient {
+  background: linear-gradient(100deg, var(--nn-label) 10%, var(--nn-accent) 55%, var(--nn-signal) 95%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-safe-only {
+    animation: none !important;
+  }
+}
+
+/* === Isometric neighbourhood palette ====================================== */
+
+:root,
+[data-theme="light"] {
+  --iso-ground: #e7dfcf;
+  --iso-slab-1: #cdbfa6;
+  --iso-slab-2: #b9a98c;
+  --iso-road: #d6cdbb;
+  --iso-lane: rgb(255 255 255 / 0.85);
+  --iso-sidewalk: #efe8da;
+  --iso-plaza: #e9dcc2;
+  --iso-park: #b9d3a0;
+  --iso-water: #9cc3e8;
+  --iso-tree-top: #7fb069;
+  --iso-tree-1: #5f9150;
+  --iso-tree-2: #4c7a40;
+  --iso-a-top: #fffaf0;
+  --iso-a-1: #e8dcc6;
+  --iso-a-2: #d6c6aa;
+  --iso-b-top: #dfe8ff;
+  --iso-b-1: #a9bff4;
+  --iso-b-2: #86a3ea;
+  --iso-c-top: #fff3ea;
+  --iso-c-1: #f2c9b4;
+  --iso-c-2: #e3ab90;
+  --iso-d-top: #f4f0e8;
+  --iso-d-1: #cfc9bd;
+  --iso-d-2: #b7b0a2;
+}
+
+[data-theme="dark"] {
+  --iso-ground: #141a27;
+  --iso-slab-1: #0e131d;
+  --iso-slab-2: #0a0e16;
+  --iso-road: #1d2434;
+  --iso-lane: rgb(255 214 140 / 0.55);
+  --iso-sidewalk: #182031;
+  --iso-plaza: #1f2738;
+  --iso-park: #1d3326;
+  --iso-water: #1b3354;
+  --iso-tree-top: #2f5a3a;
+  --iso-tree-1: #244a2e;
+  --iso-tree-2: #1b3923;
+  --iso-a-top: #2a3245;
+  --iso-a-1: #222a3b;
+  --iso-a-2: #1b2231;
+  --iso-b-top: #2c3c66;
+  --iso-b-1: #23315a;
+  --iso-b-2: #1c284b;
+  --iso-c-top: #3a2c34;
+  --iso-c-1: #30242b;
+  --iso-c-2: #271d23;
+  --iso-d-top: #262b38;
+  --iso-d-1: #1f2430;
+  --iso-d-2: #191d27;
+}
+
+/* Lit windows at night. */
+[data-theme="dark"] .iso-night-windows {
+  filter: none;
+}
+
+.iso-car {
+  position: absolute;
+  top: 0;
+  transform-style: preserve-3d;
+  animation-name: nn-drive;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes nn-drive {
+  from { left: -6%; }
+  to { left: 100%; }
+}
+
+/* === Enter animations (CSS, so content never depends on JS frame timing) === */
+
+@keyframes nn-rise {
+  from { opacity: 0; transform: translate3d(0, 26px, 0); filter: blur(6px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+@keyframes nn-rise-3d {
+  from { opacity: 0; transform: translate3d(0, 40px, 0) rotateX(-40deg); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes nn-drop {
+  0% { opacity: 0; transform: translate3d(0, -140px, 0); }
+  60% { opacity: 1; transform: translate3d(0, 8px, 0); }
+  80% { transform: translate3d(0, -4px, 0); }
+  100% { opacity: 1; transform: none; }
+}
+
+.rise {
+  animation: nn-rise 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.rise-3d {
+  animation: nn-rise-3d 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  transform-origin: 50% 100%;
+}
+.drop {
+  animation: nn-drop 0.9s cubic-bezier(0.3, 0.7, 0.3, 1) both;
+}
+
+/* Scroll reveal: toggled by an IntersectionObserver (see components/motion Reveal). */
+.reveal {
+  opacity: 0;
+  transform: translate3d(0, var(--reveal-y, 24px), 0);
+  filter: blur(6px);
+  transition: opacity 0.7s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition-delay: var(--reveal-delay, 0s);
+}
+.reveal[data-shown] {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; filter: none; }
 }

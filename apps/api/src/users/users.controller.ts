@@ -1,82 +1,83 @@
-import { Controller, Post, UseInterceptors, UploadedFile, UseGuards, Req, Get, Param, Patch, Body } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import type { User } from '@prisma/client';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CurrentUser } from '../common/current-user.decorator';
+import { imageUploadOptions } from '../uploads/uploads.service';
+import {
+  DeleteAccountDto,
+  SetSavedDto,
+  UpdateProfileDto,
+} from './dto/users.dto';
 
+/** All routes act on the authenticated user; there are no `:userId` variants. */
 @Controller('users')
+@UseGuards(JwtAuthGuard)
 export class UsersController {
-    constructor(private readonly usersService: UsersService) { }
+  constructor(private readonly usersService: UsersService) {}
 
-    @Get('me')
-    @UseGuards(JwtAuthGuard)
-    async getProfile(@Req() req: any) {
-        // Fetch fresh profile with stats instead of just returning JWT payload user
-        return this.usersService.findProfile(req.user.id);
-    }
+  @Get('me')
+  getProfile(@CurrentUser() user: User) {
+    return this.usersService.findProfile(user.id);
+  }
 
-    @Patch('profile')
-    @UseGuards(JwtAuthGuard)
-    async updateProfile(@Req() req: any, @Body() updateData: { name?: string }) {
-        const userId = req.user.id;
-        return this.usersService.update(userId, { id: userId, ...updateData });
-    }
+  @Patch('me')
+  updateMe(@CurrentUser() user: User, @Body() body: UpdateProfileDto) {
+    return this.usersService.updateProfile(user.id, body);
+  }
 
-    @Post('avatar')
-    @UseGuards(JwtAuthGuard)
-    @UseInterceptors(FileInterceptor('file', {
-        storage: diskStorage({
-            destination: './uploads',
-            filename: (req, file, cb) => {
-                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                const ext = file.originalname.split('.').pop();
-                cb(null, `${file.fieldname}-${uniqueSuffix}.${ext}`);
-            }
-        })
-    }))
-    async uploadAvatar(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
-        if (!file) throw new Error('No file uploaded');
-        const userId = req.user.id; // Corrected: JwtStrategy returns full User object, so use .id (not .sub)
-        const avatarUrl = `/uploads/${file.filename}`;
-        return this.usersService.update(userId, { id: userId, avatar: avatarUrl });
-    }
+  /** Legacy path used by the web client. */
+  @Patch('profile')
+  updateProfile(@CurrentUser() user: User, @Body() body: UpdateProfileDto) {
+    return this.usersService.updateProfile(user.id, body);
+  }
 
-    @Get('me/saved')
-    @UseGuards(JwtAuthGuard)
-    async getMySavedPosts(@Req() req: any) {
-        return this.usersService.getSavedPosts(req.user.id);
-    }
+  @Post('avatar')
+  @UseInterceptors(FileInterceptor('file', imageUploadOptions))
+  uploadAvatar(
+    @CurrentUser() user: User,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.usersService.updateAvatar(user.id, file);
+  }
 
-    @Post('me/saved/:postId')
-    @UseGuards(JwtAuthGuard)
-    async toggleMySavedPost(@Req() req: any, @Param('postId') postId: string) {
-        return this.usersService.toggleSavedPost(req.user.id, postId);
-    }
+  @Delete('me')
+  deleteMe(@CurrentUser() user: User, @Body() _body: DeleteAccountDto) {
+    return this.usersService.deleteAccount(user.id);
+  }
 
-    @Get('me/saved/:postId/check')
-    @UseGuards(JwtAuthGuard)
-    async checkMySavedStatus(@Req() req: any, @Param('postId') postId: string) {
-        const isSaved = await this.usersService.isPostSaved(req.user.id, postId);
-        return { isSaved };
-    }
+  @Get('me/saved')
+  getMySavedPosts(@CurrentUser() user: User) {
+    return this.usersService.getSavedPosts(user.id);
+  }
 
-    @Get(':id/saved')
-    @UseGuards(JwtAuthGuard)
-    async getSavedPosts(@Param('id') id: string) {
-        return this.usersService.getSavedPosts(id);
-    }
+  @Post('me/saved/:postId')
+  toggleMySavedPost(
+    @CurrentUser() user: User,
+    @Param('postId', ParseUUIDPipe) postId: string,
+    @Body() body: SetSavedDto,
+  ) {
+    return this.usersService.setSaved(user.id, postId, body?.saved);
+  }
 
-    @Post(':id/saved/:postId')
-    @UseGuards(JwtAuthGuard)
-    async toggleSavedPost(@Param('id') userId: string, @Param('postId') postId: string) {
-        return this.usersService.toggleSavedPost(userId, postId);
-    }
-
-    @Get(':id/saved/:postId/check')
-    @UseGuards(JwtAuthGuard)
-    async checkSavedStatus(@Param('id') userId: string, @Param('postId') postId: string) {
-        const isSaved = await this.usersService.isPostSaved(userId, postId);
-        return { isSaved };
-    }
+  @Get('me/saved/:postId/check')
+  async checkMySavedStatus(
+    @CurrentUser() user: User,
+    @Param('postId', ParseUUIDPipe) postId: string,
+  ) {
+    return { isSaved: await this.usersService.isPostSaved(user.id, postId) };
+  }
 }
